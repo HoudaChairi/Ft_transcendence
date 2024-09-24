@@ -37,6 +37,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # New apps
+    'core.apps.authentication',
+    # 'core.apps.users',
+    'rest_framework',
+    # 'rest_framework.authtoken',
+    # new for JWT
+    'rest_framework_simplejwt',
+    # 'rest_framework_simplejwt.token_blacklist', # new 
 ]
 
 MIDDLEWARE = [
@@ -121,3 +129,24 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+#-------------------------------------------------------------------------#
+# new : step 2
+AUTH_USER_MODEL = 'authentication.CustomUser' #specify which model Django should use as the user model#
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        # new for JWT
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+}
+
+import datetime
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': datetime.timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': datetime.timedelta(days=1),
+}
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
