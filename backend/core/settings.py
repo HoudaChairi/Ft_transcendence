@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     # new for JWT
     'rest_framework_simplejwt',
     # 'rest_framework_simplejwt.token_blacklist', # new 
+    # new for Access-Control-Allow-Origin for browser
+    'corsheaders'
 ]
 
 MIDDLEWARE = [
@@ -55,6 +57,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # new for browser 
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -144,9 +149,20 @@ REST_FRAMEWORK = {
 import datetime
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': datetime.timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': datetime.timedelta(days=1),
+    'ALGORITHM': 'HS256',  # The default algorithm, should be HS256 or RS256
+    'SIGNING_KEY': SECRET_KEY,  # Use your Django secret key or a different one if configured
+    'VERIFYING_KEY': None,      # Use if RS256 is used
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    
+    'ACCESS_TOKEN_LIFETIME': datetime.timedelta(seconds=5),
+    'REFRESH_TOKEN_LIFETIME': datetime.timedelta(seconds=30),
+    
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': False,
 }
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# MEDIA_URL = '/media/'
+# MEDIA_ROOT = BASE_DIR / 'media'
+
+# To allow all origins  to access your API  from browser
+CORS_ALLOW_ALL_ORIGINS = True

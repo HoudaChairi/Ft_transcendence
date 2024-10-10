@@ -5,16 +5,19 @@ from rest_framework_simplejwt.tokens import RefreshToken # new import RefreshTok
 # new
 # step 1:
 class CustomUser(AbstractUser):
-    email = models.EmailField(max_length=255, unique=True, db_index=True)
-    # new 
-    display_name = models.CharField(max_length=50, unique=True, null=True, blank=True)
-    avatar = models.ImageField(upload_to='avatars/', default='default_avatar.png')
-    wins = models.IntegerField(default=0)
-    losses = models.IntegerField(default=0)
-    friends = models.ManyToManyField('self', blank=True, symmetrical=False, related_name='friend_set')
+    username = models.CharField(max_length=20, unique=True, blank=False, null=False)
+    email = models.CharField(max_length=50, unique=True, blank=False, null=False)
+    display_name = models.CharField(max_length=30, unique=True, null=True, blank=True)
+    # avatar = models.ImageField(upload_to='avatars/', default='default_avatar.png')
+    # wins = models.IntegerField(default=0)
+    # losses = models.IntegerField(default=0)
+    # friends = models.ManyToManyField('self', blank=True, symmetrical=False, related_name='friend_set')
 
     def __str__(self):
         return self.username
+    
+    # def __str__(self):
+    #     return self.display_name if self.display_name else self.email
     
     def tokens(self):
         refresh = RefreshToken.for_user(self)

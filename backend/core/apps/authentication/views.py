@@ -2,8 +2,12 @@
 from rest_framework import generics,status,permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import RegisterSerializer,LoginSerializer,LogoutSerializer
+from .serializers import RegisterSerializer,LoginSerializer, DisplayNameSerializer
     #UpdateProfileSerializer
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.authentication import JWTAuthentication
+
 
 class RegisterView(APIView):
     def post(self, request):
@@ -21,16 +25,29 @@ class LoginAPIView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-class LogoutAPIView(APIView):
-    permission_classes = (permissions.IsAuthenticated,)
+# class LogoutAPIView(APIView):
+#     permission_classes = (permissions.IsAuthenticated,)
+
+#     def post(self, request):
+#         serializer = LogoutSerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(status=status.HTTP_204_NO_CONTENT)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+# ---------------------------------------------------------------------------------
+# 
+class UpdateDisplayNameView(APIView):
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        serializer = LogoutSerializer(data=request.data)
+        user = request.user
+        serializer = DisplayNameSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response({"message": "Display name updated successfully"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-# ---------------------------------------------------------------------------------
+# 
+# 
 # after : to handle user updates.
 # class UpdateProfileView(APIView):
 #     # permission_classes = [permissions.IsAuthenticated]

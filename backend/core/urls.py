@@ -11,6 +11,6 @@ urlpatterns = [
     path('api/', include('core.apps.authentication.urls')),
 ]
 
-# new for avatar'
-if settings.DEBUG:  # Only serve media files in development mode
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# # new for avatar'
+# if settings.DEBUG:  # Only serve media files in development mode
+#     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
