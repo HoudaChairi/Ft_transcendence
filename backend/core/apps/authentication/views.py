@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from .models import Player
-
+from rest_framework_simplejwt.views import TokenVerifyView, TokenRefreshView
 # from rest_framework_simplejwt.views import TokenVerifyView, TokenRefreshView
 
 class RegisterView(APIView):
@@ -130,3 +130,39 @@ class UserList(APIView):
 
         return Response({'users': users_list})
 
+
+#------------------------------------------------
+# Custom TokenVerifyView to return username
+class CustomTokenVerifyView(TokenVerifyView):
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+
+        try:
+            token = request.data.get('token')
+            access_token = AccessToken(token)
+            user_id = access_token['user_id']
+            user = Player.objects.get(id=user_id)
+            username = user.username
+            response.data['username'] = username
+        except Exception as e:
+            return Response({'error': 'Invalid token or user not found'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return response
+
+
+# Custom TokenRefreshView to return username
+class CustomTokenRefreshView(TokenRefreshView):
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+
+        try:
+            refresh_token = request.data.get('refresh')
+            access_token = AccessToken(response.data['access'])
+            user_id = access_token['user_id']
+            user = Player.objects.get(id=user_id)
+            username = user.username
+            response.data['username'] = username
+        except Exception as e:
+            return Response({'error': 'Invalid refresh token or user not found'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return response
