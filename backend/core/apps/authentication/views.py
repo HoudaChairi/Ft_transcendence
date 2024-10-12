@@ -5,16 +5,26 @@ from rest_framework.views import APIView
 from .serializers import RegisterSerializer,LoginSerializer, DisplayNameSerializer
     #UpdateProfileSerializer
 from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from .models import Player
 
+# from rest_framework_simplejwt.views import TokenVerifyView, TokenRefreshView
 
 class RegisterView(APIView):
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            user = serializer.save()  # Create the user
+            tokens = user.tokens()     # Get the tokens for the newly created user
+            
+            return Response({
+                'email': user.email,
+                'username': user.username,
+                'access': tokens['access'],
+                'refresh': tokens['refresh'],
+            }, status=status.HTTP_201_CREATED)
+        
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -75,7 +85,7 @@ class UpdateDisplayNameView(APIView):
 #     permission_classes = [permissions.IsAuthenticated]
 
 #     def post(self, request, friend_id):
-#         friend = get_object_or_404(CustomUser, id=friend_id)
+#         friend = get_object_or_404(Player, id=friend_id)
 #         Friendship.objects.get_or_create(user=request.user, friend=friend)
 #         return Response({"message": "Friend added!"}, status=status.HTTP_201_CREATED)
 
@@ -103,3 +113,20 @@ class UpdateDisplayNameView(APIView):
 #         user = request.user
 #         match_history = user.match_set.all()  # Assuming you have a Match model
 #         return Response(match_history)
+
+
+class UserList(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        users = Player.objects.all()
+
+        users_list = [
+            {
+                'username': user.username,
+            }
+            for user in users
+        ]
+
+        return Response({'users': users_list})
+

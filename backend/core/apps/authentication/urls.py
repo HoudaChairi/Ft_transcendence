@@ -11,6 +11,9 @@ urlpatterns = [
     path('verify-token/', TokenVerifyView.as_view(), name='token_verify'),
     path('refresh-token/', TokenRefreshView.as_view(), name='token_refresh'),
 
+    # by meriem
+    path('users/', UserList.as_view(), name='user_list'),
+
 
     # after
     #----------------------------------------------------------------------------#
@@ -22,4 +25,5 @@ urlpatterns = [
     #----------------------------------------------------------------------------#
     # path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     # path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
 ]

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import CustomUser
+from .models import Player
 from django.contrib import auth
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
@@ -20,7 +20,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        model = CustomUser
+        model = Player
         fields = ['email', 'username', 'password', 'confirmPassword']
         extra_kwargs = {
             'username': {'required': True},
@@ -43,7 +43,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # Remove confirmPassword from validated_data before creating user
         validated_data.pop('confirmPassword', None)
-        user = CustomUser.objects.create_user(
+        user = Player.objects.create_user(
             email=validated_data['email'],
             username=validated_data['username'],
             password=validated_data['password'],
@@ -58,14 +58,15 @@ class LoginSerializer(serializers.ModelSerializer):
     tokens = serializers.SerializerMethodField()
     
     def get_tokens(self, obj):
-        user = CustomUser.objects.get(username=obj['username'])
+        user = Player.objects.get(username=obj['username'])
         return {
+            'username': obj['username'],
             'refresh': user.tokens()['refresh'],
             'access': user.tokens()['access'],
         }
         
     class Meta:
-        model = CustomUser
+        model = Player
         fields = ['username','password','tokens']
     
     def validate(self, attrs):
@@ -98,11 +99,11 @@ class LoginSerializer(serializers.ModelSerializer):
 
 class DisplayNameSerializer(serializers.ModelSerializer):
     class Meta:
-        model = CustomUser
+        model = Player
         fields = ['display_name']
     
     def validate_display_name(self, value):
-        if CustomUser.objects.filter(display_name=value).exists():
+        if Player.objects.filter(display_name=value).exists():
             raise serializers.ValidationError("This display name is already taken.")
         return value
 
@@ -110,7 +111,7 @@ class DisplayNameSerializer(serializers.ModelSerializer):
 #  after:  for display name, avatar,
 # class UpdateProfileSerializer(serializers.ModelSerializer):
 #     class Meta:
-#         model = CustomUser
+#         model = Player
 #         fields = ['email', 'username', 'display_name', 'avatar']
     
 #     def validate_username(self, value):
@@ -119,11 +120,11 @@ class DisplayNameSerializer(serializers.ModelSerializer):
 #         return value
     
 #     def validate_display_name(self, value):
-#         if CustomUser.objects.filter(display_name=value).exists():
+#         if Player.objects.filter(display_name=value).exists():
 #             raise serializers.ValidationError("Display name is already taken.")
 #         return value
 
 # class FriendSerializer(serializers.ModelSerializer):
 #     class Meta:
-#         model = CustomUser
+#         model = Player
 #         fields = ['username', 'display_name', 'online_status']

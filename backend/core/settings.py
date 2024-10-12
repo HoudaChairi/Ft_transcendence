@@ -90,6 +90,13 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        # 'ENGINE': 'django.db.backends.postgresql',
+        # 'NAME': 'transcendence_db',
+        # 'USER': 'postgres_user',
+        # 'PASSWORD': '1337transcendence',
+        # # 'HOST': 'postgres',
+        # 'HOST': 'localhost',
+        # 'PORT': '5432',
     }
 }
 
@@ -137,7 +144,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 #-------------------------------------------------------------------------#
 # new : step 2
-AUTH_USER_MODEL = 'authentication.CustomUser' #specify which model Django should use as the user model#
+AUTH_USER_MODEL = 'authentication.Player' #specify which model Django should use as the user model#
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
