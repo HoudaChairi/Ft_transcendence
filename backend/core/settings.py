@@ -25,7 +25,9 @@ SECRET_KEY = 'django-insecure-e!-e$qj*#i@8s!=rd9=#2cwk99^-nx9#zk7_e^qethq*vwg!$(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# ALLOWED_HOSTS = []
+##
+ALLOWED_HOSTS = ['10.12.2.10', 'localhost', '127.0.0.1']
 
 
 # Application definition
@@ -36,9 +38,12 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'daphne',
     'django.contrib.staticfiles',
     # New apps
     'core.apps.authentication',
+    'core.apps.chat',
+
     # 'core.apps.users',
     'rest_framework',
     # 'rest_framework.authtoken',
@@ -46,7 +51,11 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     # 'rest_framework_simplejwt.token_blacklist', # new 
     # new for Access-Control-Allow-Origin for browser
-    'corsheaders'
+    'corsheaders',
+
+
+    ##
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -173,3 +182,13 @@ SIMPLE_JWT = {
 
 # To allow all origins  to access your API  from browser
 CORS_ALLOW_ALL_ORIGINS = True
+
+
+## Meriem
+ASGI_APPLICATION = 'core.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
