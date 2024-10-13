@@ -9,7 +9,7 @@ from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from .models import Player
 from rest_framework_simplejwt.views import TokenVerifyView, TokenRefreshView
-# from rest_framework_simplejwt.views import TokenVerifyView, TokenRefreshView
+
 
 class RegisterView(APIView):
     def post(self, request):

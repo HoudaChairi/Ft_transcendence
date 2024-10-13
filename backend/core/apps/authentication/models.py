@@ -1,9 +1,8 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser # new import AbstractUser
-from rest_framework_simplejwt.tokens import RefreshToken # new import RefreshToken
+from django.contrib.auth.models import AbstractUser
+from rest_framework_simplejwt.tokens import RefreshToken
 
-# new
-# step 1:
+
 class Player(AbstractUser):
     username = models.CharField(max_length=20, unique=True, blank=False, null=False)
     email = models.CharField(max_length=50, unique=True, blank=False, null=False)
@@ -15,9 +14,6 @@ class Player(AbstractUser):
 
     def __str__(self):
         return self.username
-    
-    # def __str__(self):
-    #     return self.display_name if self.display_name else self.email
     
     def tokens(self):
         refresh = RefreshToken.for_user(self)
@@ -38,10 +34,6 @@ class Player(AbstractUser):
 #     opponent = models.ForeignKey(Player, related_name='opponents', on_delete=models.CASCADE)
 #     result = models.CharField(max_length=10)  # 'win' or 'loss'
 #     date = models.DateTimeField(auto_now_add=True)
-
-
-# By using str(), you're converting these token objects into their string representations,
-# => In this user model we created a function tokens to assign the user with Refresh and Access Tokens.
 
 
 # class UserProfile(models.Model):

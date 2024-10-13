@@ -161,8 +161,8 @@ SIMPLE_JWT = {
     'VERIFYING_KEY': None,      # Use if RS256 is used
     'AUTH_HEADER_TYPES': ('Bearer',),
     
-    'ACCESS_TOKEN_LIFETIME': datetime.timedelta(seconds=5),
-    'REFRESH_TOKEN_LIFETIME': datetime.timedelta(seconds=30),
+    'ACCESS_TOKEN_LIFETIME': datetime.timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': datetime.timedelta(days=1),
     
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': False,
