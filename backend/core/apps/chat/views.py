@@ -1,6 +1,7 @@
 from django.http import JsonResponse
 from .models import Message
-from core.apps.authentication.models import Player
+from authentication.models import Player
+
 
 def room(request, user1, user2):
     room_name = '_'.join(sorted([user1, user2]))
@@ -21,7 +22,7 @@ def room(request, user1, user2):
             'sender': message.sender.username,
             'receiver': message.receiver.username,
             'content': message.content,
-            # 'timestamp': message.timestamp.isoformat()  # Format timestamp as ISO 8601
+            # 'timestamp': message.timestamp.isoformat()
         }
         for message in messages
     ]

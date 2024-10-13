@@ -187,3 +187,8 @@ CORS_ALLOW_ALL_ORIGINS = True
 ## Meriem
 ASGI_APPLICATION = 'core.asgi.application'
 
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
