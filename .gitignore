@@ -33,5 +33,4 @@ media/
 *.sass-cache/
 
 # Database migrations (ignore all except __init__.py)
-**/migrations/*.py
-!**/migrations/__init__.py
+migrations
