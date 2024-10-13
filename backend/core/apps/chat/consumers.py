@@ -23,3 +23,25 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             self.channel_name
         )
+
+    async def receive(self, text_data):
+        text_data_json = json.loads(text_data)
+        message = text_data_json['message']
+        sender_username = text_data_json['username']
+
+        room_users = self.room_name.split('_')
+        receiver_username = room_users[1] if room_users[0] == sender_username else room_users[0]
+
+        sender = await self.get_user(sender_username)
+        receiver = await self.get_user(receiver_username)
+
+        await self.save_message(sender, receiver, message)
+
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'chat_message',
+                'message': message,
+                'sender': sender_username,
+            }
+        )
