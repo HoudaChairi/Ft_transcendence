@@ -15,8 +15,7 @@ env/
 db.sqlite3
 
 # Python cache files
-__pycache__/
-backend/core/__pycache__/
+__pycache__
 
 # Editor settings
 .vscode/
