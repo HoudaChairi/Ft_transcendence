@@ -1,6 +1,6 @@
 from django.http import JsonResponse
 from .models import Message
-from authentication.models import Player
+from core.apps.authentication.models import Player
 
 
 def room(request, user1, user2):
