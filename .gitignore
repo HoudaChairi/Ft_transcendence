@@ -1,2 +1,39 @@
+notes*
+todo*
+todo*
+.gitignore
+
+# System files
 .DS_Store
-/backend/env/
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# SQLite database
+db.sqlite3
+
+# Python cache files
+__pycache__/
+backend/core/__pycache__/
+db.sqlite3
+# Editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment variable files
+.env
+.env.*
+
+# Media and static files
+media/
+/static/
+*.sass-cache/
+
+# Database migrations (ignore all except __init__.py)
+**/migrations/*.py
+!**/migrations/__init__.py
