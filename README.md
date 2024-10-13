@@ -1,3 +1,0 @@
-# Ft_transcendence
-
-meow
