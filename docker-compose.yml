@@ -1,0 +1,51 @@
+services:
+  db:
+    image: postgres:alpine
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      POSTGRES_DB: your_db_name
+      POSTGRES_USER: your_db_user
+      POSTGRES_PASSWORD: your_db_password
+    ports:
+      - "5432:5432"
+
+  django:
+    build:
+      context: ./Devops/Django
+    volumes:
+      - ./Backend:/app
+    expose:
+      - "8000"
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_NAME: your_db_name
+      DB_USER: your_db_user
+      DB_PASSWORD: your_db_password
+
+  threejs:
+    build:
+      context: ./Devops/Three.js
+    volumes:
+      - ./Frontend:/usr/src/app
+    expose:
+      - "5173"
+    depends_on:
+      - django
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    depends_on:
+      - django
+      - threejs
+    volumes:
+      - ./Devops/Nginx/nginx.conf:/etc/nginx/nginx.conf
+    restart: always
+
+volumes:
+  postgres_data:

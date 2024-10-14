@@ -34,3 +34,5 @@ media/
 
 # Database migrations (ignore all except __init__.py)
 migrations
+
+node_modules
