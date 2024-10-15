@@ -1,15 +1,24 @@
 services:
-  db:
+  postgres:
     image: postgres:alpine
     restart: always
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
-      POSTGRES_DB: your_db_name
-      POSTGRES_USER: your_db_user
-      POSTGRES_PASSWORD: your_db_password
+      POSTGRES_DB: transcendence_db
+      POSTGRES_USER: postgres_user
+      POSTGRES_PASSWORD: 1337transcendence
     ports:
       - "5432:5432"
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: my_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8080:80"
 
   django:
     build:
@@ -19,12 +28,12 @@ services:
     expose:
       - "8000"
     depends_on:
-      - db
+      - postgres
     environment:
-      DB_HOST: db
-      DB_NAME: your_db_name
-      DB_USER: your_db_user
-      DB_PASSWORD: your_db_password
+      DB_HOST: postgres
+      DB_NAME: transcendence_db
+      DB_USER: postgres_user
+      DB_PASSWORD: 1337transcendence
 
   threejs:
     build:

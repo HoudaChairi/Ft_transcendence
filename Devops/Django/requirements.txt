@@ -26,3 +26,4 @@ Twisted
 txaio
 typing_extensions
 zope.interface
+psycopg[binary]
