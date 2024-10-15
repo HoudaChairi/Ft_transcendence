@@ -82,7 +82,7 @@ class Game {
 		this.#createCamera();
 		this.#createRenderer();
 		this.#addDOMElem();
-		this.#createControls();
+		// this.#createControls();
 		this.#loadEnvironment();
 		this.#loadFont();
 		window.addEventListener('resize', () => this.#onWindowResize());
