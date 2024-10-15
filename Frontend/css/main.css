@@ -1,3 +1,18 @@
+@font-face {
+	font-family: 'Frijole';
+	src: url('../fonts/Frijole-Regular.ttf') format('truetype');
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Gabriela';
+	src: url('../fonts/Gabriela-Regular.ttf') format('truetype');
+	font-weight: normal;
+	font-style: normal;
+}
+
+
 html,
 body {
 	margin: 0;

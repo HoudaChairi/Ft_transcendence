@@ -349,7 +349,7 @@ class Game {
 				'.recived-parent'
 			).innerHTML = '';
 			const response = await fetch(
-				`http://${window.location.host}:80/api/chat/room/${this.#loggedUser}/${user}/`,
+				`https://${window.location.host}/api/chat/room/${this.#loggedUser}/${user}/`,
 				{
 					method: 'GET',
 					headers: {
@@ -415,7 +415,7 @@ class Game {
 
 				const room = [this.#loggedUser, user.username].sort().join('_');
 				this.#chatWebSocket[user.username] = new WebSocket(
-					`ws://${window.location.host}/api/ws/chat/${room}/`
+					`wss://${window.location.host}/api/ws/chat/${room}/`
 				);
 				this.#chatWebSocket[user.username].onmessage = e => {
 					const data = JSON.parse(e.data);
@@ -437,7 +437,7 @@ class Game {
 
 	async #chatUsers() {
 		try {
-			const response = await fetch(`http://${window.location.host}:80/api/users/`, {
+			const response = await fetch(`https://${window.location.host}/api/users/`, {
 				method: 'GET',
 				headers: {
 					Authorization: `Bearer ${localStorage.getItem(
@@ -889,7 +889,7 @@ class Game {
 
 			if (access) {
 				const response = await fetch(
-					`http://${window.location.host}:80/api/verify-token/`,
+					`https://${window.location.host}/api/verify-token/`,
 					{
 						method: 'POST',
 						headers: {
@@ -907,7 +907,7 @@ class Game {
 				} else {
 					if (refresh) {
 						const refreshResponse = await fetch(
-							`http://${window.location.host}:80/api/refresh-token/`,
+							`https://${window.location.host}/api/refresh-token/`,
 							{
 								method: 'POST',
 								headers: {
@@ -975,7 +975,7 @@ class Game {
 
 		try {
 			const response = await fetch(
-				`http://${window.location.host}:80/api/register/`,
+				`https://${window.location.host}/api/register/`,
 				{
 					method: 'POST',
 					headers: {
@@ -1026,7 +1026,7 @@ class Game {
 			const { value: password } =
 				this.#css2DObject.sign.element.querySelector('#password');
 
-			const response = await fetch(`http://${window.location.host}:80/api/login/`, {
+			const response = await fetch(`https://${window.location.host}/api/login/`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
