@@ -7,7 +7,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.contrib.auth.hashers import check_password
-
+import re
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
@@ -32,6 +32,17 @@ class RegisterSerializer(serializers.ModelSerializer):
         except ValidationError as exc:
             raise serializers.ValidationError(str(exc))
         return value
+    
+    def validate_username(self, value):
+        if ' ' in value:
+            raise serializers.ValidationError("Username should not contain spaces.")
+        
+        if not re.match("^[a-zA-Z0-9_-]+$", value):
+            raise serializers.ValidationError(
+                "Username should only contain letters, numbers, dashes, or underscores."
+            )
+        return value
+    
 
     def validate(self, attrs):
         if attrs['password'] != attrs['confirmPassword']:
@@ -48,7 +59,6 @@ class RegisterSerializer(serializers.ModelSerializer):
             username=validated_data['username'],
             password=validated_data['password'],
         )
-        # Additional user setup can be done here
         return user
     
 # new Login serializer:
