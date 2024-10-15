@@ -1,0 +1,36 @@
+notes*
+todo*
+
+# System files
+.DS_Store
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# SQLite database
+db.sqlite3
+
+# Python cache files
+__pycache__
+
+# Editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment variable files
+.env
+.env.*
+
+# Media and static files
+media/
+/static/
+*.sass-cache/
+
+
+migrations
+node_modules
