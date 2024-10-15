@@ -7,24 +7,15 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.contrib.auth.hashers import check_password
-
+import re
 
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(
-        write_only=True,
-        required=True,
-    )
-    confirmPassword = serializers.CharField(
-        write_only=True,
-        required=True,
-    )
+    password = serializers.CharField(write_only=True, required=True)
+    confirmPassword = serializers.CharField(write_only=True, required=True)
 
     class Meta:
         model = Player
         fields = ['email', 'username', 'password', 'confirmPassword']
-        extra_kwargs = {
-            'username': {'required': True},
-        }
 
     def validate_password(self, value):
         try:
@@ -32,7 +23,15 @@ class RegisterSerializer(serializers.ModelSerializer):
         except ValidationError as exc:
             raise serializers.ValidationError(str(exc))
         return value
-
+    
+    def validate_username(self, value):
+        if ' ' in value:
+            raise serializers.ValidationError("Username should not contain spaces.")    
+        if not re.match("^[a-zA-Z0-9_-]+$", value):
+            raise serializers.ValidationError(
+                "Username should only contain letters, numbers, dashes, or underscores.")
+        return value
+    
     def validate(self, attrs):
         if attrs['password'] != attrs['confirmPassword']:
             raise serializers.ValidationError({
@@ -41,14 +40,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        # Remove confirmPassword from validated_data before creating user
         validated_data.pop('confirmPassword', None)
         user = Player.objects.create_user(
             email=validated_data['email'],
             username=validated_data['username'],
             password=validated_data['password'],
         )
-        # Additional user setup can be done here
         return user
     
 # new Login serializer:
