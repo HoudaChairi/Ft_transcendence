@@ -9,6 +9,7 @@ import { LEGEND, LEGEND_CHAT, LEGEND_LEADERBOARD } from './Legend';
 import { LEADERBOARDMAIN } from './Leaderboard';
 import { SIGNIN, SIGNUP } from './Sign';
 import { LOGIN } from './Login';
+import { CHANGE_USERNAME } from './Sbook';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -126,6 +127,7 @@ class Game {
 		this.#addHomeCss2D();
 		this.#addPanerCss2D();
 		this.#addSettingsCss2D();
+		this.#addSbookSettingsCss2D();
 		this.#addProfilePic();
 		this.#addChatCss2D();
 		this.#addLegendCss2d();
@@ -181,6 +183,10 @@ class Game {
 		this.#css2DObject.sbOverlay.element.addEventListener('click', e =>
 			this.#toggleSBook()
 		);
+		this.#css2DObject.sbsettingOverlay.element.addEventListener(
+			'click',
+			e => this.#toggleSettings()
+		);
 		['sign', 'register'].forEach(ele => {
 			this.#css2DObject[ele].element
 				.querySelector('.parent')
@@ -195,6 +201,12 @@ class Game {
 					}
 				});
 		});
+		this.#css2DObject.sbook.element
+			.querySelector('.setting-frame-parent')
+			.addEventListener('click', e => {
+				const btn = e.target.closest('.setting-frame');
+				if (btn) this.#sbookSettings(btn);
+			});
 	}
 
 	#login42() {
@@ -203,6 +215,28 @@ class Game {
 
 	#loginGoogle() {
 		// console.log('this is Google');
+	}
+
+	#changeUsername() {
+		['sbsetting', 'sbsettingOverlay'].forEach(ele => {
+			this.#scene.add(this.#css2DObject[ele]);
+		});
+	}
+
+	#changeAvatar() {}
+
+	#handleTwoFA() {}
+
+	#logout() {}
+
+	#sbookSettings(btn) {
+		const setting = {
+			username: this.#changeUsername.bind(this),
+			avatar: this.#changeAvatar.bind(this),
+			twofa: this.#handleTwoFA.bind(this),
+			logout: this.#logout.bind(this),
+		};
+		setting[btn.dataset.id]();
 	}
 
 	#addLoginCss2D() {
@@ -306,6 +340,29 @@ class Game {
 		this.#css2DObject.sbOverlay.renderOrder = 7;
 	}
 
+	#addSbookSettingsCss2D() {
+		const usernameContainer = document.createElement('div');
+		usernameContainer.className = 'frame-parent-user';
+		usernameContainer.innerHTML = CHANGE_USERNAME;
+
+		this.#css2DObject.sbsetting = new CSS2DObject(usernameContainer);
+		this.#css2DObject.sbsetting.name = 'change user';
+		this.#css2DObject.sbsetting.renderOrder = 10;
+
+		const overlayContainer = document.createElement('div');
+		overlayContainer.className = 'overlay';
+
+		this.#css2DObject.sbsettingOverlay = new CSS2DObject(overlayContainer);
+		this.#css2DObject.sbsettingOverlay.name = 'overlay';
+		this.#css2DObject.sbsettingOverlay.renderOrder = 9;
+	}
+
+	#toggleSettings() {
+		['sbsetting', 'sbsettingOverlay'].forEach(ele => {
+			this.#scene.remove(this.#css2DObject[ele]);
+		});
+	}
+
 	#toggleSBook() {
 		if (this.#scene.getObjectByName('sbook')) {
 			this.#scene.remove(this.#css2DObject.sbook);
@@ -349,14 +406,15 @@ class Game {
 				'.recived-parent'
 			).innerHTML = '';
 			const response = await fetch(
-				`https://${window.location.host}/api/chat/room/${this.#loggedUser}/${user}/`,
+				`https://${window.location.host}/api/chat/room/${
+					this.#loggedUser
+				}/${user}/`,
 				{
 					method: 'GET',
 					headers: {
 						Authorization: `Bearer ${localStorage.getItem(
 							'accessToken'
 						)}`,
-						// 	'Content-Type': 'application/json'
 					},
 				}
 			);
@@ -437,15 +495,17 @@ class Game {
 
 	async #chatUsers() {
 		try {
-			const response = await fetch(`https://${window.location.host}/api/users/`, {
-				method: 'GET',
-				headers: {
-					Authorization: `Bearer ${localStorage.getItem(
-						'accessToken'
-					)}`,
-					// 	'Content-Type': 'application/json'
-				},
-			});
+			const response = await fetch(
+				`https://${window.location.host}/api/users/`,
+				{
+					method: 'GET',
+					headers: {
+						Authorization: `Bearer ${localStorage.getItem(
+							'accessToken'
+						)}`,
+					},
+				}
+			);
 			const data = await response.json();
 			if (response.ok) {
 				this.#addChatUsers(data.users);
@@ -1026,13 +1086,16 @@ class Game {
 			const { value: password } =
 				this.#css2DObject.sign.element.querySelector('#password');
 
-			const response = await fetch(`https://${window.location.host}/api/login/`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({ username, password }),
-			});
+			const response = await fetch(
+				`https://${window.location.host}/api/login/`,
+				{
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({ username, password }),
+				}
+			);
 
 			if (response.ok) {
 				const data = await response.json();
