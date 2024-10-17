@@ -9,7 +9,7 @@ import { LEGEND, LEGEND_CHAT, LEGEND_LEADERBOARD } from './Legend';
 import { LEADERBOARDMAIN } from './Leaderboard';
 import { SIGNIN, SIGNUP } from './Sign';
 import { LOGIN } from './Login';
-import { CHANGE_USERNAME } from './Sbook';
+import { CHANGE_AVATAR, CHANGE_USERNAME } from './Sbook';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -218,12 +218,39 @@ class Game {
 	}
 
 	#changeUsername() {
+		this.#css2DObject.sbsetting.element.innerHTML = CHANGE_USERNAME;
 		['sbsetting', 'sbsettingOverlay'].forEach(ele => {
 			this.#scene.add(this.#css2DObject[ele]);
 		});
 	}
 
-	#changeAvatar() {}
+	#changeAvatar() {
+		this.#css2DObject.sbsetting.element.innerHTML = CHANGE_AVATAR;
+		['sbsetting', 'sbsettingOverlay'].forEach(ele => {
+			this.#scene.add(this.#css2DObject[ele]);
+		});
+		this.#css2DObject.sbsetting.element
+			.querySelector('#avatarImage')
+			.addEventListener('click', e =>
+				this.#css2DObject.sbsetting.element
+					.querySelector('#avatarUpload')
+					.click()
+			);
+		this.#css2DObject.sbsetting.element
+			.querySelector('#avatarUpload')
+			.addEventListener('change', e => {
+				const file = e.target.files[0];
+				if (file) {
+					const reader = new FileReader();
+					reader.onload = e => {
+						this.#css2DObject.sbsetting.element.querySelector(
+							'#avatarImage'
+						).src = e.target.result;
+					};
+					reader.readAsDataURL(file);
+				}
+			});
+	}
 
 	#handleTwoFA() {}
 
