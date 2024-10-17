@@ -2089,26 +2089,30 @@ body {
 }
 
 .username-user {
-	width: 6.188rem;
+	width: 283px;
 	position: relative;
 	line-height: 150%;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	overflow: hidden;
+	text-align: center;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-	height: 1.875rem;
+	/* height: 1.875rem; */
 	flex-shrink: 0;
 	resize: none;
 	border: none;
 	background: transparent;
 	outline: none !important;
 	font-size: 1.25rem;
+	color: #4f483f;
+	font-family: Gabriela;
 }
 
 .username-user::placeholder {
 	font-size: 1.25rem;
+	text-align: center;
 	color: #4f483f;
 	font-family: Gabriela;
 	opacity: 1;

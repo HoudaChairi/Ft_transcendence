@@ -11,7 +11,7 @@ export const CHANGE_USERNAME = `<div class="frame-wrapper">
 <div class="select-new-username-parent">
 	<div class="select-new-username">Select New Username</div>
 	<div class="username-wrapper">
-		<textarea class="username-user" placeholder="Username"></textarea>
+		<input type="text" class="username-user" placeholder="Username" id="username"/>
 	</div>
 	<div class="sette-wrapper">
 		<div class="change-username">Sette</div>
