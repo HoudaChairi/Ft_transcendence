@@ -80,16 +80,16 @@ class LoginSerializer(serializers.ModelSerializer):
         }
         
 # new Logout serializer:
-# class LogoutSerializer(serializers.Serializer):
-#     refresh = serializers.CharField()
-#     def validate(self, attrs):
-#         self.token = attrs['refresh']
-#         return attrs
-#     def save(self, **kwargs):
-#         try:
-#             RefreshToken(self.token).blacklist()
-#         except TokenError:
-#             self.fail('bad_token')
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+    def validate(self, attrs):
+        self.token = attrs['refresh']
+        return attrs
+    def save(self, **kwargs):
+        try:
+            RefreshToken(self.token).blacklist()
+        except TokenError:
+            self.fail('bad_token')
     
 # --------------------------------------------------------------------------------------
 
@@ -104,22 +104,6 @@ class DisplayNameSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("This display name is already taken.")
         return value
 
-
-#  after:  for display name, avatar,
-# class UpdateProfileSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Player
-#         fields = ['email', 'username', 'display_name', 'avatar']
-    
-#     def validate_username(self, value):
-#         if not value.isalnum():
-#             raise serializers.ValidationError("Username must be alphanumeric.")
-#         return value
-    
-#     def validate_display_name(self, value):
-#         if Player.objects.filter(display_name=value).exists():
-#             raise serializers.ValidationError("Display name is already taken.")
-#         return value
 
 # class FriendSerializer(serializers.ModelSerializer):
 #     class Meta:

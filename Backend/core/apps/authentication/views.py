@@ -2,7 +2,7 @@
 from rest_framework import generics,status,permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import RegisterSerializer,LoginSerializer, DisplayNameSerializer
+from .serializers import RegisterSerializer,LoginSerializer, LogoutSerializer, DisplayNameSerializer
     #UpdateProfileSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
@@ -35,15 +35,16 @@ class LoginAPIView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-# class LogoutAPIView(APIView):
-#     permission_classes = (permissions.IsAuthenticated,)
+    
+class LogoutAPIView(APIView):
+    permission_classes = [IsAuthenticated]
 
-#     def post(self, request):
-#         serializer = LogoutSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(status=status.HTTP_204_NO_CONTENT)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def post(self, request):
+        serializer = LogoutSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 # ---------------------------------------------------------------------------------
 # 
 class UpdateDisplayNameView(APIView):
@@ -82,7 +83,7 @@ class UpdateDisplayNameView(APIView):
 
 # new: views to add and remove friends.
 # class AddFriendAPIView(APIView):
-#     permission_classes = [permissions.IsAuthenticated]
+#     permission_classes = [IsAuthenticated]
 
 #     def post(self, request, friend_id):
 #         friend = get_object_or_404(Player, id=friend_id)
@@ -90,7 +91,7 @@ class UpdateDisplayNameView(APIView):
 #         return Response({"message": "Friend added!"}, status=status.HTTP_201_CREATED)
 
 # class RemoveFriendAPIView(APIView):
-#     permission_classes = [permissions.IsAuthenticated]
+#     permission_classes = [IsAuthenticated]
 
 #     def post(self, request, friend_id):
 #         friendship = get_object_or_404(Friendship, user=request.user, friend_id=friend_id)
@@ -99,7 +100,7 @@ class UpdateDisplayNameView(APIView):
 
 # # new: Create an endpoint to retrieve match history.
 # class MatchHistoryAPIView(APIView):
-#     permission_classes = [permissions.IsAuthenticated]
+#     permission_classes = [IsAuthenticated]
 
 #     def get(self, request):
 #         matches = Match.objects.filter(user=request.user).values('opponent__username', 'result', 'date')
