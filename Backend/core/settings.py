@@ -49,8 +49,7 @@ INSTALLED_APPS = [
     # 'rest_framework.authtoken',
     # new for JWT
     'rest_framework_simplejwt',
-    # 'rest_framework_simplejwt.token_blacklist', # new 
-    # new for Access-Control-Allow-Origin for browser
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
 
 

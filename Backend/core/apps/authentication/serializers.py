@@ -2,7 +2,8 @@ from rest_framework import serializers
 from .models import Player
 from django.contrib import auth
 from rest_framework.exceptions import AuthenticationFailed
-from rest_framework_simplejwt.tokens import RefreshToken, TokenError
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -82,15 +83,28 @@ class LoginSerializer(serializers.ModelSerializer):
 # new Logout serializer:
 class LogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField()
+
+    default_error_messages = {
+        'bad_token': 'Token is invalid or expired',
+        'blacklisted_token': 'Token is already blacklisted'
+    }
+
     def validate(self, attrs):
         self.token = attrs['refresh']
         return attrs
+
     def save(self, **kwargs):
         try:
-            RefreshToken(self.token).blacklist()
-        except TokenError:
-            self.fail('bad_token')
-    
+            token = RefreshToken(self.token)
+            token.check_blacklist()
+        except TokenError as e:
+            if str(e) == "Token is blacklisted":
+                self.fail('blacklisted_token')
+            else:
+                self.fail('bad_token')
+        else:
+            token.blacklist()
+            
 # --------------------------------------------------------------------------------------
 
 

@@ -227,10 +227,36 @@ class Game {
 
 	#handleTwoFA() {}
 
-	#logout() {
-		this.#switchHome('home');
-		this.#toggleSBook();
-		this.#LoginPage();
+	async #logout() {
+		try {
+			const response = await fetch(
+				`https://${window.location.host}/api/logout/`,
+				{
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+					},
+					body: JSON.stringify({
+						refresh: localStorage.getItem('refreshToken'),
+					}),
+				}
+			);
+			
+			if (response.ok) {
+				localStorage.removeItem('accessToken');
+				localStorage.removeItem('refreshToken');
+				
+				this.#switchHome('home');
+				this.#toggleSBook();
+				this.#LoginPage();
+			} else {
+				const errorData = await response.json();
+				throw new Error(errorData.detail || 'Logout failed');
+			}
+		} catch (error) {
+			alert(error);
+		}
 	}
 
 	#sbookSettings(btn) {

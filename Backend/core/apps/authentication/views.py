@@ -39,7 +39,7 @@ class LoginAPIView(APIView):
     
 class LogoutAPIView(APIView):
     permission_classes = [IsAuthenticated]
-
+    
     def post(self, request):
         serializer = LogoutSerializer(data=request.data)
         if serializer.is_valid():
