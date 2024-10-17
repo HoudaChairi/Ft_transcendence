@@ -228,6 +228,8 @@ class Game {
 	#handleTwoFA() {}
 
 	#logout() {
+		this.#switchHome('home');
+		this.#toggleSBook();
 		this.#LoginPage();
 	}
 
