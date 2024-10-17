@@ -2062,6 +2062,14 @@ body {
 	gap: 1.875rem;
 }
 
+.frame-child-user {
+	width: 7.5rem;
+	position: relative;
+	border-radius: 50%;
+	height: 7.5rem;
+	object-fit: cover;
+}
+
 .frame-wrapper {
 	align-self: stretch;
 	height: 42px;
@@ -2077,6 +2085,13 @@ body {
 	background-position: top;
 }
 
+.ellipse-wrapper {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: flex-start;
+}
+
 .select-new-username {
 	align-self: stretch;
 	position: relative;
@@ -2089,26 +2104,29 @@ body {
 }
 
 .username-user {
-	width: 6.188rem;
+	width: 283px;
 	position: relative;
 	line-height: 150%;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	overflow: hidden;
+	text-align: center;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-	height: 1.875rem;
 	flex-shrink: 0;
 	resize: none;
 	border: none;
 	background: transparent;
 	outline: none !important;
 	font-size: 1.25rem;
+	color: #4f483f;
+	font-family: Gabriela;
 }
 
 .username-user::placeholder {
 	font-size: 1.25rem;
+	text-align: center;
 	color: #4f483f;
 	font-family: Gabriela;
 	opacity: 1;
@@ -2134,9 +2152,9 @@ body {
 	justify-content: center;
 	padding: 5px 60px;
 	background-image: url('/textures/svg/B9.svg');
-	background-size: cover;
+	background-size: 100% 100%;
 	background-repeat: no-repeat;
-	background-position: top;
+	background-position: center;
 	color: #000;
 }
 
