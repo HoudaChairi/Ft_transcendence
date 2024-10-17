@@ -10,15 +10,17 @@ services:
       POSTGRES_PASSWORD: 1337transcendence
     ports:
       - "5432:5432"
+    container_name: postgres
 
   pgadmin:
     image: dpage/pgadmin4
-    container_name: my_pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@example.com
       PGADMIN_DEFAULT_PASSWORD: admin
     ports:
       - "8080:80"
+    container_name: pgadmin
+    restart: always
 
   django:
     build:
@@ -34,6 +36,8 @@ services:
       DB_NAME: transcendence_db
       DB_USER: postgres_user
       DB_PASSWORD: 1337transcendence
+    container_name: django
+    restart: always
 
   threejs:
     build:
@@ -44,17 +48,22 @@ services:
       - "5173"
     depends_on:
       - django
+    container_name: threejs
+    restart: always
 
   nginx:
     image: nginx:alpine
     ports:
       - "80:80"
+      - "443:443"
     depends_on:
       - django
       - threejs
     volumes:
       - ./Devops/Nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./Devops/Nginx/certs:/etc/nginx/certs
     restart: always
+    container_name: nginx
 
 volumes:
   postgres_data:

@@ -1,4 +1,4 @@
-import game from './game';
+import game from './Game';
 
 const keyState = new Set();
 const KEY_UP = 'ArrowUp';
