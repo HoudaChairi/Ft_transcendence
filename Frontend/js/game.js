@@ -227,7 +227,9 @@ class Game {
 
 	#handleTwoFA() {}
 
-	#logout() {}
+	#logout() {
+		this.#LoginPage();
+	}
 
 	#sbookSettings(btn) {
 		const setting = {

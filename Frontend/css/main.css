@@ -2064,14 +2064,14 @@ body {
 
 .frame-wrapper {
 	align-self: stretch;
-	height: 2.625rem;
+	height: 42px;
 	display: flex;
 	flex-direction: row;
 	align-items: center;
 	justify-content: flex-start;
-	padding: 0rem 5rem 0rem 0rem;
+	padding: 0px 80px 0px 0px;
 	box-sizing: border-box;
-	background-image: url('/textures/svg/SBG.svg');
+	background-image: url('/textures/svg/BGP.svg');
 	background-size: cover;
 	background-repeat: no-repeat;
 	background-position: top;
@@ -2100,6 +2100,18 @@ body {
 	white-space: nowrap;
 	height: 1.875rem;
 	flex-shrink: 0;
+	resize: none;
+	border: none;
+	background: transparent;
+	outline: none !important;
+	font-size: 1.25rem;
+}
+
+.username-user::placeholder {
+	font-size: 1.25rem;
+	color: #4f483f;
+	font-family: Gabriela;
+	opacity: 1;
 }
 
 .username-wrapper {
@@ -2120,8 +2132,8 @@ body {
 	flex-direction: row;
 	align-items: center;
 	justify-content: center;
-	padding: 0.312rem 3.75rem;
-	background-image: url('Frame 56.png');
+	padding: 5px 60px;
+	background-image: url('/textures/svg/B9.svg');
 	background-size: cover;
 	background-repeat: no-repeat;
 	background-position: top;
