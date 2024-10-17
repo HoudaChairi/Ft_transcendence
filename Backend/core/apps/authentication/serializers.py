@@ -104,6 +104,16 @@ class DisplayNameSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("This display name is already taken.")
         return value
 
+class AvatarSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Player
+        fields = ['avatar']
+
+    def validate_avatar(self, value):
+        # You can add validation for the uploaded file if needed (e.g., file size, type)
+        return value
+
+
 
 # class FriendSerializer(serializers.ModelSerializer):
 #     class Meta:

@@ -2,7 +2,8 @@
 from rest_framework import generics,status,permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import RegisterSerializer,LoginSerializer, LogoutSerializer, DisplayNameSerializer
+from .serializers import RegisterSerializer,LoginSerializer, LogoutSerializer,\
+    DisplayNameSerializer, AvatarSerializer
     #UpdateProfileSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
@@ -57,19 +58,18 @@ class UpdateDisplayNameView(APIView):
             serializer.save()
             return Response({"message": "Display name updated successfully"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-# 
-# 
-# after : to handle user updates.
-# class UpdateProfileView(APIView):
-#     # permission_classes = [permissions.IsAuthenticated]
 
-#     def put(self, request):
-#         user = request.user
-#         serializer = UpdateProfileSerializer(user, data=request.data, partial=True)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_200_OK)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class UpdateAvatarView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        serializer = AvatarSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Avatar updated successfully"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # friend list
 # class FriendListView(APIView):

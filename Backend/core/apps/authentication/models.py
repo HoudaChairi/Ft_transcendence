@@ -7,7 +7,7 @@ class Player(AbstractUser):
     username = models.CharField(max_length=20, unique=True, blank=False, null=False)
     email = models.CharField(max_length=50, unique=True, blank=False, null=False)
     display_name = models.CharField(max_length=30, unique=True, null=True, blank=True)
-    # avatar = models.ImageField(upload_to='avatars/', default='default_avatar.png')
+    avatar = models.ImageField(upload_to='avatars/', default='default_avatar.png')
     # wins = models.IntegerField(default=0)
     # losses = models.IntegerField(default=0)
     # friends = models.ManyToManyField('self', blank=True, symmetrical=False, related_name='friend_set')
