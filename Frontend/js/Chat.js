@@ -25,6 +25,43 @@ export const ELEMENT = `<div class="element">
 	/>
 </div>`;
 
+//infos-chat
+export const CHAT_INFO = `<div class="frame-group">
+	<div class="frame-container">
+		<img class="frame-item" alt="" src="/textures/svg/Frame 14.svg" />
+		<img
+			class="indicator-icon12"
+			alt=""
+			src="/textures/svg/Indicator online.svg"
+		/>
+	</div>
+	<div class="meriem-el-mountasser-parent">
+		<div class="meriem-el-mountasser">Meriem El Mountasser</div>
+		<div class="profile-icon-parent">
+			<img
+				class="profile-icon"
+				alt=""
+				src="/textures/svg/profile_icon.svg"
+			/>
+			<img
+				class="add-user-icon"
+				alt=""
+				src="/textures/svg/add_user.svg"
+			/>
+			<img
+				class="ping-pong-1-icon"
+				alt=""
+				src="/textures/svg/ping-pong 1.svg"
+			/>
+			<img
+				class="add-user-icon"
+				alt=""
+				src="/textures/svg/block_user.svg"
+			/>
+		</div>
+	</div>
+</div>`;
+
 export const MAINCHAT = `<div class="chat">
 	<div class="friends-list">
 		<div class="frame-parent-chat">
@@ -39,50 +76,9 @@ export const MAINCHAT = `<div class="chat">
 			<div class="element-parent"></div>
 		</div>
 	</div>
-	<div class="infos-chat">
-		<div class="frame-group">
-			<div class="frame-container">
-				<img
-					class="frame-item"
-					alt=""
-					src="/textures/svg/Frame 14.svg"
-				/>
-				<img
-					class="indicator-icon12"
-					alt=""
-					src="/textures/svg/Indicator online.svg"
-				/>
-			</div>
-			<div class="meriem-el-mountasser-parent">
-				<div class="meriem-el-mountasser">Meriem El Mountasser</div>
-				<div class="profile-icon-parent">
-					<img
-						class="profile-icon"
-						alt=""
-						src="/textures/svg/profile_icon.svg"
-					/>
-					<img
-						class="add-user-icon"
-						alt=""
-						src="/textures/svg/add_user.svg"
-					/>
-					<img
-						class="ping-pong-1-icon"
-						alt=""
-						src="/textures/svg/ping-pong 1.svg"
-					/>
-					<img
-						class="add-user-icon"
-						alt=""
-						src="/textures/svg/block_user.svg"
-					/>
-				</div>
-			</div>
-		</div>
-	</div>
+	<div class="infos-chat"></div>
 	<div class="rightchat">
-		<div class="recived-parent">
-		</div>
+		<div class="recived-parent"></div>
 		<div class="message-frame">
 			<img class="b-icon" alt="" src="/textures/svg/B.svg" />
 			<textarea class="message" placeholder="Message"></textarea>

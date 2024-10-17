@@ -4,7 +4,7 @@ import { HOME, GAME, CHAT, LEADERBOARD } from './home';
 import { PANER } from './Paner';
 import { SBOOK, SETTINGS } from './Settings';
 import { USERSPROFILE } from './UsersProfile';
-import { ELEMENT, MAINCHAT, RECIVED, SENT } from './Chat';
+import { CHAT_INFO, ELEMENT, MAINCHAT, RECIVED, SENT } from './Chat';
 import { LEGEND, LEGEND_CHAT, LEGEND_LEADERBOARD } from './Legend';
 import { LEADERBOARDMAIN } from './Leaderboard';
 import { SIGNIN, SIGNUP } from './Sign';
@@ -431,11 +431,29 @@ class Game {
 		this.#css2DObject.upOverlay.renderOrder = 5;
 	}
 
-	async #loadChat(user) {
+	async #loadChat(user, userData) {
 		try {
-			this.#css2DObject.chat.element.querySelector(
-				'.recived-parent'
-			).innerHTML = '';
+			const template = document.createElement('template');
+			template.innerHTML = CHAT_INFO.trim();
+
+			const info = template.content.firstChild;
+			info.querySelector('.frame-item').src = userData.avatar;
+			info.querySelector(
+				'.indicator-icon12'
+			).src = `/textures/svg/Indicator offline.svg`;
+			info.querySelector('.meriem-el-mountasser').textContent = user;
+
+			const chatInfoElement =
+				this.#css2DObject.chat.element.querySelector('.infos-chat');
+
+			chatInfoElement.innerHTML = '';
+
+			chatInfoElement.appendChild(info);
+
+			const recived =
+				this.#css2DObject.chat.element.querySelector('.recived-parent');
+			recived.innerHTML = '';
+
 			const response = await fetch(
 				`https://${window.location.host}/api/chat/room/${
 					this.#loggedUser
@@ -455,11 +473,7 @@ class Game {
 					if (message.sender === user)
 						this.#addRecivedMessage(message.content);
 					else this.#addSentMessage(message.content);
-					const chatContainer =
-						this.#css2DObject.chat.element.querySelector(
-							'.recived-parent'
-						);
-					const lastMessage = chatContainer.lastChild;
+					const lastMessage = recived.lastChild;
 					lastMessage.scrollIntoView({ behavior: 'auto' });
 				});
 			}
@@ -496,10 +510,10 @@ class Game {
 					.appendChild(userHTML);
 
 				userHTML.addEventListener('click', e => {
-					const user = e.target
+					const data = e.target
 						.closest('.element')
 						.querySelector('.sword-prowess-lv').textContent;
-					if (user) this.#loadChat(user);
+					if (data) this.#loadChat(data, user);
 				});
 
 				const room = [this.#loggedUser, user.username].sort().join('_');
@@ -526,6 +540,9 @@ class Game {
 
 	async #chatUsers() {
 		try {
+			this.#css2DObject.chat.element.querySelector(
+				'.mel-moun'
+			).textContent = this.#loggedUser;
 			const response = await fetch(
 				`https://${window.location.host}/api/users/`,
 				{
