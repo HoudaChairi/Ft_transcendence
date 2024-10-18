@@ -28,3 +28,4 @@ typing_extensions
 zope.interface
 psycopg[binary]
 google-auth
+social-auth-app-django

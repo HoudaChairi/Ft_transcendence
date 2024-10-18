@@ -201,87 +201,101 @@ class Game {
 		// console.log('this is 42');
 	}
 
-	// #loginGoogle() {
-	// 	// console.log('this is Google');
-	// }
-	
-	// #loginGoogle() {
+	// *******************
+
+	// async #loginGoogle() {
 	// 	console.log('this is Google');
-	// 	// Load the Google API
 	// 	const script = document.createElement('script');
 	// 	script.src = 'https://apis.google.com/js/platform.js';
-	// 	script.onload = () => {
-	// 		window.gapi.load('auth2', () => {
+	// 	script.onload = async () => {
+	// 		window.gapi.load('auth2', async () => {
 	// 			const auth2 = window.gapi.auth2.init({
-	// 				client_id: 'YOUR_GOOGLE_CLIENT_ID',  // Replace with your Client ID
+	// 				client_id: '851881649681-crjcohss2l0bh66tore6s4b6ik695g74.apps.googleusercontent.com', 
 	// 			});
-	
-	// 			auth2.signIn().then((googleUser) => {
+
+	// 			try {
+	// 				const googleUser = await auth2.signIn();
 	// 				const id_token = googleUser.getAuthResponse().id_token;
-					
-	// 				// Send the token to your Django backend
-	// 				fetch('https://localhost/api/auth/google/', {
+
+	// 				const response = await fetch(`https://${window.location.host}/api/auth/google/`, {
 	// 					method: 'POST',
 	// 					headers: {
 	// 						'Content-Type': 'application/json',
 	// 					},
 	// 					body: JSON.stringify({ token: id_token }),
-	// 				})
-	// 				.then(response => response.json())
-	// 				.then(data => {
-	// 					console.log('Success:', data);
-	// 					// Handle the response (e.g., store tokens, redirect, etc.)
-	// 				})
-	// 				.catch((error) => {
-	// 					console.error('Error:', error);
 	// 				});
+
+	// 				const data = await response.json();
+	// 				if (response.ok) {
+	// 					console.log('Success:', data);
+	// 				} else {
+	// 					console.error('Error:', data);
+	// 				}
+	// 			} catch (error) {
+	// 				console.error('Error during sign-in or fetching:', error);
+	// 			}
+	// 		});
+	// 	};
+	// 	document.body.appendChild(script);
+	// }
+	// *******************
+	// async #loginGoogle() {
+	// 	console.log('this is Google');
+	// 	const script = document.createElement('script');
+	// 	script.src = 'https://apis.google.com/js/platform.js';
+	// 	script.onload = async () => {
+	// 		window.gapi.load('auth2', async () => {
+	// 			const auth2 = window.gapi.auth2.init({
+	// 				client_id: '851881649681-crjcohss2l0bh66tore6s4b6ik695g74.apps.googleusercontent.com', // Replace with your client ID
 	// 			});
+
+	// 			try {
+	// 				const googleUser = await auth2.signIn();
+	// 				const id_token = googleUser.getAuthResponse().id_token;
+
+	// 				const response = await fetch(`https://${window.location.host}/api/auth/google/`, {
+	// 					method: 'POST',
+	// 					headers: {
+	// 						'Content-Type': 'application/json',
+	// 					},
+	// 					body: JSON.stringify({ token: id_token }),
+	// 				});
+
+	// 				const data = await response.json();
+	// 				if (response.ok) {
+	// 					console.log('Success:', data);
+	// 					localStorage.setItem('accessToken', data.access);
+	// 					localStorage.setItem('refreshToken', data.refresh);
+	// 					this.#loggedUser = data.username; // Ensure this is set correctly
+	// 					this.#HomePage();
+	// 				} else {
+	// 					console.error('Error:', data);
+	// 				}
+	// 			} catch (error) {
+	// 				console.error('Error during sign-in or fetching:', error);
+	// 			}
 	// 		});
 	// 	};
 	// 	document.body.appendChild(script);
 	// }
 
 	async #loginGoogle() {
-		console.log('this is Google');
-		// Load the Google API
-		const script = document.createElement('script');
-		script.src = 'https://apis.google.com/js/platform.js';
-		script.onload = async () => {
-			window.gapi.load('auth2', async () => {
-				const auth2 = window.gapi.auth2.init({
-					client_id: '851881649681-crjcohss2l0bh66tore6s4b6ik695g74.apps.googleusercontent.com', 
-				});
-	
-				try {
-					const googleUser = await auth2.signIn();
-					const id_token = googleUser.getAuthResponse().id_token;
-					
-					// Send the token to your Django backend
-					
-					const response = await fetch(`https://${window.location.host}/api/auth/google/`, {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify({ token: id_token }),
-					});
-					
-					const data = await response.json();
-					if (response.ok) {
-						console.log('Success:', data);
-						// Handle the response (e.g., store tokens, redirect, etc.)
-					} else {
-						console.error('Error:', data);
-					}
-				} catch (error) {
-					console.error('Error during sign-in or fetching:', error);
-				}
-			});
-		};
-		document.body.appendChild(script);
+		const clientId = '851881649681-crjcohss2l0bh66tore6s4b6ik695g74.apps.googleusercontent.com';
+		const redirectUri = `https://${window.location.host}/api/auth/google/callback/`;
+		const scope = `https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile`;
+
+		const authUrl = `https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&access_type=offline&prompt=select_account`;
+
+		try {
+			// Redirect the user to the Google OAuth URL
+			window.location.href = authUrl;
+		} catch (error) {
+			console.error("Login initiation error:", error);
+			// Handle error (e.g., show an error message to the user)
+		}
 	}
-	
-	
+
+
 
 	#addLoginCss2D() {
 		const loginContainer = document.createElement('div');

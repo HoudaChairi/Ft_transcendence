@@ -57,6 +57,8 @@ INSTALLED_APPS = [
 
     ##
     'channels',
+     'social_django',
+    'django.contrib.sites', 
 ]
 
 MIDDLEWARE = [
@@ -70,7 +72,13 @@ MIDDLEWARE = [
     # new for browser 
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
+
+    'social_django.middleware.SocialAuthExceptionMiddleware',
 ]
+AUTHENTICATION_BACKENDS = (
+    'social_core.backends.google.GoogleOAuth2',  # Enable Google OAuth2
+    'django.contrib.auth.backends.ModelBackend',
+)
 
 ROOT_URLCONF = 'core.urls'
 
@@ -195,5 +203,20 @@ CHANNEL_LAYERS = {
 #google:
 import os
 
-GOOGLE_CLIENT_ID = os.getenv('851881649681-crjcohss2l0bh66tore6s4b6ik695g74.apps.googleusercontent.com')
-GOOGLE_CLIENT_SECRET = os.getenv('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')
+# GOOGLE_CLIENT_ID = os.getenv('851881649681-crjcohss2l0bh66tore6s4b6ik695g74.apps.googleusercontent.com')
+# GOOGLE_CLIENT_SECRET = os.getenv('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')
+
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '851881649681-crjcohss2l0bh66tore6s4b6ik695g74.apps.googleusercontent.com'
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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'
+
+GOOGLE_REDIRECT_URI = 'https://localhost/api/auth/google/callback/'
+
+# Specify where Django can find your OAuth URLs
+SOCIAL_AUTH_URL_NAMESPACE = 'social'
+
+# Add 'django.contrib.sites' for multi-domain support
+SITE_ID = 1
+
+# settings.py
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
