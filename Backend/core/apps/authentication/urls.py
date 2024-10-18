@@ -6,6 +6,7 @@ urlpatterns = [
     path('login/', LoginAPIView.as_view(), name="login"),
     path('logout/', LogoutAPIView.as_view(), name="logout"),
     path('update-name/', UpdateDisplayNameView.as_view(), name='update-name'),
+    path('update-infos/', UpdateInfosView.as_view(), name='update_infos'),
       
     path('verify-token/', CustomTokenVerifyView.as_view(), name='token_verify'),
     path('refresh-token/', CustomTokenRefreshView.as_view(), name='token_refresh'),
@@ -16,7 +17,6 @@ urlpatterns = [
 
     # after
     #----------------------------------------------------------------------------#
-    # path('update/', UpdateProfileView.as_view(), name='update_profile'),
     # path('friends/', FriendListView.as_view(), name='friend_list'),
     # path('add_friend/<int:friend_id>/', AddFriendAPIView.as_view(), name='add_friend'),
     # path('remove_friend/<int:friend_id>/', RemoveFriendAPIView.as_view(), name='remove_friend'),

@@ -5,6 +5,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.contrib.auth.hashers import check_password
@@ -103,9 +104,51 @@ class LogoutSerializer(serializers.Serializer):
             else:
                 self.fail('bad_token')
         else:
-            token.blacklist()
+            token.blacklist() 
             
 # --------------------------------------------------------------------------------------
+
+class UpdateInfosSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Player
+        fields = ['username', 'email', 'first_name', 'last_name', 'password']
+        extra_kwargs = {
+            'password': {'write_only': True},  # We don't want to return the password in the response
+        }
+
+    # Validate username
+    def validate_username(self, value):
+        if Player.objects.filter(username=value).exclude(pk=self.instance.pk).exists():
+            raise serializers.ValidationError("Username is already taken.")
+        return value
+
+    # Validate email
+    def validate_email(self, value):
+        if Player.objects.filter(email=value).exclude(pk=self.instance.pk).exists():
+            raise serializers.ValidationError("Email is already taken.")
+        return value
+
+    # Validate first name
+    def validate_first_name(self, value):
+        if not value:
+            raise serializers.ValidationError("First name cannot be empty.")
+        return value
+
+    # Validate last name
+    def validate_last_name(self, value):
+        if not value:
+            raise serializers.ValidationError("Last name cannot be empty.")
+        return value
+
+    # Override the save method to handle password hashing
+    def save(self, **kwargs):
+        password = self.validated_data.get('password', None)
+        if password:
+            # Hash the password before saving
+            self.instance.password = make_password(password)
+        
+        # Save the instance with other fields
+        return super().save(**kwargs)
 
 
 class DisplayNameSerializer(serializers.ModelSerializer):

@@ -3,7 +3,7 @@ from rest_framework import generics,status,permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .serializers import RegisterSerializer,LoginSerializer, LogoutSerializer,\
-    DisplayNameSerializer, AvatarSerializer
+    UpdateInfosSerializer, DisplayNameSerializer, AvatarSerializer
     #UpdateProfileSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
@@ -48,6 +48,26 @@ class LogoutAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 # ---------------------------------------------------------------------------------
 # 
+class UpdateInfosView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user  # Get the logged-in user
+        data = request.data  # Get the data sent in the request
+
+        # Pass the current user and the new data to the serializer
+        # `partial=True` allows us to update only the fields provided
+        serializer = UpdateInfosSerializer(user, data=data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()  # Save the updated data
+            return Response({
+                'message': 'Profile updated successfully.',
+                'user': serializer.data  # Return updated user data
+            }, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class UpdateDisplayNameView(APIView):
     permission_classes = [IsAuthenticated]
 

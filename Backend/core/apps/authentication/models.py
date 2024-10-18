@@ -6,11 +6,16 @@ from rest_framework_simplejwt.tokens import RefreshToken
 class Player(AbstractUser):
     username = models.CharField(max_length=20, unique=True, blank=False, null=False)
     email = models.CharField(max_length=50, unique=True, blank=False, null=False)
+    first_name = models.CharField(max_length=30, blank=True, null=True) 
+    last_name = models.CharField(max_length=30, blank=True, null=True) 
     display_name = models.CharField(max_length=30, unique=True, null=True, blank=True)
     avatar = models.ImageField(upload_to='avatars/', default='default_avatar.png')
-    # wins = models.IntegerField(default=0)
-    # losses = models.IntegerField(default=0)
+    wins = models.IntegerField(default=0)
+    losses = models.IntegerField(default=0)
     # friends = models.ManyToManyField('self', blank=True, symmetrical=False, related_name='friend_set')
+    
+    # Define a relationship to the Match model
+    match_history = models.ManyToManyField('Match', related_name='players', blank=True)
 
     def __str__(self):
         return self.username
@@ -21,6 +26,19 @@ class Player(AbstractUser):
             'refresh': str(refresh),
             'access': str(refresh.access_token)
         }
+
+
+class Match(models.Model):
+    player1 = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='player1_matches')
+    player2 = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='player2_matches')
+    winner = models.ForeignKey(Player, on_delete=models.SET_NULL, related_name='wins', null=True)
+    date_played = models.DateTimeField(auto_now_add=True)
+    score_player1 = models.IntegerField()
+    score_player2 = models.IntegerField()
+
+    def __str__(self):
+        return f"Match: {self.player1} vs {self.player2} on {self.date_played}"
+
 
 # new: for friend user    
 # class Friendship(models.Model):
@@ -63,5 +81,3 @@ class Player(AbstractUser):
 
 #     def __str__(self):
 #         return f"Match {self.player1} vs {self.player2} on {self.date}"
-
-# comment
