@@ -44,7 +44,6 @@ INSTALLED_APPS = [
     'core.apps.authentication',
     'core.apps.chat',
     'core.apps.remote_auth',
-    'core.apps.remote_auth',
 
     # 'core.apps.users',
     'rest_framework',
@@ -200,12 +199,6 @@ CHANNEL_LAYERS = {
     },
 }   
 
-
-#google:
-import os
-
-# GOOGLE_CLIENT_ID = os.getenv('851881649681-crjcohss2l0bh66tore6s4b6ik695g74.apps.googleusercontent.com')
-# GOOGLE_CLIENT_SECRET = os.getenv('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')
 
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '851881649681-crjcohss2l0bh66tore6s4b6ik695g74.apps.googleusercontent.com'
 SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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'

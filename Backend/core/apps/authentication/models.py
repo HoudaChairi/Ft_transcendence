@@ -12,8 +12,6 @@ class Player(AbstractUser):
     # losses = models.IntegerField(default=0)
     # friends = models.ManyToManyField('self', blank=True, symmetrical=False, related_name='friend_set')
 
-    is_google_user = models.BooleanField(default=False)  # meriem lbassla
-
     def __str__(self):
         return self.username
     
