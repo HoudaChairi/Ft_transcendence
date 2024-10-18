@@ -4,11 +4,12 @@ import { HOME, GAME, CHAT, LEADERBOARD } from './home';
 import { PANER } from './Paner';
 import { SBOOK, SETTINGS } from './Settings';
 import { USERSPROFILE } from './UsersProfile';
-import { ELEMENT, MAINCHAT, RECIVED, SENT } from './Chat';
+import { CHAT_INFO, ELEMENT, MAINCHAT, RECIVED, SENT } from './Chat';
 import { LEGEND, LEGEND_CHAT, LEGEND_LEADERBOARD } from './Legend';
 import { LEADERBOARDMAIN } from './Leaderboard';
 import { SIGNIN, SIGNUP } from './Sign';
 import { LOGIN } from './Login';
+import { CHANGE_AVATAR, CHANGE_USERNAME } from './Sbook';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -126,6 +127,7 @@ class Game {
 		this.#addHomeCss2D();
 		this.#addPanerCss2D();
 		this.#addSettingsCss2D();
+		this.#addSbookSettingsCss2D();
 		this.#addProfilePic();
 		this.#addChatCss2D();
 		this.#addLegendCss2d();
@@ -181,6 +183,10 @@ class Game {
 		this.#css2DObject.sbOverlay.element.addEventListener('click', e =>
 			this.#toggleSBook()
 		);
+		this.#css2DObject.sbsettingOverlay.element.addEventListener(
+			'click',
+			e => this.#toggleSettings()
+		);
 		['sign', 'register'].forEach(ele => {
 			this.#css2DObject[ele].element
 				.querySelector('.parent')
@@ -195,6 +201,12 @@ class Game {
 					}
 				});
 		});
+		this.#css2DObject.sbook.element
+			.querySelector('.setting-frame-parent')
+			.addEventListener('click', e => {
+				const btn = e.target.closest('.setting-frame');
+				if (btn) this.#sbookSettings(btn);
+			});
 	}
 
 	#login42() {
@@ -218,6 +230,64 @@ class Game {
 	}
 
 
+	#changeUsername() {
+		this.#css2DObject.sbsetting.element.innerHTML = CHANGE_USERNAME;
+		['sbsetting', 'sbsettingOverlay'].forEach(ele => {
+			this.#scene.add(this.#css2DObject[ele]);
+		});
+	}
+
+	#changeAvatar() {
+		this.#css2DObject.sbsetting.element.innerHTML = CHANGE_AVATAR;
+		['sbsetting', 'sbsettingOverlay'].forEach(ele => {
+			this.#scene.add(this.#css2DObject[ele]);
+		});
+		this.#css2DObject.sbsetting.element
+			.querySelector('#avatarImage')
+			.addEventListener('click', e =>
+				this.#css2DObject.sbsetting.element
+					.querySelector('#avatarUpload')
+					.click()
+			);
+		this.#css2DObject.sbsetting.element
+			.querySelector('#avatarUpload')
+			.addEventListener('change', e => {
+				const file = e.target.files[0];
+				if (file) {
+					const reader = new FileReader();
+					reader.onload = e => {
+						this.#css2DObject.sbsetting.element.querySelector(
+							'#avatarImage'
+						).src = e.target.result;
+					};
+					reader.readAsDataURL(file);
+				}
+			});
+	}
+
+	#handleTwoFA(twofa) {
+		const icon = twofa.querySelector('.fa-icon1');
+		const factor = twofa.querySelector('.factor-authentication');
+
+		icon.src = `/textures/svg/2FA OFF.svg`;
+		factor.classList.toggle('factor-authentication-op');
+	}
+
+	#logout() {
+		this.#toggleSBook();
+		this.#switchHome('home');
+		this.#LoginPage();
+	}
+
+	#sbookSettings(btn) {
+		const setting = {
+			username: this.#changeUsername.bind(this),
+			avatar: this.#changeAvatar.bind(this),
+			twofa: this.#handleTwoFA.bind(this, btn),
+			logout: this.#logout.bind(this),
+		};
+		setting[btn.dataset.id]();
+	}
 
 	#addLoginCss2D() {
 		const loginContainer = document.createElement('div');
@@ -320,6 +390,29 @@ class Game {
 		this.#css2DObject.sbOverlay.renderOrder = 7;
 	}
 
+	#addSbookSettingsCss2D() {
+		const usernameContainer = document.createElement('div');
+		usernameContainer.className = 'frame-parent-user';
+		usernameContainer.innerHTML = CHANGE_USERNAME;
+
+		this.#css2DObject.sbsetting = new CSS2DObject(usernameContainer);
+		this.#css2DObject.sbsetting.name = 'change user';
+		this.#css2DObject.sbsetting.renderOrder = 10;
+
+		const overlayContainer = document.createElement('div');
+		overlayContainer.className = 'overlay';
+
+		this.#css2DObject.sbsettingOverlay = new CSS2DObject(overlayContainer);
+		this.#css2DObject.sbsettingOverlay.name = 'overlay';
+		this.#css2DObject.sbsettingOverlay.renderOrder = 9;
+	}
+
+	#toggleSettings() {
+		['sbsetting', 'sbsettingOverlay'].forEach(ele => {
+			this.#scene.remove(this.#css2DObject[ele]);
+		});
+	}
+
 	#toggleSBook() {
 		if (this.#scene.getObjectByName('sbook')) {
 			this.#scene.remove(this.#css2DObject.sbook);
@@ -357,20 +450,39 @@ class Game {
 		this.#css2DObject.upOverlay.renderOrder = 5;
 	}
 
-	async #loadChat(user) {
+	async #loadChat(user, userData) {
 		try {
-			this.#css2DObject.chat.element.querySelector(
-				'.recived-parent'
-			).innerHTML = '';
+			const template = document.createElement('template');
+			template.innerHTML = CHAT_INFO.trim();
+
+			const info = template.content.firstChild;
+			info.querySelector('.frame-item').src = userData.avatar;
+			info.querySelector(
+				'.indicator-icon12'
+			).src = `/textures/svg/Indicator offline.svg`;
+			info.querySelector('.meriem-el-mountasser').textContent = user;
+
+			const chatInfoElement =
+				this.#css2DObject.chat.element.querySelector('.infos-chat');
+
+			chatInfoElement.innerHTML = '';
+
+			chatInfoElement.appendChild(info);
+
+			const recived =
+				this.#css2DObject.chat.element.querySelector('.recived-parent');
+			recived.innerHTML = '';
+
 			const response = await fetch(
-				`https://${window.location.host}/api/chat/room/${this.#loggedUser}/${user}/`,
+				`https://${window.location.host}/api/chat/room/${
+					this.#loggedUser
+				}/${user}/`,
 				{
 					method: 'GET',
 					headers: {
 						Authorization: `Bearer ${localStorage.getItem(
 							'accessToken'
 						)}`,
-						// 	'Content-Type': 'application/json'
 					},
 				}
 			);
@@ -380,11 +492,7 @@ class Game {
 					if (message.sender === user)
 						this.#addRecivedMessage(message.content);
 					else this.#addSentMessage(message.content);
-					const chatContainer =
-						this.#css2DObject.chat.element.querySelector(
-							'.recived-parent'
-						);
-					const lastMessage = chatContainer.lastChild;
+					const lastMessage = recived.lastChild;
 					lastMessage.scrollIntoView({ behavior: 'auto' });
 				});
 			}
@@ -421,10 +529,10 @@ class Game {
 					.appendChild(userHTML);
 
 				userHTML.addEventListener('click', e => {
-					const user = e.target
+					const data = e.target
 						.closest('.element')
 						.querySelector('.sword-prowess-lv').textContent;
-					if (user) this.#loadChat(user);
+					if (data) this.#loadChat(data, user);
 				});
 
 				const room = [this.#loggedUser, user.username].sort().join('_');
@@ -451,15 +559,20 @@ class Game {
 
 	async #chatUsers() {
 		try {
-			const response = await fetch(`https://${window.location.host}/api/users/`, {
-				method: 'GET',
-				headers: {
-					Authorization: `Bearer ${localStorage.getItem(
-						'accessToken'
-					)}`,
-					// 	'Content-Type': 'application/json'
-				},
-			});
+			this.#css2DObject.chat.element.querySelector(
+				'.mel-moun'
+			).textContent = this.#loggedUser;
+			const response = await fetch(
+				`https://${window.location.host}/api/users/`,
+				{
+					method: 'GET',
+					headers: {
+						Authorization: `Bearer ${localStorage.getItem(
+							'accessToken'
+						)}`,
+					},
+				}
+			);
 			const data = await response.json();
 			if (response.ok) {
 				this.#addChatUsers(data.users);
@@ -1040,13 +1153,16 @@ class Game {
 			const { value: password } =
 				this.#css2DObject.sign.element.querySelector('#password');
 
-			const response = await fetch(`https://${window.location.host}/api/login/`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({ username, password }),
-			});
+			const response = await fetch(
+				`https://${window.location.host}/api/login/`,
+				{
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({ username, password }),
+				}
+			);
 
 			if (response.ok) {
 				const data = await response.json();
