@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'core.apps.authentication',
     'core.apps.chat',
     'core.apps.remote_auth',
+    'core.apps.remote_auth',
 
     # 'core.apps.users',
     'rest_framework',
