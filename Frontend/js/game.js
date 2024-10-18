@@ -201,8 +201,39 @@ class Game {
 		// console.log('this is 42');
 	}
 
-	#loginGoogle() {
-		// console.log('this is Google');
+	async #loginGoogle() {
+		const urlParams = new URLSearchParams(window.location.search);
+   	 const code = urlParams.get('code');
+		
+		if (code) {
+			try {
+				const response = await fetch(
+					`https://${window.location.host}/api/auth/google/callback/?code=${code}`, {
+					method: 'GET', // Use POST if you are sending data
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				});
+	
+				if (response.ok) {
+					const data = await response.json();
+					console.log('Tokens:', data.access, data.refresh);
+					console.log('User Info:', data.user);
+	
+					// Save the tokens in local storage or use them as needed
+					localStorage.setItem('access_token', data.access);
+					localStorage.setItem('refresh_token', data.refresh);
+					
+					// You can now redirect the user or update the UI accordingly
+				} else {
+					console.error('Login failed:', response.statusText);
+				}
+			} catch (error) {
+				console.error('Error during Google login:', error);
+			}
+		} else {
+			console.error('No code found in URL');
+		}
 	}
 
 	#addLoginCss2D() {

@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     # New apps
     'core.apps.authentication',
     'core.apps.chat',
+    'core.apps.remote_auth',
 
     # 'core.apps.users',
     'rest_framework',
@@ -56,6 +57,8 @@ INSTALLED_APPS = [
 
     ##
     'channels',
+    'social_django',
+
 ]
 
 MIDDLEWARE = [
@@ -189,3 +192,27 @@ CHANNEL_LAYERS = {
         'BACKEND': 'channels.layers.InMemoryChannelLayer',
     },
 }   
+
+    # Google things:
+AUTHENTICATION_BACKENDS = (
+    'social_core.backends.google.GoogleOAuth2',
+    'django.contrib.auth.backends.ModelBackend',
+)
+
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '2279291814-37rmk830d3rjj69nhiph1folrikf6mmm.apps.googleusercontent.com'
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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'
+
+SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = 'http://localhost:8000/api/auth/google/callback/'
+
+SOCIAL_AUTH_PIPELINE = (
+    'social_core.pipeline.social_auth.social_details',
+    'social_core.pipeline.social_auth.social_uid',
+    'social_core.pipeline.social_auth.auth_allowed',
+    'social_core.pipeline.social_auth.social_user',
+    'social_core.pipeline.user.get_username',
+    'social_core.pipeline.user.create_user',  # Create the user if they do not exist
+    'your_app_name.pipeline.save_google_user',  # Custom pipeline to mark Google users
+    'social_core.pipeline.social_auth.associate_user',
+    'social_core.pipeline.social_auth.load_extra_data',
+    'social_core.pipeline.user.user_details',
+)
