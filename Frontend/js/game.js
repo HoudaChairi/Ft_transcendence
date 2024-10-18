@@ -214,21 +214,25 @@ class Game {
 	}
 
 	async #loginGoogle() {
-		const clientId = '851881649681-crjcohss2l0bh66tore6s4b6ik695g74.apps.googleusercontent.com';
+		const clientId =
+			'851881649681-crjcohss2l0bh66tore6s4b6ik695g74.apps.googleusercontent.com';
 		const redirectUri = `https://${window.location.host}/api/auth/google/callback/`;
 		const scope = `https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile`;
 
-		const authUrl = `https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&access_type=offline&prompt=select_account`;
+		const authUrl = `https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(
+			redirectUri
+		)}&scope=${encodeURIComponent(
+			scope
+		)}&access_type=offline&prompt=select_account`;
 
 		try {
 			// Redirect the user to the Google OAuth URL
 			window.location.href = authUrl;
 		} catch (error) {
-			console.error("Login initiation error:", error);
+			console.error('Login initiation error:', error);
 			// Handle error (e.g., show an error message to the user)
 		}
 	}
-
 
 	#changeUsername() {
 		this.#css2DObject.sbsetting.element.innerHTML = CHANGE_USERNAME;
@@ -242,6 +246,45 @@ class Game {
 		['sbsetting', 'sbsettingOverlay'].forEach(ele => {
 			this.#scene.add(this.#css2DObject[ele]);
 		});
+
+		this.#css2DObject.sbsetting.element
+			.querySelector('.change-avatar')
+			.addEventListener('click', async e => {
+				const fileInput =
+					this.#css2DObject.sbsetting.element.querySelector(
+						'#avatarUpload'
+					);
+				const file = fileInput.files[0];
+				if (file) {
+					const formData = new FormData();
+					formData.append('avatar', file);
+
+					try {
+						const response = await fetch(`/upload-avatar/`, {
+							method: 'POST',
+							body: formData,
+							headers: {
+								Authorization: `Bearer ${localStorage.getItem(
+									'accessToken'
+								)}`,
+							},
+						});
+
+						if (!response.ok) {
+							throw new Error('Network response was not ok');
+						}
+
+						const data = await response.json();
+						console.log('Success:', data);
+					} catch (error) {
+						console.error('Error:', error);
+						alert('Failed to upload avatar. Please try again.');
+					}
+				} else {
+					alert('Please select an image to upload.');
+				}
+			});
+
 		this.#css2DObject.sbsetting.element
 			.querySelector('#avatarImage')
 			.addEventListener('click', e =>
