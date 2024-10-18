@@ -252,7 +252,13 @@ class Game {
 			});
 	}
 
-	#handleTwoFA() {}
+	#handleTwoFA(twofa) {
+		const icon = twofa.querySelector('.fa-icon1');
+		const factor = twofa.querySelector('.factor-authentication');
+
+		icon.src = `/textures/svg/2FA OFF.svg`;
+		factor.classList.toggle('factor-authentication-op');
+	}
 
 	#logout() {
 		this.#toggleSBook();
@@ -264,7 +270,7 @@ class Game {
 		const setting = {
 			username: this.#changeUsername.bind(this),
 			avatar: this.#changeAvatar.bind(this),
-			twofa: this.#handleTwoFA.bind(this),
+			twofa: this.#handleTwoFA.bind(this, btn),
 			logout: this.#logout.bind(this),
 		};
 		setting[btn.dataset.id]();

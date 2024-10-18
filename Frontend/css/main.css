@@ -285,14 +285,8 @@ body {
 	object-fit: fill;
 }
 
-.fa-icon2 {
-	position: absolute;
-	bottom: -0.05px;
-	left: calc(50% - 13.95px);
-	width: 27.9px;
-	height: 20.3px;
-	overflow: hidden;
-	object-fit: cover;
+.fa-icon1-op {
+	opacity: 0.5;
 }
 
 .fa-icon {
@@ -313,6 +307,10 @@ body {
 	line-height: 150%;
 	display: flex;
 	align-items: center;
+}
+
+.factor-authentication-op {
+	opacity: 0.7;
 }
 
 .fa {
