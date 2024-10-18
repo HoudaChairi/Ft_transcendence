@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     # New apps
     'core.apps.authentication',
     'core.apps.chat',
+    'core.apps.remote_auth',
 
     # 'core.apps.users',
     'rest_framework',
@@ -189,3 +190,10 @@ CHANNEL_LAYERS = {
         'BACKEND': 'channels.layers.InMemoryChannelLayer',
     },
 }   
+
+
+#google:
+import os
+
+GOOGLE_CLIENT_ID = os.getenv('851881649681-crjcohss2l0bh66tore6s4b6ik695g74.apps.googleusercontent.com')
+GOOGLE_CLIENT_SECRET = os.getenv('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')

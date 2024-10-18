@@ -201,9 +201,87 @@ class Game {
 		// console.log('this is 42');
 	}
 
-	#loginGoogle() {
-		// console.log('this is Google');
+	// #loginGoogle() {
+	// 	// console.log('this is Google');
+	// }
+	
+	// #loginGoogle() {
+	// 	console.log('this is Google');
+	// 	// Load the Google API
+	// 	const script = document.createElement('script');
+	// 	script.src = 'https://apis.google.com/js/platform.js';
+	// 	script.onload = () => {
+	// 		window.gapi.load('auth2', () => {
+	// 			const auth2 = window.gapi.auth2.init({
+	// 				client_id: 'YOUR_GOOGLE_CLIENT_ID',  // Replace with your Client ID
+	// 			});
+	
+	// 			auth2.signIn().then((googleUser) => {
+	// 				const id_token = googleUser.getAuthResponse().id_token;
+					
+	// 				// Send the token to your Django backend
+	// 				fetch('https://localhost/api/auth/google/', {
+	// 					method: 'POST',
+	// 					headers: {
+	// 						'Content-Type': 'application/json',
+	// 					},
+	// 					body: JSON.stringify({ token: id_token }),
+	// 				})
+	// 				.then(response => response.json())
+	// 				.then(data => {
+	// 					console.log('Success:', data);
+	// 					// Handle the response (e.g., store tokens, redirect, etc.)
+	// 				})
+	// 				.catch((error) => {
+	// 					console.error('Error:', error);
+	// 				});
+	// 			});
+	// 		});
+	// 	};
+	// 	document.body.appendChild(script);
+	// }
+
+	async #loginGoogle() {
+		console.log('this is Google');
+		// Load the Google API
+		const script = document.createElement('script');
+		script.src = 'https://apis.google.com/js/platform.js';
+		script.onload = async () => {
+			window.gapi.load('auth2', async () => {
+				const auth2 = window.gapi.auth2.init({
+					client_id: '851881649681-crjcohss2l0bh66tore6s4b6ik695g74.apps.googleusercontent.com', 
+				});
+	
+				try {
+					const googleUser = await auth2.signIn();
+					const id_token = googleUser.getAuthResponse().id_token;
+					
+					// Send the token to your Django backend
+					
+					const response = await fetch(`https://${window.location.host}/api/auth/google/`, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({ token: id_token }),
+					});
+					
+					const data = await response.json();
+					if (response.ok) {
+						console.log('Success:', data);
+						// Handle the response (e.g., store tokens, redirect, etc.)
+					} else {
+						console.error('Error:', data);
+					}
+				} catch (error) {
+					console.error('Error during sign-in or fetching:', error);
+				}
+			});
+		};
+		document.body.appendChild(script);
 	}
+	
+	
 
 	#addLoginCss2D() {
 		const loginContainer = document.createElement('div');
