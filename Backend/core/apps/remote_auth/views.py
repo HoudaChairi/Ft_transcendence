@@ -72,11 +72,13 @@ class GoogleLoginCallbackAPIView(APIView):
         first_name = user_info.get('given_name')
         last_name = user_info.get('family_name')
 
+        username = email.split('@')[0]
+
         # Check if user exists, otherwise create a new Player
         user, created = Player.objects.get_or_create(
             email=email,
             defaults={
-                'username': email,
+                'username': username,
                 'first_name': first_name,
                 'last_name': last_name,
             }
@@ -96,6 +98,7 @@ class GoogleLoginCallbackAPIView(APIView):
             'email': user.email,
             'first_name': user.first_name,
             'last_name': user.last_name,
+            'username': user.username,
             'access': tokens['access'],
             'refresh': tokens['refresh'],
         }, status=status.HTTP_200_OK)
