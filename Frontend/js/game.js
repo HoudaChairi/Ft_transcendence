@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-import { HOME, GAME, CHAT, LEADERBOARD } from './home';
+import { HOME, GAME, CHAT, LEADERBOARD } from './Home';
 import { PANER } from './Paner';
 import { SBOOK, SETTINGS } from './Settings';
 import { USERSPROFILE } from './UsersProfile';
