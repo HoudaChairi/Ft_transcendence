@@ -207,6 +207,18 @@ class Game {
 				const btn = e.target.closest('.setting-frame');
 				if (btn) this.#sbookSettings(btn);
 			});
+		this.#css2DObject.chat.element
+			.querySelector('.infos-chat')
+			.addEventListener('click', e => {
+				const btn = e.target.closest('.chat-btn');
+				if (btn) {
+					const user =
+						this.#css2DObject.chat.element.querySelector(
+							'.infos-chat'
+						).dataset.user;
+					this.#chatBtns(btn, user);
+				}
+			});
 	}
 
 	#login42() {
@@ -319,6 +331,24 @@ class Game {
 			logout: this.#logout.bind(this),
 		};
 		setting[btn.dataset.id]();
+	}
+
+	#addUser() {}
+
+	#playUser() {}
+
+	#blockUser() {}
+
+	#chatBtns(btn, user) {
+		console.log(btn, user);
+
+		const usr = {
+			// profile:,
+			add: this.#addUser.bind(this),
+			play: this.#playUser.bind(this),
+			block: this.#blockUser.bind(this),
+		};
+		usr[btn.dataset.id]();
 	}
 
 	#addLoginCss2D() {
@@ -498,6 +528,9 @@ class Game {
 				this.#css2DObject.chat.element.querySelector('.infos-chat');
 
 			chatInfoElement.innerHTML = '';
+			this.#css2DObject.chat.element.querySelector(
+				'.infos-chat'
+			).dataset.user = user;
 
 			chatInfoElement.appendChild(info);
 
@@ -1217,6 +1250,8 @@ class Game {
 	}
 
 	#switchHome(home) {
+		for (const key in this.#chatWebSocket) this.#chatWebSocket[key].close();
+
 		const legendText = {
 			chat: LEGEND_CHAT,
 			leaderboard: LEGEND_LEADERBOARD,
