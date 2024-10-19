@@ -214,23 +214,12 @@ class Game {
 	}
 
 	async #loginGoogle() {
-		const clientId =
-			'851881649681-crjcohss2l0bh66tore6s4b6ik695g74.apps.googleusercontent.com';
-		const redirectUri = `https://${window.location.host}/api/auth/google/callback/`;
-		const scope = `https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile`;
-
-		const authUrl = `https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(
-			redirectUri
-		)}&scope=${encodeURIComponent(
-			scope
-		)}&access_type=offline&prompt=select_account`;
-
 		try {
-			// Redirect the user to the Google OAuth URL
-			window.location.href = authUrl;
+			const backendLoginUrl = `/api/auth/google/`;
+
+			window.location.href = backendLoginUrl;
 		} catch (error) {
 			console.error('Login initiation error:', error);
-			// Handle error (e.g., show an error message to the user)
 		}
 	}
 

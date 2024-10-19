@@ -1,3 +1,20 @@
+window.onload = async () => {
+	const urlParams = new URLSearchParams(window.location.search);
+	const accessToken = urlParams.get('access');
+	const refreshToken = urlParams.get('refresh');
+
+	if (accessToken && refreshToken) {
+		localStorage.setItem('accessToken', accessToken);
+		localStorage.setItem('refreshToken', refreshToken);
+
+		history.replaceState(null, null, window.location.pathname);
+
+		window.location.reload();
+	} else {
+		console.error('Login failed: No tokens received.');
+	}
+};
+
 import game from './Game';
 
 const keyState = new Set();

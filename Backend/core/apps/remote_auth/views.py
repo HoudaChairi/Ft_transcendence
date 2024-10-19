@@ -43,9 +43,6 @@ class GoogleLoginAPIView(APIView):
         return redirect(authorization_url)
 
 class GoogleLoginCallbackAPIView(APIView):
-    """
-    Handles the callback from Google OAuth and authenticates the user.
-    """
     def get(self, request):
         google = OAuth2Session(GOOGLE_CLIENT_ID, redirect_uri=GOOGLE_REDIRECT_URI)
         authorization_response = request.build_absolute_uri()
@@ -60,21 +57,17 @@ class GoogleLoginCallbackAPIView(APIView):
             print(f"Error fetching token: {e}")
             return Response({"error": str(e)}, status=400)
 
-        # Get user info from Google
         userinfo_response = requests.get(
             'https://www.googleapis.com/oauth2/v1/userinfo',
             params={'alt': 'json', 'access_token': token['access_token']}
         )
 
-        # Parse the user info
         user_info = userinfo_response.json()
         email = user_info.get('email')
         first_name = user_info.get('given_name')
         last_name = user_info.get('family_name')
-
         username = email.split('@')[0]
 
-        # Check if user exists, otherwise create a new Player
         user, created = Player.objects.get_or_create(
             email=email,
             defaults={
@@ -84,21 +77,11 @@ class GoogleLoginCallbackAPIView(APIView):
             }
         )
 
-        # Log in the user
-        user.backend = 'django.contrib.auth.backends.ModelBackend'  # Set your backend
-
-        # Log in the user
+        user.backend = 'django.contrib.auth.backends.ModelBackend'
         django_login(request, user)
 
-        # Generate JWT tokens
         tokens = user.tokens()
 
-        # Respond with the user data and tokens
-        return Response({
-            'email': user.email,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'username': user.username,
-            'access': tokens['access'],
-            'refresh': tokens['refresh'],
-        }, status=status.HTTP_200_OK)
+        # Redirect to frontend with tokens as query parameters
+        frontend_url = f'https://localhost/?access={tokens["access"]}&refresh={tokens["refresh"]}'
+        return redirect(frontend_url)
