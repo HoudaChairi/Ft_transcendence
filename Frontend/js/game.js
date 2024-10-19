@@ -506,9 +506,7 @@ class Game {
 			recived.innerHTML = '';
 
 			const response = await fetch(
-				`https://${window.location.host}/api/chat/room/${
-					this.#loggedUser
-				}/${user}/`,
+				`/api/chat/room/${this.#loggedUser}/${user}/`,
 				{
 					method: 'GET',
 					headers: {
@@ -594,17 +592,14 @@ class Game {
 			this.#css2DObject.chat.element.querySelector(
 				'.mel-moun'
 			).textContent = this.#loggedUser;
-			const response = await fetch(
-				`https://${window.location.host}/api/users/`,
-				{
-					method: 'GET',
-					headers: {
-						Authorization: `Bearer ${localStorage.getItem(
-							'accessToken'
-						)}`,
-					},
-				}
-			);
+			const response = await fetch(`/api/users/`, {
+				method: 'GET',
+				headers: {
+					Authorization: `Bearer ${localStorage.getItem(
+						'accessToken'
+					)}`,
+				},
+			});
 			const data = await response.json();
 			if (response.ok) {
 				this.#addChatUsers(data.users);
@@ -1047,18 +1042,15 @@ class Game {
 			const refresh = localStorage.getItem('refreshToken');
 
 			if (access) {
-				const response = await fetch(
-					`https://${window.location.host}/api/verify-token/`,
-					{
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify({
-							token: access,
-						}),
-					}
-				);
+				const response = await fetch(`/api/verify-token/`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({
+						token: access,
+					}),
+				});
 				if (response.ok) {
 					const data = await response.json();
 					this.#loggedUser = data.username;
@@ -1066,7 +1058,7 @@ class Game {
 				} else {
 					if (refresh) {
 						const refreshResponse = await fetch(
-							`https://${window.location.host}/api/refresh-token/`,
+							`/api/refresh-token/`,
 							{
 								method: 'POST',
 								headers: {
@@ -1133,21 +1125,18 @@ class Game {
 		}
 
 		try {
-			const response = await fetch(
-				`https://${window.location.host}/api/register/`,
-				{
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify({
-						email,
-						username,
-						password,
-						confirmPassword,
-					}),
-				}
-			);
+			const response = await fetch(`/api/register/`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					email,
+					username,
+					password,
+					confirmPassword,
+				}),
+			});
 
 			const data = await response.json();
 			if (response.ok) {
@@ -1185,16 +1174,13 @@ class Game {
 			const { value: password } =
 				this.#css2DObject.sign.element.querySelector('#password');
 
-			const response = await fetch(
-				`https://${window.location.host}/api/login/`,
-				{
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify({ username, password }),
-				}
-			);
+			const response = await fetch(`api/login/`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ username, password }),
+			});
 
 			if (response.ok) {
 				const data = await response.json();
