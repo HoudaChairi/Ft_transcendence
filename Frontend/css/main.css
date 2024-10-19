@@ -1025,6 +1025,10 @@ body {
 	flex-shrink: 0;
 }
 
+.indicator-icon1[src] {
+	display: block;
+}
+
 .indicator-icon1 {
 	position: absolute;
 	top: calc(50% - 16px);
@@ -1033,6 +1037,7 @@ body {
 	height: 32px;
 	overflow: hidden;
 	object-fit: cover;
+	display: none;
 }
 
 .element-parent {

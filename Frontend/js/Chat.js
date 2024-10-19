@@ -15,13 +15,11 @@ export const ELEMENT = `<div class="element">
 	<img
 		class="indicator-icon1"
 		alt=""
-		src="/textures/svg/Indicator message.svg"
 	/>
 
 	<img
 		class="indicator-icon"
 		alt=""
-		src="/textures/svg/Indicator offline.svg"
 	/>
 </div>`;
 

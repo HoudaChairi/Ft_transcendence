@@ -514,6 +514,10 @@ class Game {
 
 	async #loadChat(user, userData) {
 		try {
+			this.#chatWebSocket[user].elem
+				.querySelector('.indicator-icon1')
+				.removeAttribute('src');
+
 			const template = document.createElement('template');
 			template.innerHTML = CHAT_INFO.trim();
 
@@ -582,9 +586,6 @@ class Game {
 					'.sword-prowess-lv'
 				).textContent = `${user.username}`;
 				userHTML.querySelector(
-					'.indicator-icon1'
-				).src = `/textures/svg/Indicator online.svg`;
-				userHTML.querySelector(
 					'.indicator-icon'
 				).src = `/textures/svg/Indicator online.svg`;
 				this.#css2DObject.chat.element
@@ -599,10 +600,12 @@ class Game {
 				});
 
 				const room = [this.#loggedUser, user.username].sort().join('_');
-				this.#chatWebSocket[user.username] = new WebSocket(
+				this.#chatWebSocket[user.username] = {};
+				this.#chatWebSocket[user.username].elem = userHTML;
+				this.#chatWebSocket[user.username].sock = new WebSocket(
 					`wss://${window.location.host}/api/ws/chat/${room}/`
 				);
-				this.#chatWebSocket[user.username].onmessage = e => {
+				this.#chatWebSocket[user.username].sock.onmessage = e => {
 					const data = JSON.parse(e.data);
 					if (user.username === this.#chatuser) {
 						if (data.sender === user.username)
@@ -614,6 +617,10 @@ class Game {
 							);
 						const lastMessage = chatContainer.lastChild;
 						lastMessage.scrollIntoView({ behavior: 'smooth' });
+					} else {
+						this.#chatWebSocket[user.username].elem.querySelector(
+							'.indicator-icon1'
+						).src = `/textures/svg/Indicator message.svg`;
 					}
 				};
 			}
@@ -674,7 +681,7 @@ class Game {
 		const message = this.#css2DObject.chat.element
 			.querySelector('.message')
 			.value.trim();
-		if (message && this.#chatWebSocket[this.#chatuser]) {
+		if (message && this.#chatWebSocket[this.#chatuser].sock) {
 			this.#css2DObject.chat.element
 				.querySelector('.message')
 				.addEventListener('keyup', e => {
@@ -683,7 +690,7 @@ class Game {
 							'.message'
 						).value = '';
 				});
-			this.#chatWebSocket[this.#chatuser].send(
+			this.#chatWebSocket[this.#chatuser].sock.send(
 				JSON.stringify({
 					message: message,
 					username: this.#loggedUser,
@@ -1250,7 +1257,8 @@ class Game {
 	}
 
 	#switchHome(home) {
-		for (const key in this.#chatWebSocket) this.#chatWebSocket[key].close();
+		for (const key in this.#chatWebSocket)
+			this.#chatWebSocket[key].sock.close();
 
 		const legendText = {
 			chat: LEGEND_CHAT,
