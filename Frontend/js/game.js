@@ -5,6 +5,7 @@ import { PANER } from './Paner';
 import { SBOOK, SETTINGS } from './Settings';
 import { USERSPROFILE } from './UsersProfile';
 import { CHAT_INFO, ELEMENT, MAINCHAT, RECIVED, SENT } from './Chat';
+import { ADD, BLOCK, PLAY } from './ChatBtn';
 import { LEGEND, LEGEND_CHAT, LEGEND_LEADERBOARD } from './Legend';
 import { LEADERBOARDMAIN } from './Leaderboard';
 import { SIGNIN, SIGNUP } from './Sign';
@@ -128,6 +129,7 @@ class Game {
 		this.#addPanerCss2D();
 		this.#addSettingsCss2D();
 		this.#addSbookSettingsCss2D();
+		this.#addChatBtnCss2D();
 		this.#addProfilePic();
 		this.#addChatCss2D();
 		this.#addLegendCss2d();
@@ -219,6 +221,9 @@ class Game {
 					this.#chatBtns(btn, user);
 				}
 			});
+		this.#css2DObject.btnOverlay.element.addEventListener('click', e =>
+			this.#toggleChatBtn()
+		);
 	}
 
 	#login42() {
@@ -333,20 +338,42 @@ class Game {
 		setting[btn.dataset.id]();
 	}
 
-	#addUser() {}
+	#addUser(user) {
+		this.#css2DObject.chatBtn.element.innerHTML = ADD;
+		this.#css2DObject.chatBtn.element.querySelector(
+			'.send-invite-to'
+		).textContent = `Send Invite to ${user} ?`;
+		['chatBtn', 'btnOverlay'].forEach(ele => {
+			this.#scene.add(this.#css2DObject[ele]);
+		});
+	}
 
-	#playUser() {}
+	#playUser(user) {
+		this.#css2DObject.chatBtn.element.innerHTML = PLAY;
+		this.#css2DObject.chatBtn.element.querySelector(
+			'.select-new-username'
+		).textContent = `Start a Game With ${user}`;
+		['chatBtn', 'btnOverlay'].forEach(ele => {
+			this.#scene.add(this.#css2DObject[ele]);
+		});
+	}
 
-	#blockUser() {}
+	#blockUser(user) {
+		this.#css2DObject.chatBtn.element.innerHTML = BLOCK;
+		this.#css2DObject.chatBtn.element.querySelector(
+			'.block-mel-moun'
+		).textContent = `Block ${user} ?`;
+		['chatBtn', 'btnOverlay'].forEach(ele => {
+			this.#scene.add(this.#css2DObject[ele]);
+		});
+	}
 
 	#chatBtns(btn, user) {
-		console.log(btn, user);
-
 		const usr = {
 			// profile:,
-			add: this.#addUser.bind(this),
-			play: this.#playUser.bind(this),
-			block: this.#blockUser.bind(this),
+			add: this.#addUser.bind(this, user),
+			play: this.#playUser.bind(this, user),
+			block: this.#blockUser.bind(this, user),
 		};
 		usr[btn.dataset.id]();
 	}
@@ -469,6 +496,29 @@ class Game {
 		this.#css2DObject.sbsettingOverlay.renderOrder = 9;
 	}
 
+	#addChatBtnCss2D() {
+		const btnContainer = document.createElement('div');
+		btnContainer.className = 'frame-parent-user';
+		btnContainer.innerHTML = BLOCK;
+
+		this.#css2DObject.chatBtn = new CSS2DObject(btnContainer);
+		this.#css2DObject.chatBtn.name = 'block';
+		this.#css2DObject.chatBtn.renderOrder = 10;
+
+		const overlayContainer = document.createElement('div');
+		overlayContainer.className = 'overlay';
+
+		this.#css2DObject.btnOverlay = new CSS2DObject(overlayContainer);
+		this.#css2DObject.btnOverlay.name = 'overlay';
+		this.#css2DObject.btnOverlay.renderOrder = 9;
+	}
+
+	#toggleChatBtn() {
+		['chatBtn', 'btnOverlay'].forEach(ele => {
+			this.#scene.remove(this.#css2DObject[ele]);
+		});
+	}
+
 	#toggleSettings() {
 		['sbsetting', 'sbsettingOverlay'].forEach(ele => {
 			this.#scene.remove(this.#css2DObject[ele]);
@@ -523,9 +573,10 @@ class Game {
 
 			const info = template.content.firstChild;
 			info.querySelector('.frame-item').src = userData.avatar;
-			info.querySelector(
-				'.indicator-icon12'
-			).src = `/textures/svg/Indicator offline.svg`;
+			info.querySelector('.indicator-icon12').src =
+				this.#chatWebSocket[user].elem.querySelector(
+					'.indicator-icon'
+				).src;
 			info.querySelector('.meriem-el-mountasser').textContent = user;
 
 			const chatInfoElement =
