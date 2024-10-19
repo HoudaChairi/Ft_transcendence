@@ -85,4 +85,3 @@ class GoogleLoginCallbackAPIView(APIView):
         # Redirect to frontend with tokens as query parameters
         frontend_url = f'https://{request.get_host()}/login?access={tokens["access"]}&refresh={tokens["refresh"]}'
         return redirect(frontend_url)
-#t
