@@ -229,13 +229,13 @@ class Game {
 	async #login42() {
 		try {
 			const backendLoginUrl = `api/auth/42/login/`;
-	
+
 			window.location.href = backendLoginUrl;
 		} catch (error) {
 			console.error('Login initiation error:', error);
 		}
 	}
-	
+
 
 	async #loginGoogle() {
 		try {
@@ -248,10 +248,40 @@ class Game {
 	}
 
 	#changeUsername() {
-		this.#css2DObject.sbsetting.element.innerHTML = CHANGE_USERNAME;
-		['sbsetting', 'sbsettingOverlay'].forEach(ele => {
-			this.#scene.add(this.#css2DObject[ele]);
-		});
+		try {
+			this.#css2DObject.sbsetting.element.innerHTML = CHANGE_USERNAME;
+			['sbsetting', 'sbsettingOverlay'].forEach(ele => {
+				this.#scene.add(this.#css2DObject[ele]);
+			});
+			this.#css2DObject.sbsetting.element.querySelector('.sette-wrapper').addEventListener('click', async e => {
+				const username = this.#css2DObject.sbsetting.element.querySelector('.username-user').value;
+
+				const response = await fetch(
+					`/api/update-infos/`,
+					{
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+						},
+						body: JSON.stringify({
+							"username": username,
+						}),
+					}
+				);
+				const data = await response.json();
+				if (response.ok) {
+					this.#loggedUser = username;
+					this.#toggleSettings();
+					this.#switchHome(window.location.pathname.slice(1))
+				} else {
+					alert('Error updating username: ' + data.message);
+					this.#css2DObject.sbsetting.element.querySelector('.username-user').value = ''
+				}
+			})
+		} catch (error) {
+			alert(error);
+		}
 	}
 
 	#changeAvatar() {
@@ -332,7 +362,7 @@ class Game {
 	async #logout() {
 		try {
 			const response = await fetch(
-				`https://${window.location.host}/api/logout/`,
+				`/api/logout/`,
 				{
 					method: 'POST',
 					headers: {
@@ -344,11 +374,11 @@ class Game {
 					}),
 				}
 			);
-			
+
 			if (response.ok) {
 				localStorage.removeItem('accessToken');
 				localStorage.removeItem('refreshToken');
-				
+
 				this.#switchHome('home');
 				this.#toggleSBook();
 				this.#LoginPage();
@@ -1374,6 +1404,7 @@ class Game {
 		}
 		if (home === 'chat') this.#chatUsers();
 
+		history.replaceState(null, null, `/${home}`)
 		this.#scene.add(this.#css2DObject[home]);
 	}
 }
