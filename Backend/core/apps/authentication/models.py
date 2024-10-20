@@ -31,7 +31,7 @@ class Player(AbstractUser):
 class Match(models.Model):
     player1 = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='player1_matches')
     player2 = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='player2_matches')
-    winner = models.ForeignKey(Player, on_delete=models.SET_NULL, related_name='wins', null=True)
+    winner = models.ForeignKey(Player, on_delete=models.SET_NULL, related_name='matches_won', null=True)
     date_played = models.DateTimeField(auto_now_add=True)
     score_player1 = models.IntegerField()
     score_player2 = models.IntegerField()
