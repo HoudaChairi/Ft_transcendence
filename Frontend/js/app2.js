@@ -17,7 +17,7 @@ window.onload = async () => {
 	}
 };
 
-import game from './Game';
+import game from './game2';
 
 const keyState = new Set();
 const KEY_UP = 'ArrowUp';
