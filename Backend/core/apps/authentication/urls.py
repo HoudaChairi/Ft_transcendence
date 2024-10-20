@@ -5,8 +5,8 @@ urlpatterns = [
     path('register/', RegisterView.as_view(), name="register"),
     path('login/', LoginAPIView.as_view(), name="login"),
     path('logout/', LogoutAPIView.as_view(), name="logout"),
-    path('update-name/', UpdateDisplayNameView.as_view(), name='update-name'),
     path('update-infos/', UpdateInfosView.as_view(), name='update_infos'),
+    path('avatar/', UpdateAvatarView.as_view(), name='avatar'),
       
     path('verify-token/', CustomTokenVerifyView.as_view(), name='token_verify'),
     path('refresh-token/', CustomTokenRefreshView.as_view(), name='token_refresh'),

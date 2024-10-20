@@ -238,7 +238,7 @@ class Game {
 
 	async #loginGoogle() {
 		try {
-			const backendLoginUrl = `/api/auth/google/`;
+			const backendLoginUrl = `api/auth/google/`;
 
 			window.location.href = backendLoginUrl;
 		} catch (error) {
@@ -256,7 +256,7 @@ class Game {
 				const username = this.#css2DObject.sbsetting.element.querySelector('.username-user').value;
 
 				const response = await fetch(
-					`/api/update-infos/`,
+					`api/update-infos/`,
 					{
 						method: 'POST',
 						headers: {
@@ -302,7 +302,7 @@ class Game {
 					return;
 				}
 		
-				const response = await fetch(`/api/update-infos/`, {
+				const response = await fetch(`api/update-infos/`, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
@@ -346,7 +346,7 @@ class Game {
 		});
 
 		this.#css2DObject.sbsetting.element
-			.querySelector('.change-avatar')
+			.querySelector('.sette-wrapper')
 			.addEventListener('click', async e => {
 				const fileInput =
 					this.#css2DObject.sbsetting.element.querySelector(
@@ -358,7 +358,7 @@ class Game {
 					formData.append('avatar', file);
 
 					try {
-						const response = await fetch(`/upload-avatar/`, {
+						const response = await fetch(`api/avatar/`, {
 							method: 'POST',
 							body: formData,
 							headers: {
@@ -371,11 +371,10 @@ class Game {
 						if (!response.ok) {
 							throw new Error('Network response was not ok');
 						}
-
 						const data = await response.json();
-						console.log('Success:', data);
+						this.#css2DObject.profilepic.element.src = data.avatar;
+						this.#toggleSettings();
 					} catch (error) {
-						console.error('Error:', error);
 						alert('Failed to upload avatar. Please try again.');
 					}
 				} else {
@@ -417,7 +416,7 @@ class Game {
 	async #logout() {
 		try {
 			const response = await fetch(
-				`/api/logout/`,
+				`api/logout/`,
 				{
 					method: 'POST',
 					headers: {
@@ -661,7 +660,7 @@ class Game {
 		const ppContainer = document.createElement('img');
 		ppContainer.className = 'profile-pic-icon';
 		ppContainer.alt = '';
-		ppContainer.src = '/textures/svg/Profile pic.svg';
+		// ppContainer.src = '/textures/svg/Profile pic.svg';
 		ppContainer.id = 'profilePicImage';
 
 		this.#css2DObject.profilepic = new CSS2DObject(ppContainer);
@@ -716,7 +715,7 @@ class Game {
 			recived.innerHTML = '';
 
 			const response = await fetch(
-				`/api/chat/room/${this.#loggedUser}/${user}/`,
+				`api/chat/room/${this.#loggedUser}/${user}/`,
 				{
 					method: 'GET',
 					headers: {
@@ -805,7 +804,7 @@ class Game {
 			this.#css2DObject.chat.element.querySelector(
 				'.mel-moun'
 			).textContent = this.#loggedUser;
-			const response = await fetch(`/api/users/`, {
+			const response = await fetch(`api/users/`, {
 				method: 'GET',
 				headers: {
 					Authorization: `Bearer ${localStorage.getItem(
@@ -1255,7 +1254,7 @@ class Game {
 			const refresh = localStorage.getItem('refreshToken');
 
 			if (access) {
-				const response = await fetch(`/api/verify-token/`, {
+				const response = await fetch(`api/verify-token/`, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
@@ -1266,12 +1265,13 @@ class Game {
 				});
 				if (response.ok) {
 					const data = await response.json();
+					this.#css2DObject.profilepic.element.src = data.avatar;
 					this.#loggedUser = data.username;
 					return true;
 				} else {
 					if (refresh) {
 						const refreshResponse = await fetch(
-							`/api/refresh-token/`,
+							`api/refresh-token/`,
 							{
 								method: 'POST',
 								headers: {
@@ -1285,6 +1285,7 @@ class Game {
 
 						if (refreshResponse.ok) {
 							const data = await refreshResponse.json();
+							this.#css2DObject.profilepic.element.src = data.avatar;
 							this.#loggedUser = data.username;
 							localStorage.setItem('accessToken', data.access);
 							return true;
@@ -1338,7 +1339,7 @@ class Game {
 		}
 
 		try {
-			const response = await fetch(`/api/register/`, {
+			const response = await fetch(`api/register/`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -1355,6 +1356,7 @@ class Game {
 			if (response.ok) {
 				localStorage.setItem('accessToken', data.access);
 				localStorage.setItem('refreshToken', data.refresh);
+				this.#css2DObject.profilepic.element.src = data.avatar;
 				this.#loggedUser = data.username;
 				this.#HomePage();
 			} else {
@@ -1398,6 +1400,8 @@ class Game {
 			if (response.ok) {
 				const data = await response.json();
 				const tokens = data.tokens;
+				console.log(data);
+				this.#css2DObject.profilepic.element.src = data.avatar;
 				this.#loggedUser = tokens.username;
 				localStorage.setItem('accessToken', tokens.access);
 				localStorage.setItem('refreshToken', tokens.refresh);

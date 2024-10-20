@@ -117,7 +117,7 @@ export const USERSPROFILE = `<div class="right">
 		<div class="personal-information">Personal Information</div>
 	</div>
 	<div class="frame-parent">
-		<img class="frame-icon" alt="" src="/textures/svg/Profile pic.svg" />
+		<img class="frame-icon" alt="" src="/textures/svg/ProfilePic.svg" />
 
 		<div class="info-field-parent">
 			<div class="info-field">

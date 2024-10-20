@@ -24,6 +24,7 @@ class RegisterView(APIView):
                 'username': user.username,
                 'access': tokens['access'],
                 'refresh': tokens['refresh'],
+                'avatar': user.get_avatar_url(),
             }, status=status.HTTP_201_CREATED)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -88,7 +89,9 @@ class UpdateAvatarView(APIView):
         serializer = AvatarSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response({"message": "Avatar updated successfully"}, status=status.HTTP_200_OK)
+            return Response({
+                "avatar": user.get_avatar_url()
+            }, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # friend list
@@ -164,7 +167,9 @@ class CustomTokenVerifyView(TokenVerifyView):
             user_id = access_token['user_id']
             user = Player.objects.get(id=user_id)
             username = user.username
+            avatar = user.get_avatar_url()
             response.data['username'] = username
+            response.data['avatar'] = avatar
         except Exception as e:
             return Response({'error': 'Invalid token or user not found'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -182,7 +187,9 @@ class CustomTokenRefreshView(TokenRefreshView):
             user_id = access_token['user_id']
             user = Player.objects.get(id=user_id)
             username = user.username
+            avatar = user.get_avatar_url()
             response.data['username'] = username
+            response.data['avatar'] = avatar
         except Exception as e:
             return Response({'error': 'Invalid refresh token or user not found'}, status=status.HTTP_400_BAD_REQUEST)
 

@@ -4,18 +4,36 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 
 class Player(AbstractUser):
+    GENDER_CHOICES = [
+        ('M', 'Male'),
+        ('F', 'Female'),
+    ]
+    
     username = models.CharField(max_length=20, unique=True, blank=False, null=False)
     email = models.CharField(max_length=50, unique=True, blank=False, null=False)
     first_name = models.CharField(max_length=30, blank=True, null=True) 
     last_name = models.CharField(max_length=30, blank=True, null=True) 
-    display_name = models.CharField(max_length=30, unique=True, null=True, blank=True)
-    avatar = models.ImageField(upload_to='avatars/', default='default_avatar.png')
+    avatar = models.ImageField(upload_to='avatars/', default='textures/svg/ProfilePic.svg')
     wins = models.IntegerField(default=0)
     losses = models.IntegerField(default=0)
     # friends = models.ManyToManyField('self', blank=True, symmetrical=False, related_name='friend_set')
     
     # Define a relationship to the Match model
     match_history = models.ManyToManyField('Match', related_name='players', blank=True)
+
+    def save(self, *args, **kwargs):
+        # Set the default avatar based on gender before saving
+        if not self.avatar:  # Only set if avatar is not already defined
+            if self.gender == 'M':
+                self.avatar = 'textures/svg/M.svg'
+            elif self.gender == 'F':
+                self.avatar = 'textures/svg/ProfilePic.svg'
+        super().save(*args, **kwargs)
+
+    def get_avatar_url(self):
+        if 'textures/svg/' in self.avatar.name:
+            return f'{self.avatar}'
+        return f'/media/{self.avatar}'
 
     def __str__(self):
         return self.username

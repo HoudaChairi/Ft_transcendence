@@ -182,8 +182,9 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': False,
 }
 
-# MEDIA_URL = '/media/'
-# MEDIA_ROOT = BASE_DIR / 'media'
+#  for avatar
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # To allow all origins  to access your API  from browser
 CORS_ALLOW_ALL_ORIGINS = True

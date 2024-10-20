@@ -56,31 +56,36 @@ class LoginSerializer(serializers.ModelSerializer):
     username = serializers.CharField(max_length=255, min_length=3)
     password = serializers.CharField(max_length=68, min_length=6, write_only=True)
     tokens = serializers.SerializerMethodField()
-    
-    def get_tokens(self, obj):
-        user = Player.objects.get(username=obj['username'])
+    avatar = serializers.SerializerMethodField()
+
+    def get_tokens(self, user):
+        # Now `user` is the Player instance
         return {
-            'username': obj['username'],
             'refresh': user.tokens()['refresh'],
             'access': user.tokens()['access'],
         }
-        
+
+    def get_avatar(self, user):
+        # Call the method to get the avatar URL
+        return user.get_avatar_url()
+
     class Meta:
         model = Player
-        fields = ['username','password','tokens']
-    
+        fields = ['username', 'password', 'tokens', 'avatar']
+
     def validate(self, attrs):
-        username = attrs.get('username','')
-        password = attrs.get('password','')
-        user = auth.authenticate(username=username,password=password)
+        username = attrs.get('username', '')
+        password = attrs.get('password', '')
+        user = auth.authenticate(username=username, password=password)
+
         if not user:
             raise AuthenticationFailed('Invalid credentials, try again')
         if not user.is_active:
             raise AuthenticationFailed('Account disabled, contact admin')
-        return {
-            'username': user.username,
-            'tokens': user.tokens,
-        }
+        
+        # Return the user instance instead of a dictionary
+        return user  # Return the Player instance directly
+
         
 # new Logout serializer:
 class LogoutSerializer(serializers.Serializer):
@@ -171,13 +176,21 @@ class DisplayNameSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("This display name is already taken.")
         return value
 
+
 class AvatarSerializer(serializers.ModelSerializer):
     class Meta:
         model = Player
         fields = ['avatar']
 
     def validate_avatar(self, value):
-        # You can add validation for the uploaded file if needed (e.g., file size, type)
+        # Check file type
+        if not value.name.endswith(('.png', '.jpg', '.jpeg', '.gif')):
+            raise serializers.ValidationError("File type is not supported. Please upload an image.")
+        
+        # Check file size (e.g., limit to 5 MB)
+        if value.size > 5 * 1024 * 1024:
+            raise serializers.ValidationError("File size should be less than 5 MB.")
+        
         return value
 
 
