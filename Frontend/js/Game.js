@@ -10,7 +10,7 @@ import { LEGEND, LEGEND_CHAT, LEGEND_LEADERBOARD } from './Legend';
 import { LEADERBOARDMAIN } from './Leaderboard';
 import { SIGNIN, SIGNUP } from './Sign';
 import { LOGIN } from './Login';
-import { CHANGE_AVATAR, CHANGE_USERNAME } from './Sbook';
+import { CHANGE_AVATAR, CHANGE_PASSWORD, CHANGE_USERNAME } from './Sbook';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -283,6 +283,22 @@ class Game {
 			alert(error);
 		}
 	}
+	#changePassword() {
+
+		this.#css2DObject.sbsetting.element.innerHTML = CHANGE_PASSWORD;
+
+		['sbsetting', 'sbsettingOverlay'].forEach(ele => {
+
+			this.#scene.add(this.#css2DObject[ele]);
+
+		});
+	}
+
+	#changeFirstName() { }
+
+	#changeLastName() { }
+
+	#changeEmail() { }
 
 	#changeAvatar() {
 		this.#css2DObject.sbsetting.element.innerHTML = CHANGE_AVATAR;
@@ -394,6 +410,10 @@ class Game {
 	#sbookSettings(btn) {
 		const setting = {
 			username: this.#changeUsername.bind(this),
+			password: this.#changePassword.bind(this),
+			first: this.#changeFirstName.bind(this),
+			last: this.#changeLastName.bind(this),
+			email: this.#changeEmail.bind(this),
 			avatar: this.#changeAvatar.bind(this),
 			twofa: this.#handleTwoFA.bind(this, btn),
 			logout: this.#logout.bind(this),
