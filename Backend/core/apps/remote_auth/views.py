@@ -22,7 +22,7 @@ GOOGLE_OAUTH_SCOPE = [
     'https://www.googleapis.com/auth/userinfo.profile',
 ]
 
-class GoogleLoginAPIView(APIView):
+class GoogleView(APIView):
     def get(self, request):
         google = OAuth2Session(GOOGLE_CLIENT_ID, scope=GOOGLE_OAUTH_SCOPE, redirect_uri=GOOGLE_REDIRECT_URI)
 
@@ -33,7 +33,7 @@ class GoogleLoginAPIView(APIView):
 
         return redirect(authorization_url)
 
-class GoogleLoginCallbackAPIView(APIView):
+class GoogleCallbackView(APIView):
     def get(self, request):
         google = OAuth2Session(GOOGLE_CLIENT_ID, redirect_uri=GOOGLE_REDIRECT_URI)
         authorization_response = request.build_absolute_uri()
@@ -81,7 +81,7 @@ FT_CLIENT_ID = settings.SOCIAL_AUTH_42_KEY
 FT_CLIENT_SECRET = settings.SOCIAL_AUTH_42_SECRET  
 FT_REDIRECT_URI = settings.SOCIAL_AUTH_42_REDIRECT_URI
 
-class FTLoginAPIView(APIView):
+class FtView(APIView):
     def get(self, request):
         ft_oauth = OAuth2Session(FT_CLIENT_ID, redirect_uri=FT_REDIRECT_URI)
         authorization_url, state = ft_oauth.authorization_url(
@@ -89,7 +89,7 @@ class FTLoginAPIView(APIView):
         )
         return redirect(authorization_url)
 
-class FTLoginCallbackAPIView(APIView):
+class FtCallbackView(APIView):
     def get(self, request):
         ft_oauth = OAuth2Session(FT_CLIENT_ID, redirect_uri=FT_REDIRECT_URI)
         authorization_response = request.build_absolute_uri()
