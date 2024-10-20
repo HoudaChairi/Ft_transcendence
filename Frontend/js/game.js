@@ -209,9 +209,16 @@ class Game {
 			});
 	}
 
-	#login42() {
-		// console.log('this is 42');
+	async #login42() {
+		try {
+			const backendLoginUrl = `api/auth/42/login/`;
+	
+			window.location.href = backendLoginUrl;
+		} catch (error) {
+			console.error('Login initiation error:', error);
+		}
 	}
+	
 
 	async #loginGoogle() {
 		try {
