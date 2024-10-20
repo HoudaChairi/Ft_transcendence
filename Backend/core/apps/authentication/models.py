@@ -22,8 +22,7 @@ class Player(AbstractUser):
     match_history = models.ManyToManyField('Match', related_name='players', blank=True)
 
     def save(self, *args, **kwargs):
-        # Set the default avatar based on gender before saving
-        if not self.avatar:  # Only set if avatar is not already defined
+        if not self.avatar:
             if self.gender == 'M':
                 self.avatar = 'textures/svg/M.svg'
             elif self.gender == 'F':
@@ -31,7 +30,7 @@ class Player(AbstractUser):
         super().save(*args, **kwargs)
 
     def get_avatar_url(self):
-        if 'textures/svg/' in self.avatar.name:
+        if 'textures/svg/' in self.avatar.name or self.avatar.name.startswith('http'):
             return f'{self.avatar}'
         return f'/media/{self.avatar}'
 
@@ -40,7 +39,7 @@ class Player(AbstractUser):
     
     def tokens(self):
         refresh = RefreshToken.for_user(self)
-        return{
+        return {
             'refresh': str(refresh),
             'access': str(refresh.access_token)
         }

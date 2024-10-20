@@ -313,8 +313,12 @@ class Game {
 						).value;
 
 					if (newpass !== confpass) {
-						// this.#css2DObject.sbsetting.element.querySelector('#newpass').value = '';
-						// this.#css2DObject.sbsetting.element.querySelector('#confpass').value = '';
+						this.#css2DObject.sbsetting.element.querySelector(
+							'#newpass'
+						).value = '';
+						this.#css2DObject.sbsetting.element.querySelector(
+							'#confpass'
+						).value = '';
 						alert("Passwords don't match");
 						return;
 					}
@@ -338,9 +342,15 @@ class Game {
 					if (response.ok) {
 						this.#toggleSettings();
 					} else {
-						// this.#css2DObject.sbsetting.element.querySelector('#oldpass').value = '';
-						// this.#css2DObject.sbsetting.element.querySelector('#newpass').value = '';
-						// this.#css2DObject.sbsetting.element.querySelector('#confpass').value = '';
+						this.#css2DObject.sbsetting.element.querySelector(
+							'#oldpass'
+						).value = '';
+						this.#css2DObject.sbsetting.element.querySelector(
+							'#newpass'
+						).value = '';
+						this.#css2DObject.sbsetting.element.querySelector(
+							'#confpass'
+						).value = '';
 						const errorMessage =
 							Object.values(data).flat().join(', ') ||
 							'An error occurred. Please try again.';
@@ -716,7 +726,9 @@ class Game {
 				this.#chatWebSocket[user].elem.querySelector(
 					'.indicator-icon'
 				).src;
-			info.querySelector('.meriem-el-mountasser').textContent = user;
+			info.querySelector(
+				'.meriem-el-mountasser'
+			).textContent = `${userData.first.trim()} ${userData.last.trim()}`;
 
 			const chatInfoElement =
 				this.#css2DObject.chat.element.querySelector('.infos-chat');

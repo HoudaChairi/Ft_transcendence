@@ -58,6 +58,7 @@ class GoogleCallbackView(APIView):
         first_name = user_info.get('given_name')
         last_name = user_info.get('family_name')
         username = email.split('@')[0]
+        profile_pic_url = user_info.get('picture')
 
         user, created = Player.objects.get_or_create(
             email=email,
@@ -67,6 +68,10 @@ class GoogleCallbackView(APIView):
                 'last_name': last_name,
             }
         )
+
+        if created or not user.avatar:
+            user.avatar = profile_pic_url
+            user.save()
 
         user.backend = 'django.contrib.auth.backends.ModelBackend'
         django_login(request, user)
@@ -114,6 +119,7 @@ class FtCallbackView(APIView):
         first_name = user_info.get('first_name')
         last_name = user_info.get('last_name')
         username = user_info.get('login')
+        avatar_url = user_info.get('image', {}).get('link')
 
         user, created = Player.objects.get_or_create(
             email=email,
@@ -123,6 +129,10 @@ class FtCallbackView(APIView):
                 'last_name': last_name,
             }
         )
+
+        if avatar_url:
+            user.avatar = avatar_url
+        user.save()
 
         user.backend = 'django.contrib.auth.backends.ModelBackend'
         django_login(request, user)
