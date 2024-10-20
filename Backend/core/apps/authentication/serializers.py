@@ -9,6 +9,7 @@ from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.contrib.auth.hashers import check_password
+from django.contrib.auth import authenticate
 import re
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -108,12 +109,16 @@ class LogoutSerializer(serializers.Serializer):
             
 # --------------------------------------------------------------------------------------
 
+
 class UpdateInfosSerializer(serializers.ModelSerializer):
+    old_password = serializers.CharField(write_only=True, required=False)
+    new_password = serializers.CharField(write_only=True, required=False)
+
     class Meta:
         model = Player
-        fields = ['username', 'email', 'first_name', 'last_name', 'password']
+        fields = ['username', 'email', 'first_name', 'last_name', 'old_password', 'new_password']
         extra_kwargs = {
-            'password': {'write_only': True},  # We don't want to return the password in the response
+            'new_password': {'write_only': True},
         }
 
     # Validate username
@@ -140,16 +145,21 @@ class UpdateInfosSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Last name cannot be empty.")
         return value
 
-    # Override the save method to handle password hashing
     def save(self, **kwargs):
-        password = self.validated_data.get('password', None)
-        if password:
-            # Hash the password before saving
-            self.instance.password = make_password(password)
-        
+        # Handle password change
+        old_password = self.validated_data.get('old_password', None)
+        new_password = self.validated_data.get('new_password', None)
+
+        # Check if the old password is provided and validate it
+        if old_password and not authenticate(username=self.instance.username, password=old_password):
+            raise serializers.ValidationError("Old password is incorrect.")
+
+        # If a new password is provided, hash it before saving
+        if new_password:
+            self.instance.password = make_password(new_password)
+
         # Save the instance with other fields
         return super().save(**kwargs)
-
 
 class DisplayNameSerializer(serializers.ModelSerializer):
     class Meta:

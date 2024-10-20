@@ -284,11 +284,54 @@ class Game {
 	}
 
 	#changePassword() {
-		this.#css2DObject.sbsetting.element.innerHTML = CHANGE_PASSWORD;
-		['sbsetting', 'sbsettingOverlay'].forEach(ele => {
-			this.#scene.add(this.#css2DObject[ele]);
-		});
+		try {
+			this.#css2DObject.sbsetting.element.innerHTML = CHANGE_PASSWORD;
+			['sbsetting', 'sbsettingOverlay'].forEach(ele => {
+				this.#scene.add(this.#css2DObject[ele]);
+			});
+		
+			this.#css2DObject.sbsetting.element.querySelector('.sette-wrapper').addEventListener('click', async e => {
+				const oldpass = this.#css2DObject.sbsetting.element.querySelector('#oldpass').value;
+				const newpass = this.#css2DObject.sbsetting.element.querySelector('#newpass').value;
+				const confpass = this.#css2DObject.sbsetting.element.querySelector('#confpass').value;
+		
+				if (newpass !== confpass) {
+					// this.#css2DObject.sbsetting.element.querySelector('#newpass').value = '';
+					// this.#css2DObject.sbsetting.element.querySelector('#confpass').value = '';
+					alert("Passwords don't match");
+					return;
+				}
+		
+				const response = await fetch(`/api/update-infos/`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+					},
+					body: JSON.stringify({
+						"old_password": oldpass,
+						"new_password": newpass,
+					}),
+				});
+		
+				const data = await response.json();
+		
+				if (response.ok) {
+					this.#toggleSettings();
+				} else {
+					// this.#css2DObject.sbsetting.element.querySelector('#oldpass').value = '';
+					// this.#css2DObject.sbsetting.element.querySelector('#newpass').value = '';
+					// this.#css2DObject.sbsetting.element.querySelector('#confpass').value = '';
+					const errorMessage = Object.values(data).flat().join(', ') || 'An error occurred. Please try again.';
+					alert('Error updating password: ' + errorMessage);
+				}
+			});
+		} catch (error) {
+			alert('An unexpected error occurred: ' + error.message);
+		}
+		
 	}
+	
 
 	#changeFirstName() { }
 
