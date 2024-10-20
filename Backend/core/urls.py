@@ -11,6 +11,8 @@ urlpatterns = [
     path('api/chat/', include('core.apps.chat.urls')),
     path('api/', include('core.apps.authentication.urls')),
 
+
+    path('api/auth/', include('core.apps.remote_auth.urls')),
 ]
 
 # # new for avatar'

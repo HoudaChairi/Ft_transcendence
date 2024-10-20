@@ -279,20 +279,14 @@ body {
 	position: absolute;
 	top: 0px;
 	left: calc(50% - 13.95px);
-	width: 27.9px;
-	height: 20.3px;
+	width: 54px;
+	height: 37.17px;
 	overflow: hidden;
-	object-fit: cover;
+	object-fit: fill;
 }
 
-.fa-icon2 {
-	position: absolute;
-	bottom: -0.05px;
-	left: calc(50% - 13.95px);
-	width: 27.9px;
-	height: 20.3px;
-	overflow: hidden;
-	object-fit: cover;
+.fa-icon1-op {
+	opacity: 0.5;
 }
 
 .fa-icon {
@@ -313,6 +307,10 @@ body {
 	line-height: 150%;
 	display: flex;
 	align-items: center;
+}
+
+.factor-authentication-op {
+	opacity: 0.7;
 }
 
 .fa {
@@ -1027,6 +1025,10 @@ body {
 	flex-shrink: 0;
 }
 
+.indicator-icon1[src] {
+	display: block;
+}
+
 .indicator-icon1 {
 	position: absolute;
 	top: calc(50% - 16px);
@@ -1035,6 +1037,7 @@ body {
 	height: 32px;
 	overflow: hidden;
 	object-fit: cover;
+	display: none;
 }
 
 .element-parent {
@@ -2186,4 +2189,60 @@ body {
 	font-family: Gabriela;
 	overflow: hidden;
 	text-align: center;
+}
+
+.block-mel-moun {
+	align-self: stretch;
+	position: relative;
+	line-height: 150%;
+	color: #6b3783;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 4.5rem;
+	flex-shrink: 0;
+}
+
+.block-mel-moun-parent {
+	align-self: stretch;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 1.25rem;
+	color: #000;
+}
+
+.send-invite-to {
+	align-self: stretch;
+	position: relative;
+	line-height: 150%;
+	color: #6b3783;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 4.5rem;
+	flex-shrink: 0;
+}
+
+.send-invite-to-mel-moun-parent {
+	align-self: stretch;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 0rem 1.312rem;
+	gap: 1.25rem;
+	color: #000;
+}
+
+.start-a-game-with-mel-moun-parent {
+	align-self: stretch;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 0rem 1.312rem;
+	gap: 1.25rem;
+	color: #6b3783;
 }

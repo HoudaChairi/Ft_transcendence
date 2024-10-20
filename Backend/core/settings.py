@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     # New apps
     'core.apps.authentication',
     'core.apps.chat',
+    'core.apps.remote_auth',
 
     # 'core.apps.users',
     'rest_framework',
@@ -55,6 +56,8 @@ INSTALLED_APPS = [
 
     ##
     'channels',
+     'social_django',
+    'django.contrib.sites', 
 ]
 
 MIDDLEWARE = [
@@ -68,7 +71,13 @@ MIDDLEWARE = [
     # new for browser 
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
+
+    'social_django.middleware.SocialAuthExceptionMiddleware',
 ]
+AUTHENTICATION_BACKENDS = (
+    'social_core.backends.google.GoogleOAuth2',  # Enable Google OAuth2
+    'django.contrib.auth.backends.ModelBackend',
+)
 
 ROOT_URLCONF = 'core.urls'
 
@@ -179,12 +188,33 @@ SIMPLE_JWT = {
 # To allow all origins  to access your API  from browser
 CORS_ALLOW_ALL_ORIGINS = True
 
-
 ## Meriem
+
+# CHAT 
+
 ASGI_APPLICATION = 'core.asgi.application'
 
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels.layers.InMemoryChannelLayer',
     },
-}
+}   
+
+# GOOGLE 
+
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '851881649681-crjcohss2l0bh66tore6s4b6ik695g74.apps.googleusercontent.com'
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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'
+
+GOOGLE_REDIRECT_URI = 'https://localhost/api/auth/google/callback/'
+
+SOCIAL_AUTH_URL_NAMESPACE = 'social'
+
+SITE_ID = 1
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# 42
+
+SOCIAL_AUTH_42_KEY = 'u-s4t2ud-cbb98f88ec757c172c1f5f2ec653fa1f1e0694ffe0f0e43fb5707487add59a72'
+SOCIAL_AUTH_42_SECRET = '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' 
+SOCIAL_AUTH_42_REDIRECT_URI = 'https://localhost/api/auth/42/callback/' 
