@@ -15,13 +15,11 @@ export const ELEMENT = `<div class="element">
 	<img
 		class="indicator-icon1"
 		alt=""
-		src="/textures/svg/Indicator message.svg"
 	/>
 
 	<img
 		class="indicator-icon"
 		alt=""
-		src="/textures/svg/Indicator offline.svg"
 	/>
 </div>`;
 
@@ -39,24 +37,28 @@ export const CHAT_INFO = `<div class="frame-group">
 		<div class="meriem-el-mountasser">Meriem El Mountasser</div>
 		<div class="profile-icon-parent">
 			<img
-				class="profile-icon"
+				class="profile-icon chat-btn"
 				alt=""
 				src="/textures/svg/profile_icon.svg"
+				data-id="profile"
 			/>
 			<img
-				class="add-user-icon"
+				class="add-user-icon chat-btn"
 				alt=""
 				src="/textures/svg/add_user.svg"
+				data-id="add"
 			/>
 			<img
-				class="ping-pong-1-icon"
+				class="ping-pong-1-icon chat-btn"
 				alt=""
 				src="/textures/svg/ping-pong 1.svg"
+				data-id="play"
 			/>
 			<img
-				class="add-user-icon"
+				class="add-user-icon chat-btn"
 				alt=""
 				src="/textures/svg/block_user.svg"
+				data-id="block"
 			/>
 		</div>
 	</div>

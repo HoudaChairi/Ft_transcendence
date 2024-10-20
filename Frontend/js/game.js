@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 
-import { HOME, GAME, CHAT, LEADERBOARD } from './home';
+import { HOME, GAME, CHAT, LEADERBOARD } from './Home';
 import { PANER } from './Paner';
 import { SBOOK, SETTINGS } from './Settings';
 import { USERSPROFILE } from './UsersProfile';
 import { CHAT_INFO, ELEMENT, MAINCHAT, RECIVED, SENT } from './Chat';
+import { ADD, BLOCK, PLAY } from './ChatBtn';
 import { LEGEND, LEGEND_CHAT, LEGEND_LEADERBOARD } from './Legend';
 import { LEADERBOARDMAIN } from './Leaderboard';
 import { SIGNIN, SIGNUP } from './Sign';
@@ -128,6 +129,7 @@ class Game {
 		this.#addPanerCss2D();
 		this.#addSettingsCss2D();
 		this.#addSbookSettingsCss2D();
+		this.#addChatBtnCss2D();
 		this.#addProfilePic();
 		this.#addChatCss2D();
 		this.#addLegendCss2d();
@@ -207,6 +209,21 @@ class Game {
 				const btn = e.target.closest('.setting-frame');
 				if (btn) this.#sbookSettings(btn);
 			});
+		this.#css2DObject.chat.element
+			.querySelector('.infos-chat')
+			.addEventListener('click', e => {
+				const btn = e.target.closest('.chat-btn');
+				if (btn) {
+					const user =
+						this.#css2DObject.chat.element.querySelector(
+							'.infos-chat'
+						).dataset.user;
+					this.#chatBtns(btn, user);
+				}
+			});
+		this.#css2DObject.btnOverlay.element.addEventListener('click', e =>
+			this.#toggleChatBtn()
+		);
 	}
 
 	async #login42() {
@@ -328,6 +345,46 @@ class Game {
 		setting[btn.dataset.id]();
 	}
 
+	#addUser(user) {
+		this.#css2DObject.chatBtn.element.innerHTML = ADD;
+		this.#css2DObject.chatBtn.element.querySelector(
+			'.send-invite-to'
+		).textContent = `Send Invite to ${user} ?`;
+		['chatBtn', 'btnOverlay'].forEach(ele => {
+			this.#scene.add(this.#css2DObject[ele]);
+		});
+	}
+
+	#playUser(user) {
+		this.#css2DObject.chatBtn.element.innerHTML = PLAY;
+		this.#css2DObject.chatBtn.element.querySelector(
+			'.select-new-username'
+		).textContent = `Start a Game With ${user}`;
+		['chatBtn', 'btnOverlay'].forEach(ele => {
+			this.#scene.add(this.#css2DObject[ele]);
+		});
+	}
+
+	#blockUser(user) {
+		this.#css2DObject.chatBtn.element.innerHTML = BLOCK;
+		this.#css2DObject.chatBtn.element.querySelector(
+			'.block-mel-moun'
+		).textContent = `Block ${user} ?`;
+		['chatBtn', 'btnOverlay'].forEach(ele => {
+			this.#scene.add(this.#css2DObject[ele]);
+		});
+	}
+
+	#chatBtns(btn, user) {
+		const usr = {
+			// profile:,
+			add: this.#addUser.bind(this, user),
+			play: this.#playUser.bind(this, user),
+			block: this.#blockUser.bind(this, user),
+		};
+		usr[btn.dataset.id]();
+	}
+
 	#addLoginCss2D() {
 		const loginContainer = document.createElement('div');
 		loginContainer.className = 'sign-inup';
@@ -446,6 +503,29 @@ class Game {
 		this.#css2DObject.sbsettingOverlay.renderOrder = 9;
 	}
 
+	#addChatBtnCss2D() {
+		const btnContainer = document.createElement('div');
+		btnContainer.className = 'frame-parent-user';
+		btnContainer.innerHTML = BLOCK;
+
+		this.#css2DObject.chatBtn = new CSS2DObject(btnContainer);
+		this.#css2DObject.chatBtn.name = 'block';
+		this.#css2DObject.chatBtn.renderOrder = 10;
+
+		const overlayContainer = document.createElement('div');
+		overlayContainer.className = 'overlay';
+
+		this.#css2DObject.btnOverlay = new CSS2DObject(overlayContainer);
+		this.#css2DObject.btnOverlay.name = 'overlay';
+		this.#css2DObject.btnOverlay.renderOrder = 9;
+	}
+
+	#toggleChatBtn() {
+		['chatBtn', 'btnOverlay'].forEach(ele => {
+			this.#scene.remove(this.#css2DObject[ele]);
+		});
+	}
+
 	#toggleSettings() {
 		['sbsetting', 'sbsettingOverlay'].forEach(ele => {
 			this.#scene.remove(this.#css2DObject[ele]);
@@ -491,20 +571,28 @@ class Game {
 
 	async #loadChat(user, userData) {
 		try {
+			this.#chatWebSocket[user].elem
+				.querySelector('.indicator-icon1')
+				.removeAttribute('src');
+
 			const template = document.createElement('template');
 			template.innerHTML = CHAT_INFO.trim();
 
 			const info = template.content.firstChild;
 			info.querySelector('.frame-item').src = userData.avatar;
-			info.querySelector(
-				'.indicator-icon12'
-			).src = `/textures/svg/Indicator offline.svg`;
+			info.querySelector('.indicator-icon12').src =
+				this.#chatWebSocket[user].elem.querySelector(
+					'.indicator-icon'
+				).src;
 			info.querySelector('.meriem-el-mountasser').textContent = user;
 
 			const chatInfoElement =
 				this.#css2DObject.chat.element.querySelector('.infos-chat');
 
 			chatInfoElement.innerHTML = '';
+			this.#css2DObject.chat.element.querySelector(
+				'.infos-chat'
+			).dataset.user = user;
 
 			chatInfoElement.appendChild(info);
 
@@ -556,9 +644,6 @@ class Game {
 					'.sword-prowess-lv'
 				).textContent = `${user.username}`;
 				userHTML.querySelector(
-					'.indicator-icon1'
-				).src = `/textures/svg/Indicator online.svg`;
-				userHTML.querySelector(
 					'.indicator-icon'
 				).src = `/textures/svg/Indicator online.svg`;
 				this.#css2DObject.chat.element
@@ -573,10 +658,12 @@ class Game {
 				});
 
 				const room = [this.#loggedUser, user.username].sort().join('_');
-				this.#chatWebSocket[user.username] = new WebSocket(
+				this.#chatWebSocket[user.username] = {};
+				this.#chatWebSocket[user.username].elem = userHTML;
+				this.#chatWebSocket[user.username].sock = new WebSocket(
 					`wss://${window.location.host}/api/ws/chat/${room}/`
 				);
-				this.#chatWebSocket[user.username].onmessage = e => {
+				this.#chatWebSocket[user.username].sock.onmessage = e => {
 					const data = JSON.parse(e.data);
 					if (user.username === this.#chatuser) {
 						if (data.sender === user.username)
@@ -588,6 +675,10 @@ class Game {
 							);
 						const lastMessage = chatContainer.lastChild;
 						lastMessage.scrollIntoView({ behavior: 'smooth' });
+					} else {
+						this.#chatWebSocket[user.username].elem.querySelector(
+							'.indicator-icon1'
+						).src = `/textures/svg/Indicator message.svg`;
 					}
 				};
 			}
@@ -648,7 +739,7 @@ class Game {
 		const message = this.#css2DObject.chat.element
 			.querySelector('.message')
 			.value.trim();
-		if (message && this.#chatWebSocket[this.#chatuser]) {
+		if (message && this.#chatWebSocket[this.#chatuser].sock) {
 			this.#css2DObject.chat.element
 				.querySelector('.message')
 				.addEventListener('keyup', e => {
@@ -657,7 +748,7 @@ class Game {
 							'.message'
 						).value = '';
 				});
-			this.#chatWebSocket[this.#chatuser].send(
+			this.#chatWebSocket[this.#chatuser].sock.send(
 				JSON.stringify({
 					message: message,
 					username: this.#loggedUser,
@@ -1224,6 +1315,9 @@ class Game {
 	}
 
 	#switchHome(home) {
+		for (const key in this.#chatWebSocket)
+			this.#chatWebSocket[key].sock.close();
+
 		const legendText = {
 			chat: LEGEND_CHAT,
 			leaderboard: LEGEND_LEADERBOARD,
