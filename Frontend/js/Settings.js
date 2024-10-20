@@ -6,8 +6,20 @@ export const SBOOK = `<img class="rectangle-icon17" alt="" src="/textures/svg/SB
 	<div class="setting-frame" data-id="username">
 		<div class="setting-1">Change Username</div>
 	</div>
+	<div class="setting-frame" data-id="password">
+		<div class="setting-1">Change Password</div>
+	</div>
+	<div class="setting-frame" data-id="first">
+		<div class="setting-1">Change First Name</div>
+	</div>
+	<div class="setting-frame" data-id="last">
+		<div class="setting-1">Change Last Name</div>
+	</div>
+	<div class="setting-frame" data-id="email">
+		<div class="setting-1">Change Email</div>
+	</div>
 	<div class="setting-frame" data-id="avatar">
-		<div class="setting-11">Change Avatar</div>
+		<div class="setting-1">Change Avatar</div>
 	</div>
 	<div class="setting-frame" data-id="twofa">
 		<div class="fa-icon">
