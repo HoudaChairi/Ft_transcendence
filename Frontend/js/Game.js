@@ -252,32 +252,38 @@ class Game {
 			['sbsetting', 'sbsettingOverlay'].forEach(ele => {
 				this.#scene.add(this.#css2DObject[ele]);
 			});
-			this.#css2DObject.sbsetting.element.querySelector('.sette-wrapper').addEventListener('click', async e => {
-				const username = this.#css2DObject.sbsetting.element.querySelector('.username-user').value;
+			this.#css2DObject.sbsetting.element
+				.querySelector('.sette-wrapper')
+				.addEventListener('click', async e => {
+					const username =
+						this.#css2DObject.sbsetting.element.querySelector(
+							'.username-user'
+						).value;
 
-				const response = await fetch(
-					`api/update-infos/`,
-					{
+					const response = await fetch(`api/update-infos/`, {
 						method: 'POST',
 						headers: {
 							'Content-Type': 'application/json',
-							Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+							Authorization: `Bearer ${localStorage.getItem(
+								'accessToken'
+							)}`,
 						},
 						body: JSON.stringify({
-							"username": username,
+							username: username,
 						}),
+					});
+					const data = await response.json();
+					if (response.ok) {
+						this.#loggedUser = username;
+						this.#toggleSettings();
+						this.#switchHome(window.location.pathname.slice(1));
+					} else {
+						alert('Error updating username: ' + data.message);
+						this.#css2DObject.sbsetting.element.querySelector(
+							'.username-user'
+						).value = '';
 					}
-				);
-				const data = await response.json();
-				if (response.ok) {
-					this.#loggedUser = username;
-					this.#toggleSettings();
-					this.#switchHome(window.location.pathname.slice(1))
-				} else {
-					alert('Error updating username: ' + data.message);
-					this.#css2DObject.sbsetting.element.querySelector('.username-user').value = ''
-				}
-			})
+				});
 		} catch (error) {
 			alert(error);
 		}
@@ -289,55 +295,68 @@ class Game {
 			['sbsetting', 'sbsettingOverlay'].forEach(ele => {
 				this.#scene.add(this.#css2DObject[ele]);
 			});
-		
-			this.#css2DObject.sbsetting.element.querySelector('.sette-wrapper').addEventListener('click', async e => {
-				const oldpass = this.#css2DObject.sbsetting.element.querySelector('#oldpass').value;
-				const newpass = this.#css2DObject.sbsetting.element.querySelector('#newpass').value;
-				const confpass = this.#css2DObject.sbsetting.element.querySelector('#confpass').value;
-		
-				if (newpass !== confpass) {
-					// this.#css2DObject.sbsetting.element.querySelector('#newpass').value = '';
-					// this.#css2DObject.sbsetting.element.querySelector('#confpass').value = '';
-					alert("Passwords don't match");
-					return;
-				}
-		
-				const response = await fetch(`api/update-infos/`, {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-					},
-					body: JSON.stringify({
-						"old_password": oldpass,
-						"new_password": newpass,
-					}),
+
+			this.#css2DObject.sbsetting.element
+				.querySelector('.sette-wrapper')
+				.addEventListener('click', async e => {
+					const oldpass =
+						this.#css2DObject.sbsetting.element.querySelector(
+							'#oldpass'
+						).value;
+					const newpass =
+						this.#css2DObject.sbsetting.element.querySelector(
+							'#newpass'
+						).value;
+					const confpass =
+						this.#css2DObject.sbsetting.element.querySelector(
+							'#confpass'
+						).value;
+
+					if (newpass !== confpass) {
+						// this.#css2DObject.sbsetting.element.querySelector('#newpass').value = '';
+						// this.#css2DObject.sbsetting.element.querySelector('#confpass').value = '';
+						alert("Passwords don't match");
+						return;
+					}
+
+					const response = await fetch(`api/update-infos/`, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							Authorization: `Bearer ${localStorage.getItem(
+								'accessToken'
+							)}`,
+						},
+						body: JSON.stringify({
+							old_password: oldpass,
+							new_password: newpass,
+						}),
+					});
+
+					const data = await response.json();
+
+					if (response.ok) {
+						this.#toggleSettings();
+					} else {
+						// this.#css2DObject.sbsetting.element.querySelector('#oldpass').value = '';
+						// this.#css2DObject.sbsetting.element.querySelector('#newpass').value = '';
+						// this.#css2DObject.sbsetting.element.querySelector('#confpass').value = '';
+						const errorMessage =
+							Object.values(data).flat().join(', ') ||
+							'An error occurred. Please try again.';
+						alert('Error updating password: ' + errorMessage);
+					}
 				});
-		
-				const data = await response.json();
-		
-				if (response.ok) {
-					this.#toggleSettings();
-				} else {
-					// this.#css2DObject.sbsetting.element.querySelector('#oldpass').value = '';
-					// this.#css2DObject.sbsetting.element.querySelector('#newpass').value = '';
-					// this.#css2DObject.sbsetting.element.querySelector('#confpass').value = '';
-					const errorMessage = Object.values(data).flat().join(', ') || 'An error occurred. Please try again.';
-					alert('Error updating password: ' + errorMessage);
-				}
-			});
 		} catch (error) {
 			alert('An unexpected error occurred: ' + error.message);
 		}
-		
 	}
-	
 
-	#changeFirstName() { }
+	#changeFirstName() {}
 
-	#changeLastName() { }
+	#changeLastName() {}
 
-	#changeEmail() { }
+	#changeEmail() {}
 
 	#changeAvatar() {
 		this.#css2DObject.sbsetting.element.innerHTML = CHANGE_AVATAR;
@@ -415,19 +434,18 @@ class Game {
 
 	async #logout() {
 		try {
-			const response = await fetch(
-				`api/logout/`,
-				{
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-					},
-					body: JSON.stringify({
-						refresh: localStorage.getItem('refreshToken'),
-					}),
-				}
-			);
+			const response = await fetch(`api/logout/`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${localStorage.getItem(
+						'accessToken'
+					)}`,
+				},
+				body: JSON.stringify({
+					refresh: localStorage.getItem('refreshToken'),
+				}),
+			});
 
 			if (response.ok) {
 				localStorage.removeItem('accessToken');
@@ -751,12 +769,9 @@ class Game {
 				userTemp.innerHTML = ELEMENT.trim();
 
 				const userHTML = userTemp.content.firstChild;
-				userHTML.querySelector(
-					'.element-child'
-				).src = `/textures/svg/Rectangle 1.svg`;
-				userHTML.querySelector(
-					'.sword-prowess-lv'
-				).textContent = `${user.username}`;
+				userHTML.querySelector('.element-child').src = user.avatar;
+				userHTML.querySelector('.sword-prowess-lv').textContent =
+					user.username;
 				userHTML.querySelector(
 					'.indicator-icon'
 				).src = `/textures/svg/Indicator online.svg`;
@@ -1285,7 +1300,8 @@ class Game {
 
 						if (refreshResponse.ok) {
 							const data = await refreshResponse.json();
-							this.#css2DObject.profilepic.element.src = data.avatar;
+							this.#css2DObject.profilepic.element.src =
+								data.avatar;
 							this.#loggedUser = data.username;
 							localStorage.setItem('accessToken', data.access);
 							return true;
@@ -1467,7 +1483,7 @@ class Game {
 		}
 		if (home === 'chat') this.#chatUsers();
 
-		history.replaceState(null, null, `/${home}`)
+		history.replaceState(null, null, `/${home}`);
 		this.#scene.add(this.#css2DObject[home]);
 	}
 }

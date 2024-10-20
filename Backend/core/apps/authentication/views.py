@@ -148,6 +148,7 @@ class UserList(APIView):
         users_list = [
             {
                 'username': user.username,
+                'avatar': user.get_avatar_url(),
             }
             for user in users
         ]
