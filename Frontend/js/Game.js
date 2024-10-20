@@ -236,7 +236,6 @@ class Game {
 		}
 	}
 
-
 	async #loginGoogle() {
 		try {
 			const backendLoginUrl = `/api/auth/google/`;
@@ -283,14 +282,11 @@ class Game {
 			alert(error);
 		}
 	}
+
 	#changePassword() {
-
 		this.#css2DObject.sbsetting.element.innerHTML = CHANGE_PASSWORD;
-
 		['sbsetting', 'sbsettingOverlay'].forEach(ele => {
-
 			this.#scene.add(this.#css2DObject[ele]);
-
 		});
 	}
 

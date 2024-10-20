@@ -256,9 +256,7 @@ body {
 }
 
 .setting-1 {
-	position: absolute;
-	top: calc(50% - 22.5px);
-	left: calc(50% - 132px);
+	text-align: center;
 	line-height: 150%;
 }
 
@@ -266,13 +264,6 @@ body {
 	width: 424.5px;
 	position: relative;
 	height: 40.5px;
-}
-
-.setting-11 {
-	position: absolute;
-	top: calc(50% - 22.5px);
-	left: calc(50% - 107.5px);
-	line-height: 150%;
 }
 
 .fa-icon1 {
