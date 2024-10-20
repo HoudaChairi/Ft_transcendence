@@ -11,7 +11,7 @@ export const CHANGE_USERNAME = `<div class="frame-wrapper">
 <div class="select-new-username-parent">
 	<div class="select-new-username">Select New Username</div>
 	<div class="username-wrapper">
-		<input type="text" class="username-user" placeholder="Username" id="username"/>
+		<input type="text" class="username-user" placeholder="Username" />
 	</div>
 	<div class="sette-wrapper">
 		<div class="change-username">Sette</div>
@@ -53,6 +53,66 @@ export const CHANGE_PASSWORD = `<div class="frame-wrapper">
 			placeholder="Confirm Password"
 			id="confpass"
 		/>
+	</div>
+	<div class="sette-wrapper">
+		<div class="change-username">Sette</div>
+	</div>
+</div>`;
+
+export const CHANGE_FIRST_NAME = `<div class="frame-wrapper">
+	<div class="rectangle-parent-user">
+		<img
+			class="rectangle-icon-user"
+			alt=""
+			src="/textures/svg/RectangleUP.svg"
+		/>
+		<div class="change-username">Change First Name</div>
+	</div>
+</div>
+<div class="select-new-username-parent">
+	<div class="select-new-username">Select New First Name</div>
+	<div class="username-wrapper">
+		<input type="text" class="username-user" placeholder="First Name" />
+	</div>
+	<div class="sette-wrapper">
+		<div class="change-username">Sette</div>
+	</div>
+</div>`;
+
+export const CHANGE_LAST_NAME = `<div class="frame-wrapper">
+	<div class="rectangle-parent-user">
+		<img
+			class="rectangle-icon-user"
+			alt=""
+			src="/textures/svg/RectangleUP.svg"
+		/>
+		<div class="change-username">Change Last Name</div>
+	</div>
+</div>
+<div class="select-new-username-parent">
+	<div class="select-new-username">Select New Last Name</div>
+	<div class="username-wrapper">
+		<input type="text" class="username-user" placeholder="Last Name" />
+	</div>
+	<div class="sette-wrapper">
+		<div class="change-username">Sette</div>
+	</div>
+</div>`;
+
+export const CHANGE_EMAIL = `<div class="frame-wrapper">
+	<div class="rectangle-parent-user">
+		<img
+			class="rectangle-icon-user"
+			alt=""
+			src="/textures/svg/RectangleUP.svg"
+		/>
+		<div class="change-username">Change Email</div>
+	</div>
+</div>
+<div class="select-new-username-parent">
+	<div class="select-new-username">Select New Email</div>
+	<div class="username-wrapper">
+		<input type="email" class="username-user" placeholder="Email" />
 	</div>
 	<div class="sette-wrapper">
 		<div class="change-username">Sette</div>

@@ -10,7 +10,14 @@ import { LEGEND, LEGEND_CHAT, LEGEND_LEADERBOARD } from './Legend';
 import { LEADERBOARDMAIN } from './Leaderboard';
 import { SIGNIN, SIGNUP } from './Sign';
 import { LOGIN } from './Login';
-import { CHANGE_AVATAR, CHANGE_PASSWORD, CHANGE_USERNAME } from './Sbook';
+import {
+	CHANGE_AVATAR,
+	CHANGE_EMAIL,
+	CHANGE_FIRST_NAME,
+	CHANGE_LAST_NAME,
+	CHANGE_PASSWORD,
+	CHANGE_USERNAME,
+} from './Sbook';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -362,11 +369,145 @@ class Game {
 		}
 	}
 
-	#changeFirstName() {}
+	#changeFirstName() {
+		try {
+			this.#css2DObject.sbsetting.element.innerHTML = CHANGE_FIRST_NAME;
+			['sbsetting', 'sbsettingOverlay'].forEach(ele => {
+				this.#scene.add(this.#css2DObject[ele]);
+			});
+			this.#css2DObject.sbsetting.element
+				.querySelector('.sette-wrapper')
+				.addEventListener('click', async e => {
+					const first =
+						this.#css2DObject.sbsetting.element.querySelector(
+							'.username-user'
+						).value;
 
-	#changeLastName() {}
+					const response = await fetch(`api/update-infos/`, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							Authorization: `Bearer ${localStorage.getItem(
+								'accessToken'
+							)}`,
+						},
+						body: JSON.stringify({
+							first_name: first,
+						}),
+					});
+					const data = await response.json();
+					if (response.ok) {
+						this.#toggleSettings();
+					} else {
+						alert('Error updating First Name: ' + data.message);
+						this.#css2DObject.sbsetting.element.querySelector(
+							'.username-user'
+						).value = '';
+					}
+				});
+		} catch (error) {
+			alert(error);
+		}
+	}
 
-	#changeEmail() {}
+	#changeLastName() {
+		try {
+			this.#css2DObject.sbsetting.element.innerHTML = CHANGE_LAST_NAME;
+			['sbsetting', 'sbsettingOverlay'].forEach(ele => {
+				this.#scene.add(this.#css2DObject[ele]);
+			});
+			this.#css2DObject.sbsetting.element
+				.querySelector('.sette-wrapper')
+				.addEventListener('click', async e => {
+					const last =
+						this.#css2DObject.sbsetting.element.querySelector(
+							'.username-user'
+						).value;
+
+					const response = await fetch(`api/update-infos/`, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							Authorization: `Bearer ${localStorage.getItem(
+								'accessToken'
+							)}`,
+						},
+						body: JSON.stringify({
+							last_name: last,
+						}),
+					});
+
+					const data = await response.json();
+
+					if (response.ok) {
+						this.#toggleSettings();
+					} else {
+						console.error('Full response:', data);
+						alert(
+							'Error updating Last Name: ' +
+								(data.message || 'Unknown error occurred.')
+						);
+					}
+				});
+		} catch (error) {
+			alert('Error: ' + error.message);
+		}
+	}
+
+	async #changeEmail() {
+		try {
+			this.#css2DObject.sbsetting.element.innerHTML = CHANGE_EMAIL;
+			['sbsetting', 'sbsettingOverlay'].forEach(ele => {
+				this.#scene.add(this.#css2DObject[ele]);
+			});
+
+			const emailInput =
+				this.#css2DObject.sbsetting.element.querySelector(
+					'.username-user'
+				);
+			const submitButton =
+				this.#css2DObject.sbsetting.element.querySelector(
+					'.sette-wrapper'
+				);
+
+			emailInput.value = '';
+
+			submitButton.addEventListener('click', async e => {
+				const email = emailInput.value;
+
+				const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+				if (!emailPattern.test(email)) {
+					alert('Please enter a valid email address.');
+					return;
+				}
+
+				try {
+					const response = await fetch(`api/update-infos/`, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							Authorization: `Bearer ${localStorage.getItem(
+								'accessToken'
+							)}`,
+						},
+						body: JSON.stringify({ email: email }),
+					});
+
+					const data = await response.json();
+
+					if (response.ok) {
+						this.#toggleSettings();
+					} else {
+						alert('Error updating email: ' + data.message);
+					}
+				} catch (fetchError) {
+					alert('Network error: ' + fetchError.message);
+				}
+			});
+		} catch (error) {
+			alert('Error: ' + error.message);
+		}
+	}
 
 	#changeAvatar() {
 		this.#css2DObject.sbsetting.element.innerHTML = CHANGE_AVATAR;
