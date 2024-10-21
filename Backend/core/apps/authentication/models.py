@@ -7,8 +7,7 @@ class Player(AbstractUser):
     GENDER_CHOICES = [
         ('M', 'Male'),
         ('F', 'Female'),
-    ]
-    
+    ]   
     username = models.CharField(max_length=20, unique=True, blank=False, null=False)
     email = models.CharField(max_length=50, unique=True, blank=False, null=False)
     first_name = models.CharField(max_length=30, blank=True, null=True) 
@@ -22,8 +21,7 @@ class Player(AbstractUser):
     match_history = models.ManyToManyField('Match', related_name='players', blank=True)
 
     def save(self, *args, **kwargs):
-        # Set the default avatar based on gender before saving
-        if not self.avatar:  # Only set if avatar is not already defined
+        if not self.avatar:
             if self.gender == 'M':
                 self.avatar = 'textures/svg/M.svg'
             elif self.gender == 'F':
