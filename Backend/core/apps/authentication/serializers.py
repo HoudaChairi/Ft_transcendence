@@ -15,10 +15,11 @@ import re
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True)
     confirmPassword = serializers.CharField(write_only=True, required=True)
+    gender = serializers.ChoiceField(choices=Player.GENDER_CHOICES, required=False)
 
     class Meta:
         model = Player
-        fields = ['email', 'username', 'password', 'confirmPassword']
+        fields = ['email', 'username', 'password', 'confirmPassword', 'gender']
 
     def validate_password(self, value):
         try:
@@ -49,6 +50,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             username=validated_data['username'],
             password=validated_data['password'],
             gender=validated_data.get('gender', None),
+            avatar='textures/svg/M.svg' if validated_data.get('gender', None) == 'M' else 'textures/svg/ProfilePic.svg'
         )
         return user
     
