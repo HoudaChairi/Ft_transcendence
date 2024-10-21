@@ -498,9 +498,12 @@ class Game {
 					if (response.ok) {
 						this.#toggleSettings();
 					} else {
-						alert('Error updating email: ' + data.message);
+						const errorMessage =
+							Object.values(data).flat().join(', ') ||
+							'An error occurred. Please try again.';
+						alert('Error updating email: ' + errorMessage);
 					}
-				} catch (fetchError) {
+				} catch (error) {
 					alert('Network error: ' + fetchError.message);
 				}
 			});

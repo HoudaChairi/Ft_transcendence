@@ -68,7 +68,7 @@ class GoogleCallbackView(APIView):
                 'last_name': last_name,
             }
         )
-
+        user.remote = True
         if created or not user.avatar:
             user.avatar = profile_pic_url
             user.save()
@@ -129,7 +129,7 @@ class FtCallbackView(APIView):
                 'last_name': last_name,
             }
         )
-
+        user.remote = True
         if avatar_url:
             user.avatar = avatar_url
         user.save()

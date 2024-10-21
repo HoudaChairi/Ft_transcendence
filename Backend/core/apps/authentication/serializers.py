@@ -135,6 +135,8 @@ class UpdateInfosSerializer(serializers.ModelSerializer):
 
     #  email
     def validate_email(self, value):
+        if self.instance.remote:
+            raise serializers.ValidationError("Remote Login can't change email.")
         if Player.objects.filter(email=value).exclude(pk=self.instance.pk).exists():
             raise serializers.ValidationError("Email is already taken.")
         return value
@@ -152,7 +154,8 @@ class UpdateInfosSerializer(serializers.ModelSerializer):
         return value
 
     def save(self, **kwargs):
-        # Handle password change
+        if self.instance.remote: 
+            raise serializers.ValidationError("Remote Login can't change password.")
         old_password = self.validated_data.get('old_password', None)
         new_password = self.validated_data.get('new_password', None)
 
