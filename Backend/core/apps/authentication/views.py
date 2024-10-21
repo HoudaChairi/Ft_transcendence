@@ -143,17 +143,24 @@ class UserList(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        users = Player.objects.all()
+        try:
+            users = Player.objects.only('username', 'avatar', 'first_name', 'last_name')
+            
+            users_list = [
+                {
+                    'username': user.username,
+                    'avatar': user.get_avatar_url(),
+                    'first': user.first_name if user.first_name else user.username,
+                    'last': user.last_name if user.last_name else '',
+                }
+                for user in users
+            ]
+            
+            return Response({'users': users_list})
+        
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        users_list = [
-            {
-                'username': user.username,
-                'avatar': user.get_avatar_url(),
-            }
-            for user in users
-        ]
-
-        return Response({'users': users_list})
 
 
 #------------------------------------------------

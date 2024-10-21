@@ -140,13 +140,13 @@ class UpdateInfosSerializer(serializers.ModelSerializer):
 
     # Validate first name
     def validate_first_name(self, value):
-        if not value:
+        if not value.strip():
             raise serializers.ValidationError("First name cannot be empty.")
         return value
 
     # Validate last name
     def validate_last_name(self, value):
-        if not value:
+        if not value.strip():
             raise serializers.ValidationError("Last name cannot be empty.")
         return value
 

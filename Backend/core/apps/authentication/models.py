@@ -29,7 +29,7 @@ class Player(AbstractUser):
         super().save(*args, **kwargs)
 
     def get_avatar_url(self):
-        if 'textures/svg/' in self.avatar.name:
+        if 'textures/svg/' in self.avatar.name or self.avatar.name.startswith('http'):
             return f'{self.avatar}'
         return f'/media/{self.avatar}'
 
@@ -38,7 +38,7 @@ class Player(AbstractUser):
     
     def tokens(self):
         refresh = RefreshToken.for_user(self)
-        return{
+        return {
             'refresh': str(refresh),
             'access': str(refresh.access_token)
         }
