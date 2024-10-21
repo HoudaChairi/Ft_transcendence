@@ -59,7 +59,7 @@ export const SIGNUP = `<div class="sign-up">SIGN UP</div>
 				/>
 				<div class="frame-child-sign"></div>
 			</div>
-			<img class="iv-icon" alt="" src="/textures/svg/usser.svg" />
+			<img class="iv-icon" alt="" src="/textures/svg/email.svg" />
 		</div>
 		<div class="section">
 			<div class="email-parent">
@@ -105,7 +105,7 @@ export const SIGNUP = `<div class="sign-up">SIGN UP</div>
 				</select>
 				<div class="frame-child-sign"></div>
 			</div>
-			<img class="iv-icon2" alt="" src="/textures/svg/pass.svg" />
+			<img class="iv-icon2" alt="" src="/textures/svg/gender.svg" />
 		</div>
 	</div>
 	<div class="login-group">
