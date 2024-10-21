@@ -48,6 +48,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             email=validated_data['email'],
             username=validated_data['username'],
             password=validated_data['password'],
+            gender=validated_data.get('gender', None),
         )
         return user
     
@@ -66,7 +67,6 @@ class LoginSerializer(serializers.ModelSerializer):
         }
 
     def get_avatar(self, user):
-        # Call the method to get the avatar URL
         return user.get_avatar_url()
 
     class Meta:
@@ -83,8 +83,7 @@ class LoginSerializer(serializers.ModelSerializer):
         if not user.is_active:
             raise AuthenticationFailed('Account disabled, contact admin')
         
-        # Return the user instance instead of a dictionary
-        return user  # Return the Player instance directly
+        return user
 
         
 # new Logout serializer:
@@ -126,25 +125,25 @@ class UpdateInfosSerializer(serializers.ModelSerializer):
             'new_password': {'write_only': True},
         }
 
-    # Validate username
+    #  username
     def validate_username(self, value):
         if Player.objects.filter(username=value).exclude(pk=self.instance.pk).exists():
             raise serializers.ValidationError("Username is already taken.")
         return value
 
-    # Validate email
+    #  email
     def validate_email(self, value):
         if Player.objects.filter(email=value).exclude(pk=self.instance.pk).exists():
             raise serializers.ValidationError("Email is already taken.")
         return value
 
-    # Validate first name
+    #  first name
     def validate_first_name(self, value):
         if not value.strip():
             raise serializers.ValidationError("First name cannot be empty.")
         return value
 
-    # Validate last name
+    #  last name
     def validate_last_name(self, value):
         if not value.strip():
             raise serializers.ValidationError("Last name cannot be empty.")
@@ -155,16 +154,45 @@ class UpdateInfosSerializer(serializers.ModelSerializer):
         old_password = self.validated_data.get('old_password', None)
         new_password = self.validated_data.get('new_password', None)
 
-        # Check if the old password is provided and validate it
-        if old_password and not authenticate(username=self.instance.username, password=old_password):
-            raise serializers.ValidationError("Old password is incorrect.")
+        # Case 1: If the old password is provided, validate it
+        if old_password:
+            if not authenticate(username=self.instance.username, password=old_password):
+                raise serializers.ValidationError("Old password is incorrect.")
+            # Old password is correct, hash the new password
+            if new_password:
+                self.instance.password = make_password(new_password)
 
-        # If a new password is provided, hash it before saving
-        if new_password:
+        # Case 2: If no old password is provided, just set the new password directly if provided
+        elif new_password:
             self.instance.password = make_password(new_password)
 
-        # Save the instance with other fields
+        # Save the instance with updated fields
         return super().save(**kwargs)
+
+
+# class PasswordSerializer(serializers.Serializer):
+#     old_password = serializers.CharField(required=False, write_only=True)  # Old password is optional
+#     new_password = serializers.CharField(write_only=True)
+
+#     def save(self, **kwargs):
+#         old_password = self.validated_data.get('old_password', None)
+#         new_password = self.validated_data.get('new_password', None)
+
+#         # Case 1: Old password is provided, and we need to validate it
+#         if old_password:
+#             if not authenticate(username=self.instance.username, password=old_password):
+#                 raise serializers.ValidationError("Old password is incorrect.")
+#             # Old password is correct, now hash and set the new password
+#             self.instance.password = make_password(new_password)
+
+#         # Case 2: No old password provided, just set the new password directly
+#         else:
+#             self.instance.password = make_password(new_password)
+
+#         # Save the instance with the new password
+#         self.instance.save()
+
+#         return self.instance
 
 class DisplayNameSerializer(serializers.ModelSerializer):
     class Meta:

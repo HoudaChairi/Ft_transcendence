@@ -12,6 +12,7 @@ class Player(AbstractUser):
     email = models.CharField(max_length=50, unique=True, blank=False, null=False)
     first_name = models.CharField(max_length=30, blank=True, null=True) 
     last_name = models.CharField(max_length=30, blank=True, null=True) 
+    gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=False, null=False)
     avatar = models.ImageField(upload_to='avatars/', default='textures/svg/ProfilePic.svg')
     wins = models.IntegerField(default=0)
     losses = models.IntegerField(default=0)

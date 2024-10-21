@@ -22,6 +22,7 @@ class RegisterView(APIView):
             return Response({
                 'email': user.email,
                 'username': user.username,
+                'gender': user.gender,
                 'access': tokens['access'],
                 'refresh': tokens['refresh'],
                 'avatar': user.get_avatar_url(),
