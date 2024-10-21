@@ -1483,6 +1483,8 @@ class Game {
 			this.#css2DObject.register.element.querySelector('#password');
 		const { value: confirmPassword } =
 			this.#css2DObject.register.element.querySelector('#confpassword');
+		const { value: gender } =
+			this.#css2DObject.register.element.querySelector('#gender');
 
 		const errors = [];
 
@@ -1518,6 +1520,7 @@ class Game {
 					username,
 					password,
 					confirmPassword,
+					gender,
 				}),
 			});
 

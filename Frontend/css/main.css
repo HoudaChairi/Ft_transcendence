@@ -1754,6 +1754,7 @@ body {
 	font-size: 24px;
 	color: #3d3c3c;
 	font-family: Gabriela;
+	appearance: none;
 }
 
 .password::placeholder {
