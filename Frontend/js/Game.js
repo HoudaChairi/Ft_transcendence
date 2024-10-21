@@ -379,12 +379,12 @@ class Game {
 					try {
 						const response = await fetch(`api/avatar/`, {
 							method: 'POST',
-							body: formData,
 							headers: {
 								Authorization: `Bearer ${localStorage.getItem(
 									'accessToken'
-								)}`,
-							},
+									)}`,
+								},
+							body: formData,
 						});
 
 						if (!response.ok) {
