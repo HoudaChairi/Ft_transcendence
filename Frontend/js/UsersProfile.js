@@ -12,10 +12,11 @@ export const MATCHESSCORE = `<div class="matches-score">
 				class="group-item"
 				alt=""
 				src="/textures/svg/Rectangle 12.svg"
+				id="avatar1"
 			/>
 		</div>
 		<div class="user-2">User 2</div>
-		<div class="div">0</div>
+		<div class="div" id="score1">0</div>
 	</div>
 	<div class="mb1">
 		<img class="mb-1-icon" alt="" src="/textures/svg/MB 1.svg" />
@@ -29,10 +30,11 @@ export const MATCHESSCORE = `<div class="matches-score">
 				class="group-item"
 				alt=""
 				src="/textures/svg/Rectangle 12.svg"
+				id="avatar2"
 			/>
 		</div>
 		<div class="user-1">User 1</div>
-		<div class="div1">0</div>
+		<div class="div1" id="score2">0</div>
 	</div>
 </div>`;
 
@@ -143,32 +145,6 @@ export const USERSPROFILE = `<div class="right">
 			<div class="info-field">
 				<div class="first-name">Coalition</div>
 				<div class="meriem">Freax</div>
-			</div>
-		</div>
-		<div class="infos">
-			<div class="first-name-parent">
-				<div class="last-name">First Name</div>
-				<div class="meriem6">Meriem</div>
-			</div>
-			<div class="first-name-parent">
-				<div class="last-name">Last Name</div>
-				<div class="el-mountasser">El Mountasser</div>
-			</div>
-			<div class="first-name-parent">
-				<div class="last-name">Nickname</div>
-				<div class="el-mountasser">mel-moun</div>
-			</div>
-			<div class="first-name-parent">
-				<div class="last-name">Gender</div>
-				<div class="el-mountasser">Female</div>
-			</div>
-			<div class="first-name-parent">
-				<div class="last-name">Level</div>
-				<div class="el-mountasser">8.17</div>
-			</div>
-			<div class="first-name-parent">
-				<div class="last-name">Coalition</div>
-				<div class="el-mountasser">Freax</div>
 			</div>
 		</div>
 	</div>

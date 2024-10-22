@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { HOME, GAME, CHAT, LEADERBOARD } from './Home';
 import { PANER } from './Paner';
 import { SBOOK, SETTINGS } from './Settings';
-import { USERSPROFILE } from './UsersProfile';
+import { MATCHESSCORE, USERSPROFILE } from './UsersProfile';
 import { CHAT_INFO, ELEMENT, MAINCHAT, RECIVED, SENT } from './Chat';
 import { ADD, BLOCK, PLAY } from './ChatBtn';
 import { LEGEND, LEGEND_CHAT, LEGEND_LEADERBOARD } from './Legend';
@@ -447,7 +447,7 @@ class Game {
 						console.error('Full response:', data);
 						alert(
 							'Error updating Last Name: ' +
-							(data.message || 'Unknown error occurred.')
+								(data.message || 'Unknown error occurred.')
 						);
 					}
 				});
@@ -665,7 +665,7 @@ class Game {
 
 	#chatBtns(btn, user) {
 		const usr = {
-			// profile:,
+			profile: this.#toggleUsersProfile.bind(this, user),
 			add: this.#addUser.bind(this, user),
 			play: this.#playUser.bind(this, user),
 			block: this.#blockUser.bind(this, user),
@@ -994,20 +994,45 @@ class Game {
 		}
 	}
 
-	#setUserProfileFields(data){
-		const profile = this.#css2DObject.usersprofile.element;
+	#setMatchHistory(matches) {
+		this.#css2DObject.usersprofile.element.querySelector(
+			'.matches-score-parent'
+		).innerHTML = '';
+		matches.slice(0, 10).forEach(match => {
+			const matchTemp = document.createElement('template');
+			matchTemp.innerHTML = MATCHESSCORE.trim();
+			const matchHTML = matchTemp.content.firstChild;
 
-		profile.querySelector('.frame-icon').src = data.avatar
+			matchHTML.querySelector('.user-2').textContent = match.player1;
+			matchHTML.querySelector('.user-1').textContent = match.player2;
+			matchHTML.querySelector('#score1').textContent =
+				match.score_player1;
+			matchHTML.querySelector('#score2').textContent =
+				match.score_player2;
+			matchHTML.querySelector('#avatar1').src = match.player1_avatar;
+			matchHTML.querySelector('#avatar2').src = match.player2_avatar;
+
+			this.#css2DObject.usersprofile.element
+				.querySelector('.matches-score-parent')
+				.appendChild(matchHTML);
+		});
+	}
+
+	#setUserProfileFields(data) {
+		const profile = this.#css2DObject.usersprofile.element;
+		const gender = { F: 'Female', M: 'Male' };
+
+		profile.querySelector('.frame-icon').src = data.avatar;
 		profile.querySelector('#first').textContent = data.first_name;
-		profile.querySelector('#last').textContent = data.last_name
-		profile.querySelector('#username').textContent = data.username
-		profile.querySelector('#gender').textContent = data.gender
-		profile.querySelector('#t_games').textContent = data.t_games
-		profile.querySelector('#wins').textContent = data.wins
-		profile.querySelector('#losses').textContent = data.losses
-		profile.querySelector('#t_points').textContent = data.t_points
-		profile.querySelector('#goals_f').textContent = data.goals_f
-		profile.querySelector('#goals_a').textContent = data.goals_a
+		profile.querySelector('#last').textContent = data.last_name;
+		profile.querySelector('#username').textContent = data.username;
+		profile.querySelector('#gender').textContent = gender[data.gender];
+		profile.querySelector('#t_games').textContent = data.t_games;
+		profile.querySelector('#wins').textContent = data.wins;
+		profile.querySelector('#losses').textContent = data.losses;
+		profile.querySelector('#t_points').textContent = data.t_points;
+		profile.querySelector('#goals_f').textContent = data.goals_f;
+		profile.querySelector('#goals_a').textContent = data.goals_a;
 	}
 
 	async #loadUserProfile(user) {
@@ -1022,7 +1047,8 @@ class Game {
 			});
 			const data = await response.json();
 			if (response.ok) {
-				this.#setUserProfileFields(data)
+				this.#setUserProfileFields(data);
+				this.#setMatchHistory(data.matches);
 			}
 		} catch (error) {
 			alert(error);
@@ -1695,12 +1721,12 @@ class Game {
 					)}`,
 				},
 				body: JSON.stringify({
-					"player1": "hchairi",
-					"player2": "agimi",
-					"score_player1": 10,
-					"score_player2": 5,
-					"winner": "hchairi",
-					"loser": "agimi"
+					player1: 'hchairi',
+					player2: 'agimi',
+					score_player1: 10,
+					score_player2: 5,
+					winner: 'hchairi',
+					loser: 'agimi',
 				}),
 			});
 			const data = await response.json();

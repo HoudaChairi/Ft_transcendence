@@ -46,5 +46,5 @@ function updateMovement() {
 	if (keyState.has(KEY_DOWN)) game.moveDown2();
 	if (keyState.has(KEY_W)) game.moveUp();
 	if (keyState.has(KEY_S)) game.moveDown();
-	if (keyState.has(KEY_M)) game.test();
+	// if (keyState.has(KEY_M)) game.test();
 }
