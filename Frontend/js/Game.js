@@ -1639,9 +1639,8 @@ class Game {
 			if (response.ok) {
 				const data = await response.json();
 				const tokens = data.tokens;
-				console.log(data);
 				this.#css2DObject.profilepic.element.src = data.avatar;
-				this.#loggedUser = tokens.username;
+				this.#loggedUser = data.username;
 				localStorage.setItem('accessToken', tokens.access);
 				localStorage.setItem('refreshToken', tokens.refresh);
 				this.#HomePage();
