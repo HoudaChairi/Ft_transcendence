@@ -18,7 +18,12 @@ class Player(AbstractUser):
     avatar = models.ImageField(upload_to='avatars/', default='textures/svg/ProfilePic.svg')
     wins = models.IntegerField(default=0)
     losses = models.IntegerField(default=0)
-    match_history = models.ManyToManyField('Match', related_name='players', blank=True)
+    t_games = models.IntegerField(default=0)
+    t_points = models.IntegerField(default=0)
+    goals_f = models.IntegerField(default=0)
+    goals_a = models.IntegerField(default=0)
+    
+    
 
     def get_avatar_url(self):
         if 'textures/svg/' in self.avatar.name or self.avatar.name.startswith('http'):
@@ -37,9 +42,10 @@ class Player(AbstractUser):
 
 
 class Match(models.Model):
-    player1 = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='player1_matches')
-    player2 = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='player2_matches')
-    winner = models.ForeignKey(Player, on_delete=models.SET_NULL, related_name='matches_won', null=True)
+    player1 = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='matches_as_player1')
+    player2 = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='matches_as_player2')
+    winner = models.ForeignKey(Player, on_delete=models.SET_NULL, related_name='matches_won', null=True, blank=True)
+    loser = models.ForeignKey(Player, on_delete=models.SET_NULL, related_name='matches_loss', null=True, blank=True)
     date_played = models.DateTimeField(auto_now_add=True)
     score_player1 = models.IntegerField()
     score_player2 = models.IntegerField()

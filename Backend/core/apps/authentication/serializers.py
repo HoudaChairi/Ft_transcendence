@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Player
+from .models import Player, Match
 from django.contrib import auth
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -209,8 +209,13 @@ class AvatarSerializer(serializers.ModelSerializer):
         return value
 
 
+class MatchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Match
+        fields = ['player1', 'player2', 'score_player1', 'score_player2', 'winner', 'loser']
 
-# class FriendSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Player
-#         fields = ['username', 'display_name', 'online_status']
+    def validate(self, attrs):
+        # Ensure player1 and player2 are different
+        if attrs['player1'] == attrs['player2']:
+            raise serializers.ValidationError("Players cannot be the same.")
+        return attrs

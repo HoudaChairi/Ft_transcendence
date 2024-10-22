@@ -165,7 +165,7 @@ class Game {
 			this.#toggleSBook()
 		);
 		this.#css2DObject.profilepic.element.addEventListener('click', () =>
-			this.#toggleUsersProfile()
+			this.#toggleUsersProfile(this.#loggedUser)
 		);
 		this.#css2DObject.chat.element
 			.querySelector('.vector-icon')
@@ -447,7 +447,7 @@ class Game {
 						console.error('Full response:', data);
 						alert(
 							'Error updating Last Name: ' +
-								(data.message || 'Unknown error occurred.')
+							(data.message || 'Unknown error occurred.')
 						);
 					}
 				});
@@ -538,8 +538,8 @@ class Game {
 							headers: {
 								Authorization: `Bearer ${localStorage.getItem(
 									'accessToken'
-									)}`,
-								},
+								)}`,
+							},
 							body: formData,
 						});
 
@@ -994,12 +994,48 @@ class Game {
 		}
 	}
 
-	#toggleUsersProfile() {
+	#setUserProfileFields(data){
+		const profile = this.#css2DObject.usersprofile.element;
+
+		profile.querySelector('.frame-icon').src = data.avatar
+		profile.querySelector('#first').textContent = data.first_name;
+		profile.querySelector('#last').textContent = data.last_name
+		profile.querySelector('#username').textContent = data.username
+		profile.querySelector('#gender').textContent = data.gender
+		profile.querySelector('#t_games').textContent = data.t_games
+		profile.querySelector('#wins').textContent = data.wins
+		profile.querySelector('#losses').textContent = data.losses
+		profile.querySelector('#t_points').textContent = data.t_points
+		profile.querySelector('#goals_f').textContent = data.goals_f
+		profile.querySelector('#goals_a').textContent = data.goals_a
+	}
+
+	async #loadUserProfile(user) {
+		try {
+			const response = await fetch(`api/user/${user}`, {
+				method: 'GET',
+				headers: {
+					Authorization: `Bearer ${localStorage.getItem(
+						'accessToken'
+					)}`,
+				},
+			});
+			const data = await response.json();
+			if (response.ok) {
+				this.#setUserProfileFields(data)
+			}
+		} catch (error) {
+			alert(error);
+		}
+	}
+
+	#toggleUsersProfile(user) {
 		if (this.#scene.getObjectByName('usersprofile')) {
 			this.#scene.remove(this.#css2DObject.usersprofile);
 			this.#scene.remove(this.#css2DObject.upOverlay);
 			return;
 		}
+		this.#loadUserProfile(user);
 		this.#scene.add(this.#css2DObject.usersprofile);
 		this.#scene.add(this.#css2DObject.upOverlay);
 	}
@@ -1646,6 +1682,35 @@ class Game {
 
 		history.replaceState(null, null, `/${home}`);
 		this.#scene.add(this.#css2DObject[home]);
+	}
+
+	async test() {
+		try {
+			const response = await fetch(`api/add-match/`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${localStorage.getItem(
+						'accessToken'
+					)}`,
+				},
+				body: JSON.stringify({
+					"player1": "hchairi",
+					"player2": "agimi",
+					"score_player1": 10,
+					"score_player2": 5,
+					"winner": "hchairi",
+					"loser": "agimi"
+				}),
+			});
+			const data = await response.json();
+			if (response.ok) {
+			} else {
+				alert(data.message);
+			}
+		} catch (error) {
+			alert(error);
+		}
 	}
 }
 

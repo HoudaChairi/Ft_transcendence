@@ -8,6 +8,9 @@ urlpatterns = [
     path('update-infos/', UpdateInfosView.as_view(), name='update_infos'),
     path('update-password/', UpdatePasswordView.as_view(), name='update_password'),
     path('avatar/', UpdateAvatarView.as_view(), name='avatar'),
+    path('add-match/', MatchCreateView.as_view(), name='add-match'),
+    path('user/<str:username>/', UserInfos.as_view(), name='user-info'),
+    
     
     path('verify-token/', CustomTokenVerifyView.as_view(), name='token_verify'),
     path('refresh-token/', CustomTokenRefreshView.as_view(), name='token_refresh'),
