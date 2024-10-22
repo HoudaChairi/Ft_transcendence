@@ -167,6 +167,10 @@ REST_FRAMEWORK = {
         # new for JWT
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
+
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
 }
 
 import datetime

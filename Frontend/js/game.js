@@ -229,13 +229,13 @@ class Game {
 	async #login42() {
 		try {
 			const backendLoginUrl = `api/auth/42/login/`;
-	
+
 			window.location.href = backendLoginUrl;
 		} catch (error) {
 			console.error('Login initiation error:', error);
 		}
 	}
-	
+
 
 	async #loginGoogle() {
 		try {
@@ -345,14 +345,43 @@ class Game {
 		setting[btn.dataset.id]();
 	}
 
-	#addUser(user) {
-		this.#css2DObject.chatBtn.element.innerHTML = ADD;
-		this.#css2DObject.chatBtn.element.querySelector(
-			'.send-invite-to'
-		).textContent = `Send Invite to ${user} ?`;
-		['chatBtn', 'btnOverlay'].forEach(ele => {
-			this.#scene.add(this.#css2DObject[ele]);
-		});
+	async #addUser(user) {
+		try {
+			this.#css2DObject.chatBtn.element.innerHTML = ADD;
+			this.#css2DObject.chatBtn.element.querySelector(
+				'.send-invite-to'
+			).textContent = `Send Invite to ${user} ?`;
+			['chatBtn', 'btnOverlay'].forEach(ele => {
+				this.#scene.add(this.#css2DObject[ele]);
+			});
+			this.#css2DObject.chatBtn.element.querySelector('#no').addEventListener('click', this.#toggleChatBtn.bind(this))
+			this.#css2DObject.chatBtn.element.querySelector('#yes').addEventListener('click', async e => {
+				const response = await fetch(
+					`/api/manage/friendships/`,
+					{
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							Authorization: `Bearer ${localStorage.getItem(
+								'accessToken'
+							)}`,
+						},
+						body: JSON.stringify({
+							to_username: user,
+						}),
+					}
+				);
+				const data = await response.json();
+				if (response.ok) {
+					console.log(data);
+				}
+				else {
+					console.log(data);
+				}
+			})
+		} catch (error) {
+
+		}
 	}
 
 	#playUser(user) {
@@ -366,13 +395,42 @@ class Game {
 	}
 
 	#blockUser(user) {
-		this.#css2DObject.chatBtn.element.innerHTML = BLOCK;
-		this.#css2DObject.chatBtn.element.querySelector(
-			'.block-mel-moun'
-		).textContent = `Block ${user} ?`;
-		['chatBtn', 'btnOverlay'].forEach(ele => {
-			this.#scene.add(this.#css2DObject[ele]);
-		});
+		try {
+			this.#css2DObject.chatBtn.element.innerHTML = BLOCK;
+			this.#css2DObject.chatBtn.element.querySelector(
+				'.block-mel-moun'
+			).textContent = `Block ${user} ?`;
+			['chatBtn', 'btnOverlay'].forEach(ele => {
+				this.#scene.add(this.#css2DObject[ele]);
+			});
+			this.#css2DObject.chatBtn.element.querySelector('#no').addEventListener('click', this.#toggleChatBtn.bind(this))
+			this.#css2DObject.chatBtn.element.querySelector('#yes').addEventListener('click', async e => {
+				const response = await fetch(
+					`/api/manage/friendships/${user}/`,
+					{
+						method: 'PUT',
+						headers: {
+							'Content-Type': 'application/json',
+							Authorization: `Bearer ${localStorage.getItem(
+								'accessToken'
+							)}`,
+						},
+						body: JSON.stringify({
+							action: 'block',
+						}),
+					}
+				);
+				const data = await response.json();
+				if (response.ok) {
+					console.log(data);
+				}
+				else {
+					console.log(data);
+				}
+			})
+		} catch (error) {
+
+		}
 	}
 
 	#chatBtns(btn, user) {

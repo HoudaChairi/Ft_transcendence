@@ -125,3 +125,8 @@ class DisplayNameSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = Player
 #         fields = ['username', 'display_name', 'online_status']
+
+class PlayerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Player
+        fields = ['id', 'username', 'email', 'display_name', 'avatar']

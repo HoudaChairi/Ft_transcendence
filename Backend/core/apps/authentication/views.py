@@ -9,7 +9,7 @@ from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from .models import Player
 from rest_framework_simplejwt.views import TokenVerifyView, TokenRefreshView
-
+from rest_framework.permissions import AllowAny
 
 class RegisterView(APIView):
     def post(self, request):
@@ -29,6 +29,7 @@ class RegisterView(APIView):
 
 
 class LoginAPIView(APIView):
+    permission_classes = [AllowAny]
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
@@ -166,3 +167,13 @@ class CustomTokenRefreshView(TokenRefreshView):
             return Response({'error': 'Invalid refresh token or user not found'}, status=status.HTTP_400_BAD_REQUEST)
 
         return response
+
+
+
+from rest_framework.generics import RetrieveAPIView
+from .serializers import PlayerSerializer
+
+class UserDetailView(RetrieveAPIView):
+    queryset = Player.objects.all()
+    serializer_class = PlayerSerializer
+    lookup_field = 'username'  # Ensure this is set to 'username'

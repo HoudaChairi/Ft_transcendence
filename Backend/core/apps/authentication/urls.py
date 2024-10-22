@@ -12,7 +12,7 @@ urlpatterns = [
     
     # by meriem
     path('users/', UserList.as_view(), name='user_list'),
-
+    path('users/<str:username>/', UserDetailView.as_view(), name='user_detail'),
 
     # after
     #----------------------------------------------------------------------------#

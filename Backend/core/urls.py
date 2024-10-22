@@ -13,6 +13,7 @@ urlpatterns = [
 
 
     path('api/auth/', include('core.apps.remote_auth.urls')),
+    path('api/manage/', include('core.apps.friends.urls')),
 ]
 
 # # new for avatar'
