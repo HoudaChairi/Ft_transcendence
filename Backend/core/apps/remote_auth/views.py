@@ -69,6 +69,7 @@ class GoogleCallbackView(APIView):
             }
         )
         user.remote = True
+        user.tournament_username = user.username
         if created or not user.avatar:
             user.avatar = profile_pic_url
             user.save()
@@ -130,7 +131,8 @@ class FtCallbackView(APIView):
             }
         )
         user.remote = True
-        if avatar_url:
+        user.tournament_username = user.username
+        if created:
             user.avatar = avatar_url
         user.save()
 

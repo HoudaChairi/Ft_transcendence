@@ -6,8 +6,9 @@ urlpatterns = [
     path('login/', LoginAPIView.as_view(), name="login"),
     path('logout/', LogoutAPIView.as_view(), name="logout"),
     path('update-infos/', UpdateInfosView.as_view(), name='update_infos'),
+    path('update-password/', UpdatePasswordView.as_view(), name='update_password'),
     path('avatar/', UpdateAvatarView.as_view(), name='avatar'),
-      
+    
     path('verify-token/', CustomTokenVerifyView.as_view(), name='token_verify'),
     path('refresh-token/', CustomTokenRefreshView.as_view(), name='token_refresh'),
     

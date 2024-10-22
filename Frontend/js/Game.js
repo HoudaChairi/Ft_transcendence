@@ -276,16 +276,18 @@ class Game {
 							)}`,
 						},
 						body: JSON.stringify({
-							username: username,
+							tournament_username: username,
 						}),
 					});
 					const data = await response.json();
 					if (response.ok) {
-						this.#loggedUser = username;
 						this.#toggleSettings();
 						this.#switchHome(window.location.pathname.slice(1));
 					} else {
-						alert('Error updating username: ' + data.message);
+						const errorMessage =
+							Object.values(data).flat().join(', ') ||
+							'An error occurred. Please try again.';
+						alert('Error updating password: ' + errorMessage);
 						this.#css2DObject.sbsetting.element.querySelector(
 							'.username-user'
 						).value = '';
@@ -330,7 +332,7 @@ class Game {
 						return;
 					}
 
-					const response = await fetch(`api/update-infos/`, {
+					const response = await fetch(`api/update-password/`, {
 						method: 'POST',
 						headers: {
 							'Content-Type': 'application/json',

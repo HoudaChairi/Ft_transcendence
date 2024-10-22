@@ -3,8 +3,8 @@ from rest_framework import generics,status,permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .serializers import RegisterSerializer,LoginSerializer, LogoutSerializer,\
-    UpdateInfosSerializer, DisplayNameSerializer, AvatarSerializer
-    #UpdateProfileSerializer
+    UpdateInfosSerializer, UpdatePasswordSerializer, AvatarSerializer
+
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -53,32 +53,49 @@ class UpdateInfosView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        user = request.user  # Get the logged-in user
-        data = request.data  # Get the data sent in the request
+        user = request.user 
+        data = request.data
 
-        # Pass the current user and the new data to the serializer
-        # `partial=True` allows us to update only the fields provided
         serializer = UpdateInfosSerializer(user, data=data, partial=True)
 
         if serializer.is_valid():
-            serializer.save()  # Save the updated data
+            serializer.save()
             return Response({
                 'message': 'Profile updated successfully.',
-                'user': serializer.data  # Return updated user data
+                'user': serializer.data
             }, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class UpdateDisplayNameView(APIView):
+
+class UpdatePasswordView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        user = request.user
-        serializer = DisplayNameSerializer(user, data=request.data, partial=True)
+        user = request.user 
+        data = request.data
+
+        serializer = UpdatePasswordSerializer(data=data, context={'user': user})
+
         if serializer.is_valid():
             serializer.save()
-            return Response({"message": "Display name updated successfully"}, status=status.HTTP_200_OK)
+            return Response({
+                'message': 'Password updated successfully.'
+            }, status=status.HTTP_200_OK)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+# class UpdateDisplayNameView(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def post(self, request):
+#         user = request.user
+#         serializer = DisplayNameSerializer(user, data=request.data, partial=True)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response({"message": "Display name updated successfully"}, status=status.HTTP_200_OK)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UpdateAvatarView(APIView):
