@@ -57,3 +57,43 @@ export const PLAY = `<div class="frame-wrapper">
 		<div class="change-username">Start</div>
 	</div>
 </div>`;
+
+export const REMOVE = `<div class="frame-wrapper">
+    <div class="rectangle-parent-user">
+        <img
+            class="rectangle-icon-user"
+            alt=""
+            src="/textures/svg/RectangleUP.svg"
+        />
+        <div class="change-username">REMOVE User</div>
+    </div>
+</div>
+<div class="send-invite-to-remove-parent">
+    <div class="send-invite-to">Remove mel-moun from your friends ?</div>
+    <div class="sette-wrapper" id="yes">
+        <div class="add-user">YES</div>
+    </div>
+    <div class="sette-wrapper" id="no">
+        <div class="add-user">NO</div>
+    </div>
+</div>`;
+
+export const UNBLOCK = `<div class="frame-wrapper">
+    <div class="rectangle-parent-user">
+        <img
+            class="rectangle-icon-user"
+            alt=""
+            src="/textures/svg/RectangleUP.svg"
+        />
+        <div class="change-username">UNBLOCK User</div>
+    </div>
+</div>
+<div class="send-invite-to-unblock-parent">
+    <div class="send-invite-to">Unblock mel-moun ?</div>
+    <div class="sette-wrapper" id="yes">
+        <div class="add-user">YES</div>
+    </div>
+    <div class="sette-wrapper" id="no">
+        <div class="add-user">NO</div>
+    </div>
+</div>`;

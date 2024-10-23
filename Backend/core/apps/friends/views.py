@@ -59,33 +59,45 @@ class FriendshipView(APIView):
             return Response({"message": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
     def put(self, request, username):
+        action = request.data.get('action')  
+        from_user = request.user 
+        to_user = get_object_or_404(Player, username=username)
+
         try:
-            action = request.data.get('action')  
-            from_user = request.user 
-
-            to_user = get_object_or_404(Player, username=username)
-
-            friendship = Friendship.objects.get(from_user=to_user, to_user=from_user)
+            friendship = Friendship.objects.get(
+                Q(from_user=from_user, to_user=to_user) |
+                Q(from_user=to_user, to_user=from_user)
+            )
         except Friendship.DoesNotExist:
-
-            try:
-                friendship = Friendship.objects.get(from_user=from_user, to_user=to_user)
-            except Friendship.DoesNotExist:
+            if action == 'block':
+                friendship = Friendship.objects.create(from_user=from_user, to_user=to_user, status='blocked')
+                return Response({
+                    "message": f"{to_user.username} has been blocked",
+                    "lists": self.get_friendship_lists(from_user)
+                }, status=status.HTTP_200_OK)
+            else:
                 return Response({"message": "Friendship request not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        if action == 'accept':
-            friendship.status = 'accepted'
-        elif action == 'block':
+        if action == 'block':
             friendship.status = 'blocked'
-        else:
-            return Response({"message": "Invalid action"}, status=status.HTTP_400_BAD_REQUEST)
+            friendship.save()
+            return Response({
+                "message": f"{to_user.username} has been blocked",
+                "lists": self.get_friendship_lists(from_user)
+            }, status=status.HTTP_200_OK)
 
-        friendship.save()
+        elif action == 'unblock':
+            if friendship.status == 'blocked':
+                friendship.delete()
+                return Response({
+                    "message": f"{to_user.username} has been unblocked, no friendship exists anymore",
+                    "lists": self.get_friendship_lists(from_user)
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({"message": "This user is not blocked"}, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response({
-            "message": f"Friendship {action}ed",
-            "lists": self.get_friendship_lists(from_user)
-        }, status=status.HTTP_200_OK)
+        return Response({"message": "Invalid action"}, status=status.HTTP_400_BAD_REQUEST)
+
 
     def delete(self, request, username):
         from_user = request.user
