@@ -1020,7 +1020,7 @@ class Game {
 
 	#setUserProfileFields(data) {
 		const profile = this.#css2DObject.usersprofile.element;
-		const gender = { F: 'Female', M: 'Male', null: '__'};
+		const gender = { F: 'Female', M: 'Male', null: '__' };
 
 		profile.querySelector('.frame-icon').src = data.avatar;
 		profile.querySelector('#first').textContent = data.first_name;
