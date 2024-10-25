@@ -1332,9 +1332,9 @@ class Game {
 	}
 
 	#checkCollisions() {
-		this.#wallsBoxes.forEach(wallBox => {
+		this.#wallsBoxes.forEach((wallBox, i) => {
 			if (this.#ballBox.intersectsBox(wallBox)) {
-				this.#handleBallWallCollision();
+				this.#handleBallWallCollision(i);
 			}
 		});
 
@@ -1373,7 +1373,17 @@ class Game {
 		);
 	}
 
-	#handleBallWallCollision() {
+	#handleBallWallCollision(i) {
+		const wallBox = this.#wallsBoxes[i];
+		const intersectionBox = this.#ballBox.clone().intersect(wallBox);
+		const point = new THREE.Vector3();
+		intersectionBox.getCenter(point);
+
+		if (i === 1 && point.z < wallBox.min.z)
+			this.#ball.position.z = wallBox.min.z;
+		if (i === 0 && point.z > wallBox.max.z)
+			this.#ball.position.z = wallBox.max.z;
+
 		this.#ballDirection.y = -this.#ballDirection.y;
 	}
 
