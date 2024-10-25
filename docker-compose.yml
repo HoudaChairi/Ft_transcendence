@@ -32,11 +32,13 @@ services:
       - "8000"
     depends_on:
       - postgres
+      - redis
     environment:
       DB_HOST: postgres
       DB_NAME: transcendence_db
       DB_USER: postgres_user
       DB_PASSWORD: 1337transcendence
+      REDIS_HOST: redis
     container_name: django
     restart: always
 
@@ -66,6 +68,13 @@ services:
       - media_data:/app/media
     restart: always
     container_name: nginx
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
 
 volumes:
   postgres_data:

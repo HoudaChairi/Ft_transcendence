@@ -219,3 +219,17 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SOCIAL_AUTH_42_KEY = 'u-s4t2ud-cbb98f88ec757c172c1f5f2ec653fa1f1e0694ffe0f0e43fb5707487add59a72'
 SOCIAL_AUTH_42_SECRET = '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' 
 SOCIAL_AUTH_42_REDIRECT_URI = 'https://localhost/api/auth/42/callback/' 
+
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://redis:6379/1',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"

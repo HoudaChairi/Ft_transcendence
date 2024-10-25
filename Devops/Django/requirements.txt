@@ -30,3 +30,4 @@ psycopg[binary]
 social-auth-app-django
 requests
 Pillow
+django-redis
