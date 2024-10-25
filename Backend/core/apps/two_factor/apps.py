@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class UsersConfig(AppConfig):
+class TwoFactorConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'core.apps.users'
+    name = 'core.apps.two_factor'

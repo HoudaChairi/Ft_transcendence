@@ -138,14 +138,6 @@ export const USERSPROFILE = `<div class="right">
 				<div class="first-name">Gender</div>
 				<div class="meriem" id="gender">Female</div>
 			</div>
-			<div class="info-field">
-				<div class="first-name">Level</div>
-				<div class="meriem">8.17</div>
-			</div>
-			<div class="info-field">
-				<div class="first-name">Coalition</div>
-				<div class="meriem">Freax</div>
-			</div>
 		</div>
 	</div>
 </div>`;

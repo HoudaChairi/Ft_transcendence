@@ -998,7 +998,7 @@ class Game {
 		this.#css2DObject.usersprofile.element.querySelector(
 			'.matches-score-parent'
 		).innerHTML = '';
-		matches.slice(0, 10).forEach(match => {
+		matches.slice(-10).forEach(match => {
 			const matchTemp = document.createElement('template');
 			matchTemp.innerHTML = MATCHESSCORE.trim();
 			const matchHTML = matchTemp.content.firstChild;
@@ -1020,7 +1020,7 @@ class Game {
 
 	#setUserProfileFields(data) {
 		const profile = this.#css2DObject.usersprofile.element;
-		const gender = { F: 'Female', M: 'Male' };
+		const gender = { F: 'Female', M: 'Male', null: '__'};
 
 		profile.querySelector('.frame-icon').src = data.avatar;
 		profile.querySelector('#first').textContent = data.first_name;
