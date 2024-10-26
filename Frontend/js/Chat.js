@@ -64,18 +64,131 @@ export const CHAT_INFO = `<div class="frame-group">
 	</div>
 </div>`;
 
+// all-players
+
+export const ALL_PLAYERS = `<div class="all-players-group">
+		<div class="all-players1">All Players</div>
+		<img class="frame-child-chat" alt="" src="/textures/svg/Line 4.svg" />
+	</div>
+	<img
+		class="radio-button-unchecked-icon"
+		alt=""
+		src="/textures/svg/Radio.svg"
+		data-id="2"
+	/>
+	<img
+		class="radio-button-unchecked-icon"
+		alt=""
+		src="/textures/svg/Radio.svg"
+		data-id="3"
+	/>
+	<img
+		class="radio-button-unchecked-icon"
+		alt=""
+		src="/textures/svg/Radio.svg"
+		data-id="4"
+	/>`;
+
+export const FRIENDS = `<img
+		class="radio-button-unchecked-icon"
+		alt=""
+		src="textures/svg/Radio.svg"
+		data-id="1"
+	/>
+	<div class="all-players-group">
+		<div class="all-players1">Friend's List</div>
+		<img class="frame-child-chat" alt="" src="/textures/svg/Line 4.svg" />
+	</div>
+	<img
+		class="radio-button-unchecked-icon"
+		alt=""
+		src="textures/svg/Radio.svg"
+		data-id="3"
+	/>
+	<img
+		class="radio-button-unchecked-icon"
+		alt=""
+		src="textures/svg/Radio.svg"
+		data-id="4"
+	/>`;
+
+export const PENDING = `<img
+		class="radio-button-unchecked-icon"
+		alt=""
+		src="textures/svg/Radio.svg"
+		data-id="1"
+	/>
+	<img
+		class="radio-button-unchecked-icon"
+		alt=""
+		src="textures/svg/Radio.svg"
+		data-id="2"
+	/>
+	<div class="all-players-group">
+		<div class="all-players1">Pending Request</div>
+		<img class="frame-child-chat" alt="" src="/textures/svg/Line 4.svg" />
+	</div>
+	<img
+		class="radio-button-unchecked-icon"
+		alt=""
+		src="textures/svg/Radio.svg"
+		data-id="4"
+	/>`;
+
+export const BLOCKED = `<img
+		class="radio-button-unchecked-icon"
+		alt=""
+		src="textures/svg/Radio.svg"
+		data-id="1"
+	/>
+	<img
+		class="radio-button-unchecked-icon"
+		alt=""
+		src="textures/svg/Radio.svg"
+		data-id="2"
+	/>
+	<img
+		class="radio-button-unchecked-icon"
+		alt=""
+		src="textures/svg/Radio.svg"
+		data-id="3"
+	/>
+	<div class="all-players-group">
+		<div class="all-players1">Blocked</div>
+		<img class="frame-child-chat" alt="" src="/textures/svg/Line 4.svg" />
+	</div>`;
+
+// -------------------------------------------------------------------------------------------------
+
 export const MAINCHAT = `<div class="chat">
 	<div class="friends-list">
-		<div class="frame-parent-chat">
-			<div class="friends-list-parent">
-				<div class="friends-list1">Friend’s List</div>
+		<div class="all-players-parent">
+			<div class="all-players">
+				<div class="all-players-group">
+					<div class="all-players1">All Players</div>
+					<img class="frame-child-chat" alt="" src="/textures/svg/Line 4" />
+				</div>
 				<img
-					class="frame-child"
+					class="radio-button-unchecked-icon"
 					alt=""
-					src="/textures/svg/Line 4.svg"
+					src="/textures/svg/Radio.svg"
+					data-id="2"
+				/>
+				<img
+					class="radio-button-unchecked-icon"
+					alt=""
+					src="/textures/svg/Radio.svg"
+					data-id="3"
+				/>
+				<img
+					class="radio-button-unchecked-icon"
+					alt=""
+					src="/textures/svg/Radio.svg"
+					data-id="4"
 				/>
 			</div>
-			<div class="element-parent"></div>
+			<div class="element-parent">
+			</div>
 		</div>
 	</div>
 	<div class="infos-chat"></div>

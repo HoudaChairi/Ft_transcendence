@@ -4,7 +4,17 @@ import { HOME, GAME, CHAT, LEADERBOARD } from './Home';
 import { PANER } from './Paner';
 import { SBOOK, SETTINGS } from './Settings';
 import { MATCHESSCORE, USERSPROFILE } from './UsersProfile';
-import { CHAT_INFO, ELEMENT, MAINCHAT, RECIVED, SENT } from './Chat';
+import {
+	ALL_PLAYERS,
+	BLOCKED,
+	CHAT_INFO,
+	ELEMENT,
+	FRIENDS,
+	MAINCHAT,
+	PENDING,
+	RECIVED,
+	SENT,
+} from './Chat';
 import { ADD, BLOCK, PLAY } from './ChatBtn';
 import { LEGEND, LEGEND_CHAT, LEGEND_LEADERBOARD } from './Legend';
 import { LEADERBOARDMAIN } from './Leaderboard';
@@ -231,6 +241,12 @@ class Game {
 		this.#css2DObject.btnOverlay.element.addEventListener('click', e =>
 			this.#toggleChatBtn()
 		);
+		this.#css2DObject.chat.element
+			.querySelector('.all-players')
+			.addEventListener('click', e => {
+				const btn = e.target.closest('.radio-button-unchecked-icon');
+				if (btn) this.#switchChatTab(btn);
+			});
 	}
 
 	async #login42() {
@@ -834,7 +850,6 @@ class Game {
 		const ppContainer = document.createElement('img');
 		ppContainer.className = 'profile-pic-icon';
 		ppContainer.alt = '';
-		// ppContainer.src = '/textures/svg/Profile pic.svg';
 		ppContainer.id = 'profilePicImage';
 
 		this.#css2DObject.profilepic = new CSS2DObject(ppContainer);
@@ -855,6 +870,17 @@ class Game {
 		this.#css2DObject.upOverlay = new CSS2DObject(overlayContainer);
 		this.#css2DObject.upOverlay.name = 'overlay';
 		this.#css2DObject.upOverlay.renderOrder = 5;
+	}
+
+	#switchChatTab(btn) {
+		const id = {
+			1: ALL_PLAYERS,
+			2: FRIENDS,
+			3: PENDING,
+			4: BLOCKED,
+		};
+		this.#css2DObject.chat.element.querySelector('.all-players').innerHTML =
+			id[btn.dataset.id];
 	}
 
 	async #loadChat(user, userData) {
