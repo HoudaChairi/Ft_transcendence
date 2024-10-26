@@ -403,14 +403,13 @@ class Game {
 				yesButton.addEventListener('click', async () => {
 					console.log("yes");
 					try {
-						// Send a friend request
 						const response = await fetch(`api/manage/friendship/add/${user}/`, {
 							method: 'POST',
 							headers: {
 								'Content-Type': 'application/json',
 								Authorization: `Bearer ${localStorage.getItem(
 									'accessToken'
-								)}`, // Assuming you're using JWT stored in localStorage
+								)}`,
 							},
 						});
 	
@@ -424,7 +423,7 @@ class Game {
 						const data = await response.json();
 						console.log("Friend request sent:", data);
 						alert(`Friend request sent to ${user}!`);
-						this.#toggleChatBtn(); // Optionally hide the button after action
+						this.#toggleChatBtn();
 	
 					} catch (error) {
 						console.error("Error adding user:", error);
