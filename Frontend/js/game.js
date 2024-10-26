@@ -5,7 +5,7 @@ import { PANER } from './Paner';
 import { SBOOK, SETTINGS } from './Settings';
 import { USERSPROFILE } from './UsersProfile';
 import { CHAT_INFO, ELEMENT, MAINCHAT, RECIVED, SENT } from './Chat';
-import { ADD, BLOCK, PLAY } from './ChatBtn';
+import { ADD, BLOCK, PLAY, REMOVE} from './ChatBtn';
 import { LEGEND, LEGEND_CHAT, LEGEND_LEADERBOARD } from './Legend';
 import { LEADERBOARDMAIN } from './Leaderboard';
 import { SIGNIN, SIGNUP } from './Sign';
@@ -436,16 +436,73 @@ class Game {
 		}
 	}
 	
+	async #removeUser(user) {
+		try {
+			this.#css2DObject.chatBtn.element.innerHTML = REMOVE; 
+			this.#css2DObject.chatBtn.element.querySelector(
+				'.send-invite-to'
+			).textContent = `Remove ${user} from friends?`;
 	
+			['chatBtn', 'btnOverlay'].forEach(ele => {
+				this.#scene.add(this.#css2DObject[ele]);
+			});
+	
+			const noButton = this.#css2DObject.chatBtn.element.querySelector('#no');
+			const yesButton = this.#css2DObject.chatBtn.element.querySelector('#yes');
+	
+			if (noButton) {
+				noButton.addEventListener('click', () => {
+					console.log("User removal canceled");
+					this.#toggleChatBtn();
+				});
+			}
+	
+			if (yesButton) {
+				yesButton.addEventListener('click', async () => {
+					console.log("Removing user:", user);
+					try {
+						const response = await fetch(`api/manage/friendship/remove/${user}/`, {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+								Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+							},
+						});
+	
+						if (!response.ok) {
+							const errorData = await response.json();
+							console.error("Error removing friend:", errorData);
+							alert(`Error: ${errorData.error || 'Something went wrong'}`);
+							return;
+						}
+	
+						const data = await response.json();
+						console.log("User removed:", data);
+						alert(`${user} has been removed from friends.`);
+						this.#toggleChatBtn();
+	
+					} catch (error) {
+						console.error("Error removing user:", error);
+					}
+				});
+			}
+	
+		} catch (error) {
+			console.error("Error removing user:", error);
+		}
+	}
+		
 
 	#playUser(user) {
-		this.#css2DObject.chatBtn.element.innerHTML = PLAY;
-		this.#css2DObject.chatBtn.element.querySelector(
-			'.select-new-username'
-		).textContent = `Start a Game With ${user}`;
-		['chatBtn', 'btnOverlay'].forEach(ele => {
-			this.#scene.add(this.#css2DObject[ele]);
-		});
+		// this.#css2DObject.chatBtn.element.innerHTML = PLAY;
+		// this.#css2DObject.chatBtn.element.querySelector(
+		// 	'.select-new-username'
+		// ).textContent = `Start a Game With ${user}`;
+		// ['chatBtn', 'btnOverlay'].forEach(ele => {
+		// 	this.#scene.add(this.#css2DObject[ele]);
+		// });
+		this.#removeUser(user);
+
 	}
 
 	#blockUser(user) {
@@ -464,6 +521,7 @@ class Game {
 			add: this.#addUser.bind(this, user),
 			play: this.#playUser.bind(this, user),
 			block: this.#blockUser.bind(this, user),
+			remove: this.#removeUser.bind(this, user),
 		};
 		usr[btn.dataset.id]();
 	}
