@@ -11,9 +11,45 @@ from .serializers import FriendshipSerializer
 class ManageFriendshipView(APIView):
     permission_classes = [IsAuthenticated]
 
+    def get(self, request):
+            try:
+                pending_friendships = Friendship.objects.filter(
+                    Q(from_user=request.user) | Q(to_user=request.user),
+                    status='pending'
+                )
+                blocked_friendships = Friendship.objects.filter(
+                    Q(from_user=request.user) | Q(to_user=request.user),
+                    status='blocked'
+                )
+                accepted_friendships = Friendship.objects.filter(
+                    Q(from_user=request.user) | Q(to_user=request.user),
+                    status='accepted'
+                )
+
+                def get_user_data(friendship):
+                    friend = friendship.to_user if friendship.from_user == request.user else friendship.from_user
+                    return {
+                        'username': friend.username,
+                        'avatar': friend.get_avatar_url(),
+                        'first': friend.first_name if friend.first_name else friend.username,
+                        'last': friend.last_name if friend.last_name else '',
+                    }
+
+                pending_data = [get_user_data(friendship) for friendship in pending_friendships]
+                blocked_data = [get_user_data(friendship) for friendship in blocked_friendships]
+                accepted_data = [get_user_data(friendship) for friendship in accepted_friendships]
+
+                return Response({
+                    "pending": pending_data,
+                    "blocked": blocked_data,
+                    "accepted": accepted_data
+                }, status=status.HTTP_200_OK)
+
+            except Exception as e:
+                return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
     def post(self, request, action, username, *args, **kwargs):
         target_user = get_object_or_404(Player, username=username)
-    
         friendship = Friendship.objects.filter(
             (Q(from_user=request.user) & Q(to_user=target_user)) |
             (Q(from_user=target_user) & Q(to_user=request.user))
