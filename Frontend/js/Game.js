@@ -15,7 +15,7 @@ import {
 	RECIVED,
 	SENT,
 } from './Chat';
-import { ADD, BLOCK, PLAY } from './ChatBtn';
+import { ADD, BLOCK, PLAY, REMOVE, UNBLOCK} from './ChatBtn';
 import { LEGEND, LEGEND_CHAT, LEGEND_LEADERBOARD } from './Legend';
 import { LEADERBOARDMAIN } from './Leaderboard';
 import { SIGNIN, SIGNUP } from './Sign';
@@ -649,34 +649,237 @@ class Game {
 		setting[btn.dataset.id]();
 	}
 
-	#addUser(user) {
-		this.#css2DObject.chatBtn.element.innerHTML = ADD;
-		this.#css2DObject.chatBtn.element.querySelector(
-			'.send-invite-to'
-		).textContent = `Send Invite to ${user} ?`;
-		['chatBtn', 'btnOverlay'].forEach(ele => {
-			this.#scene.add(this.#css2DObject[ele]);
-		});
+	async #addUser(user) {
+		try {
+			this.#css2DObject.chatBtn.element.innerHTML = ADD;
+			this.#css2DObject.chatBtn.element.querySelector(
+				'.send-invite-to'
+			).textContent = `Send Invite to ${user} ?`;
+	
+			['chatBtn', 'btnOverlay'].forEach(ele => {
+				this.#scene.add(this.#css2DObject[ele]);
+			});
+	
+			const noButton = this.#css2DObject.chatBtn.element.querySelector('#no');
+			const yesButton = this.#css2DObject.chatBtn.element.querySelector('#yes');
+	
+			if (noButton) {
+				noButton.addEventListener('click', () => {
+					console.log("no");
+					this.#toggleChatBtn();
+				});
+			}
+	
+			if (yesButton) {
+				yesButton.addEventListener('click', async () => {
+					console.log("yes");
+					try {
+						const response = await fetch(`api/manage/friendship/add/${user}/`, {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+								Authorization: `Bearer ${localStorage.getItem(
+									'accessToken'
+								)}`,
+							},
+						});
+	
+						if (!response.ok) {
+							const errorData = await response.json();
+							console.error("Error sending friend request:", errorData);
+							alert(`Error: ${errorData.error || 'Something went wrong'}`);
+							return;
+						}
+	
+						const data = await response.json();
+						console.log("Friend request sent:", data);
+						this.#toggleChatBtn();
+	
+					} catch (error) {
+						console.error("Error adding user:", error);
+					}
+				});
+			}
+	
+		} catch (error) {
+			console.error("Error adding user:", error);
+		}
 	}
+	
+	async #removeUser(user) {
+		try {
+			this.#css2DObject.chatBtn.element.innerHTML = REMOVE; 
+			this.#css2DObject.chatBtn.element.querySelector(
+				'.send-invite-to'
+			).textContent = `Remove ${user} from friends?`;
+	
+			['chatBtn', 'btnOverlay'].forEach(ele => {
+				this.#scene.add(this.#css2DObject[ele]);
+			});
+	
+			const noButton = this.#css2DObject.chatBtn.element.querySelector('#no');
+			const yesButton = this.#css2DObject.chatBtn.element.querySelector('#yes');
+	
+			if (noButton) {
+				noButton.addEventListener('click', () => {
+					console.log("User removal canceled");
+					this.#toggleChatBtn();
+				});
+			}
+	
+			if (yesButton) {
+				yesButton.addEventListener('click', async () => {
+					console.log("Removing user:", user);
+					try {
+						const response = await fetch(`api/manage/friendship/remove/${user}/`, {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+								Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+							},
+						});
+	
+						if (!response.ok) {
+							const errorData = await response.json();
+							console.error("Error removing friend:", errorData);
+							return;
+						}
+	
+						const data = await response.json();
+						console.log("User removed:", data);
+						this.#toggleChatBtn();
+	
+					} catch (error) {
+						console.error("Error removing user:", error);
+					}
+				});
+			}
+	
+		} catch (error) {
+			console.error("Error removing user:", error);
+		}
+	}
+		
 
 	#playUser(user) {
-		this.#css2DObject.chatBtn.element.innerHTML = PLAY;
-		this.#css2DObject.chatBtn.element.querySelector(
-			'.select-new-username'
-		).textContent = `Start a Game With ${user}`;
-		['chatBtn', 'btnOverlay'].forEach(ele => {
-			this.#scene.add(this.#css2DObject[ele]);
-		});
+		// this.#css2DObject.chatBtn.element.innerHTML = PLAY;
+		// this.#css2DObject.chatBtn.element.querySelector(
+		// 	'.select-new-username'
+		// ).textContent = `Start a Game With ${user}`;
+		// ['chatBtn', 'btnOverlay'].forEach(ele => {
+		// 	this.#scene.add(this.#css2DObject[ele]);
+		// });
+
+		// this.#removeUser(user);
+		this.#unblockUser(user);
 	}
 
-	#blockUser(user) {
-		this.#css2DObject.chatBtn.element.innerHTML = BLOCK;
-		this.#css2DObject.chatBtn.element.querySelector(
-			'.block-mel-moun'
-		).textContent = `Block ${user} ?`;
-		['chatBtn', 'btnOverlay'].forEach(ele => {
-			this.#scene.add(this.#css2DObject[ele]);
-		});
+	async #blockUser(user) {
+		try {
+			this.#css2DObject.chatBtn.element.innerHTML = BLOCK; 
+			this.#css2DObject.chatBtn.element.querySelector(
+				'.send-invite-to'
+			).textContent = `Block ${user}?`;
+	
+			['chatBtn', 'btnOverlay'].forEach(ele => {
+				this.#scene.add(this.#css2DObject[ele]);
+			});
+	
+			const noButton = this.#css2DObject.chatBtn.element.querySelector('#no');
+			const yesButton = this.#css2DObject.chatBtn.element.querySelector('#yes');
+	
+			if (noButton) {
+				noButton.addEventListener('click', () => {
+					console.log("Block action canceled");
+					this.#toggleChatBtn();
+				});
+			}
+	
+			if (yesButton) {
+				yesButton.addEventListener('click', async () => {
+					console.log("Blocking user:", user);
+					try {
+						const response = await fetch(`api/manage/friendship/block/${user}/`, {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+								Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+							},
+						});
+	
+						if (!response.ok) {
+							const errorData = await response.json();
+							console.error("Error blocking user:", errorData);
+							return;
+						}
+	
+						const data = await response.json();
+						console.log("User blocked:", data);
+						this.#toggleChatBtn();
+	
+					} catch (error) {
+						console.error("Error blocking user:", error);
+					}
+				});
+			}
+	
+		} catch (error) {
+			console.error("Error blocking user:", error);
+		}
+	}
+	
+	async #unblockUser(user) {
+		try {
+			this.#css2DObject.chatBtn.element.innerHTML = UNBLOCK; 
+			this.#css2DObject.chatBtn.element.querySelector(
+				'.send-invite-to'
+			).textContent = `Unblock ${user}?`;
+	
+			['chatBtn', 'btnOverlay'].forEach(ele => {
+				this.#scene.add(this.#css2DObject[ele]);
+			});
+	
+			const noButton = this.#css2DObject.chatBtn.element.querySelector('#no');
+			const yesButton = this.#css2DObject.chatBtn.element.querySelector('#yes');
+	
+			if (noButton) {
+				noButton.addEventListener('click', () => {
+					console.log("Unblock action canceled");
+					this.#toggleChatBtn();
+				});
+			}
+	
+			if (yesButton) {
+				yesButton.addEventListener('click', async () => {
+					console.log("Unblocking user:", user);
+					try {
+						const response = await fetch(`api/manage/friendship/unblock/${user}/`, {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+								Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+							},
+						});
+	
+						if (!response.ok) {
+							const errorData = await response.json();
+							console.error("Error unblocking user:", errorData);
+							return;
+						}
+	
+						const data = await response.json();
+						console.log("User unblocked:", data);
+						this.#toggleChatBtn(); 
+	
+					} catch (error) {
+						console.error("Error unblocking user:", error);
+					}
+				});
+			}
+	
+		} catch (error) {
+			console.error("Error unblocking user:", error);
+		}
 	}
 
 	#chatBtns(btn, user) {
@@ -685,6 +888,8 @@ class Game {
 			add: this.#addUser.bind(this, user),
 			play: this.#playUser.bind(this, user),
 			block: this.#blockUser.bind(this, user),
+			remove: this.#removeUser.bind(this, user),
+			unblock: this.#unblockUser.bind(this, user),
 		};
 		usr[btn.dataset.id]();
 	}
