@@ -256,9 +256,7 @@ body {
 }
 
 .setting-1 {
-	position: absolute;
-	top: calc(50% - 22.5px);
-	left: calc(50% - 132px);
+	text-align: center;
 	line-height: 150%;
 }
 
@@ -266,13 +264,6 @@ body {
 	width: 424.5px;
 	position: relative;
 	height: 40.5px;
-}
-
-.setting-11 {
-	position: absolute;
-	top: calc(50% - 22.5px);
-	left: calc(50% - 107.5px);
-	line-height: 150%;
 }
 
 .fa-icon1 {
@@ -555,19 +546,16 @@ body {
 
 .mb1 {
 	position: absolute;
-	height: 100%;
-	width: 50.01%;
-	top: 0%;
+	top: calc(50% - 26px);
+	width: 224px;
+	height: 52px;
 	right: -0.01%;
-	bottom: 0%;
-	left: 50%;
-	text-align: left;
 }
 
 .matches-score {
 	width: 447.9px;
 	position: relative;
-	height: 52px;
+	min-height: 52px;
 }
 
 .div12 {
@@ -589,6 +577,7 @@ body {
 	text-align: right;
 	font-size: 17px;
 	color: #d0c3a9;
+	gap: 10px;
 }
 
 .cadre-parent {
@@ -1763,6 +1752,7 @@ body {
 	font-size: 24px;
 	color: #3d3c3c;
 	font-family: Gabriela;
+	appearance: none;
 }
 
 .password::placeholder {
@@ -2245,4 +2235,51 @@ body {
 	padding: 0rem 1.312rem;
 	gap: 1.25rem;
 	color: #6b3783;
+}
+
+.all-players1 {
+	position: relative;
+	line-height: 150%;
+}
+
+.frame-child-chat {
+	align-self: stretch;
+	position: relative;
+	max-width: 100%;
+	overflow: hidden;
+	height: 0rem;
+	flex-shrink: 0;
+}
+
+.all-players-group {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	justify-content: flex-start;
+}
+
+.radio-button-unchecked-icon {
+	width: 1.5rem;
+	position: relative;
+	height: 1.5rem;
+}
+
+.all-players {
+	align-self: stretch;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.all-players-parent {
+	position: absolute;
+	top: calc(50% - 270.5px);
+	left: calc(50% - 275px);
+	width: 34.438rem;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	justify-content: flex-start;
+	gap: 1.562rem;
 }

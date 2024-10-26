@@ -27,6 +27,7 @@ services:
       context: ./Devops/Django
     volumes:
       - ./Backend:/app
+      - media_data:/app/media
     expose:
       - "8000"
     depends_on:
@@ -62,8 +63,10 @@ services:
     volumes:
       - ./Devops/Nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./Devops/Nginx/certs:/etc/nginx/certs
+      - media_data:/app/media
     restart: always
     container_name: nginx
 
 volumes:
   postgres_data:
+  media_data:

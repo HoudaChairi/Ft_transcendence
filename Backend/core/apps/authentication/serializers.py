@@ -1,21 +1,25 @@
 from rest_framework import serializers
-from .models import Player
+from .models import Player, Match
 from django.contrib import auth
 from rest_framework.exceptions import AuthenticationFailed
-from rest_framework_simplejwt.tokens import RefreshToken, TokenError
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.contrib.auth.hashers import check_password
+from django.contrib.auth import authenticate
 import re
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True)
     confirmPassword = serializers.CharField(write_only=True, required=True)
+    gender = serializers.ChoiceField(choices=Player.GENDER_CHOICES, required=False)
 
     class Meta:
         model = Player
-        fields = ['email', 'username', 'password', 'confirmPassword']
+        fields = ['email', 'username', 'password', 'confirmPassword', 'gender']
 
     def validate_password(self, value):
         try:
@@ -45,6 +49,9 @@ class RegisterSerializer(serializers.ModelSerializer):
             email=validated_data['email'],
             username=validated_data['username'],
             password=validated_data['password'],
+            gender=validated_data.get('gender', None),
+            tournament_username = validated_data['username'],
+            avatar='textures/svg/M.svg' if validated_data.get('gender', None) == 'M' else 'textures/svg/ProfilePic.svg'
         )
         return user
     
@@ -53,75 +60,162 @@ class LoginSerializer(serializers.ModelSerializer):
     username = serializers.CharField(max_length=255, min_length=3)
     password = serializers.CharField(max_length=68, min_length=6, write_only=True)
     tokens = serializers.SerializerMethodField()
-    
-    def get_tokens(self, obj):
-        user = Player.objects.get(username=obj['username'])
+    avatar = serializers.SerializerMethodField()
+
+    def get_tokens(self, user):
+        # Now `user` is the Player instance
         return {
-            'username': obj['username'],
             'refresh': user.tokens()['refresh'],
             'access': user.tokens()['access'],
         }
-        
+
+    def get_avatar(self, user):
+        return user.get_avatar_url()
+
     class Meta:
         model = Player
-        fields = ['username','password','tokens']
-    
+        fields = ['username', 'password', 'tokens', 'avatar']
+
     def validate(self, attrs):
-        username = attrs.get('username','')
-        password = attrs.get('password','')
-        user = auth.authenticate(username=username,password=password)
+        username = attrs.get('username', '')
+        password = attrs.get('password', '')
+        user = auth.authenticate(username=username, password=password)
+
         if not user:
             raise AuthenticationFailed('Invalid credentials, try again')
         if not user.is_active:
             raise AuthenticationFailed('Account disabled, contact admin')
-        return {
-            'username': user.username,
-            'tokens': user.tokens,
-        }
+        
+        return user
+
         
 # new Logout serializer:
-# class LogoutSerializer(serializers.Serializer):
-#     refresh = serializers.CharField()
-#     def validate(self, attrs):
-#         self.token = attrs['refresh']
-#         return attrs
-#     def save(self, **kwargs):
-#         try:
-#             RefreshToken(self.token).blacklist()
-#         except TokenError:
-#             self.fail('bad_token')
-    
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+
+    default_error_messages = {
+        'bad_token': 'Token is invalid or expired',
+        'blacklisted_token': 'Token is already blacklisted'
+    }
+
+    def validate(self, attrs):
+        self.token = attrs['refresh']
+        return attrs
+
+    def save(self, **kwargs):
+        try:
+            token = RefreshToken(self.token)
+            token.check_blacklist()
+        except TokenError as e:
+            if str(e) == "Token is blacklisted":
+                self.fail('blacklisted_token')
+            else:
+                self.fail('bad_token')
+        else:
+            token.blacklist() 
+            
 # --------------------------------------------------------------------------------------
 
 
-class DisplayNameSerializer(serializers.ModelSerializer):
+class UpdateInfosSerializer(serializers.ModelSerializer):
     class Meta:
         model = Player
-        fields = ['display_name']
-    
-    def validate_display_name(self, value):
-        if Player.objects.filter(display_name=value).exists():
-            raise serializers.ValidationError("This display name is already taken.")
+        fields = ['tournament_username', 'email', 'first_name', 'last_name']
+
+    def validate_tournament_username(self, value):
+        if Player.objects.filter(tournament_username=value).exclude(pk=self.instance.pk).exists():
+            raise serializers.ValidationError("Tournament username is already taken.")
+        return value
+
+    # email
+    def validate_email(self, value):
+        if self.instance.remote:
+            raise serializers.ValidationError("Remote Login can't change email.")
+        if Player.objects.filter(email=value).exclude(pk=self.instance.pk).exists():
+            raise serializers.ValidationError("Email is already taken.")
+        return value
+
+    # first name
+    def validate_first_name(self, value):
+        if not value.strip():
+            raise serializers.ValidationError("First name cannot be empty.")
+        return value
+
+    # last name
+    def validate_last_name(self, value):
+        if not value.strip():
+            raise serializers.ValidationError("Last name cannot be empty.")
         return value
 
 
-#  after:  for display name, avatar,
-# class UpdateProfileSerializer(serializers.ModelSerializer):
+class UpdatePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(write_only=True, required=False)
+    new_password = serializers.CharField(write_only=True, required=False)
+
+    def validate(self, data):
+        user = self.context['user']
+        
+        if user.remote:
+            raise serializers.ValidationError("Remote Login can't change password.")
+
+        if data.get('old_password') and not data.get('new_password'):
+            raise serializers.ValidationError("New password is required when old password is provided.")
+        return data
+
+    def save(self, **kwargs):
+        user = self.context['user']
+        
+        old_password = self.validated_data.get('old_password')
+        new_password = self.validated_data.get('new_password')
+
+        if old_password:
+            if not authenticate(username=user.username, password=old_password):
+                raise serializers.ValidationError("Old password is incorrect.")
+            if new_password:
+                user.password = make_password(new_password)
+                
+        elif new_password:
+            user.password = make_password(new_password)
+
+        user.save()
+        return user
+    
+
+# class DisplayNameSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = Player
-#         fields = ['email', 'username', 'display_name', 'avatar']
-    
-#     def validate_username(self, value):
-#         if not value.isalnum():
-#             raise serializers.ValidationError("Username must be alphanumeric.")
-#         return value
+#         fields = ['display_name']
     
 #     def validate_display_name(self, value):
 #         if Player.objects.filter(display_name=value).exists():
-#             raise serializers.ValidationError("Display name is already taken.")
+#             raise serializers.ValidationError("This display name is already taken.")
 #         return value
 
-# class FriendSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Player
-#         fields = ['username', 'display_name', 'online_status']
+
+class AvatarSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Player
+        fields = ['avatar']
+
+    def validate_avatar(self, value):
+        # Check file type
+        if not value.name.endswith(('.png', '.jpg', '.jpeg', '.gif')):
+            raise serializers.ValidationError("File type is not supported. Please upload an image.")
+        
+        # Check file size (e.g., limit to 5 MB)
+        if value.size > 5 * 1024 * 1024:
+            raise serializers.ValidationError("File size should be less than 5 MB.")
+        
+        return value
+
+
+class MatchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Match
+        fields = ['player1', 'player2', 'score_player1', 'score_player2', 'winner', 'loser']
+
+    def validate(self, attrs):
+        # Ensure player1 and player2 are different
+        if attrs['player1'] == attrs['player2']:
+            raise serializers.ValidationError("Players cannot be the same.")
+        return attrs

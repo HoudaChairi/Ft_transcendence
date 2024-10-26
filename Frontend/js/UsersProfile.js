@@ -12,10 +12,11 @@ export const MATCHESSCORE = `<div class="matches-score">
 				class="group-item"
 				alt=""
 				src="/textures/svg/Rectangle 12.svg"
+				id="avatar1"
 			/>
 		</div>
 		<div class="user-2">User 2</div>
-		<div class="div">0</div>
+		<div class="div" id="score1">0</div>
 	</div>
 	<div class="mb1">
 		<img class="mb-1-icon" alt="" src="/textures/svg/MB 1.svg" />
@@ -29,10 +30,11 @@ export const MATCHESSCORE = `<div class="matches-score">
 				class="group-item"
 				alt=""
 				src="/textures/svg/Rectangle 12.svg"
+				id="avatar2"
 			/>
 		</div>
 		<div class="user-1">User 1</div>
-		<div class="div1">0</div>
+		<div class="div1" id="score2">0</div>
 	</div>
 </div>`;
 
@@ -61,19 +63,19 @@ export const USERSPROFILE = `<div class="right">
 			</div>
 			<div class="total-games">
 				<div class="personal-information">Total Games</div>
-				<div class="div10">0</div>
+				<div class="div10" id="t_games">0</div>
 			</div>
 			<div class="wins">
 				<div class="wins-parent">
 					<div class="personal-information">Wins</div>
-					<div class="div10">0</div>
+					<div class="div10" id="wins">0</div>
 				</div>
 				<div class="wins-child"></div>
 			</div>
 			<div class="wins">
 				<div class="wins-parent">
 					<div class="personal-information">Losses</div>
-					<div class="div10">0</div>
+					<div class="div10" id="losses">0</div>
 				</div>
 				<div class="wins-child"></div>
 			</div>
@@ -85,19 +87,19 @@ export const USERSPROFILE = `<div class="right">
 			</div>
 			<div class="total-games">
 				<div class="personal-information">Total Points</div>
-				<div class="div10">0</div>
+				<div class="div10" id="t_points">0</div>
 			</div>
 			<div class="wins">
 				<div class="wins-parent">
 					<div class="personal-information">Goals For</div>
-					<div class="div10">0</div>
+					<div class="div10" id="goals_f">0</div>
 				</div>
 				<div class="wins-child"></div>
 			</div>
 			<div class="wins">
 				<div class="wins-parent">
 					<div class="personal-information">Goals Against</div>
-					<div class="div10">0</div>
+					<div class="div10" id="goals_a">0</div>
 				</div>
 				<div class="wins-child"></div>
 			</div>
@@ -117,58 +119,24 @@ export const USERSPROFILE = `<div class="right">
 		<div class="personal-information">Personal Information</div>
 	</div>
 	<div class="frame-parent">
-		<img class="frame-icon" alt="" src="/textures/svg/Profile pic.svg" />
+		<img class="frame-icon" alt="" src="/textures/svg/ProfilePic.svg" />
 
 		<div class="info-field-parent">
 			<div class="info-field">
 				<div class="first-name">First Name</div>
-				<div class="meriem">Meriem</div>
+				<div class="meriem" id="first">Meriem</div>
 			</div>
 			<div class="info-field">
 				<div class="first-name">Last Name</div>
-				<div class="meriem">El Mountasser</div>
+				<div class="meriem" id="last">El Mountasser</div>
 			</div>
 			<div class="info-field">
 				<div class="first-name">Nickname</div>
-				<div class="meriem">mel-moun</div>
+				<div class="meriem" id="username">mel-moun</div>
 			</div>
 			<div class="info-field">
 				<div class="first-name">Gender</div>
-				<div class="meriem">Female</div>
-			</div>
-			<div class="info-field">
-				<div class="first-name">Level</div>
-				<div class="meriem">8.17</div>
-			</div>
-			<div class="info-field">
-				<div class="first-name">Coalition</div>
-				<div class="meriem">Freax</div>
-			</div>
-		</div>
-		<div class="infos">
-			<div class="first-name-parent">
-				<div class="last-name">First Name</div>
-				<div class="meriem6">Meriem</div>
-			</div>
-			<div class="first-name-parent">
-				<div class="last-name">Last Name</div>
-				<div class="el-mountasser">El Mountasser</div>
-			</div>
-			<div class="first-name-parent">
-				<div class="last-name">Nickname</div>
-				<div class="el-mountasser">mel-moun</div>
-			</div>
-			<div class="first-name-parent">
-				<div class="last-name">Gender</div>
-				<div class="el-mountasser">Female</div>
-			</div>
-			<div class="first-name-parent">
-				<div class="last-name">Level</div>
-				<div class="el-mountasser">8.17</div>
-			</div>
-			<div class="first-name-parent">
-				<div class="last-name">Coalition</div>
-				<div class="el-mountasser">Freax</div>
+				<div class="meriem" id="gender">Female</div>
 			</div>
 		</div>
 	</div>

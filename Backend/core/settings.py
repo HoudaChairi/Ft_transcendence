@@ -51,8 +51,7 @@ INSTALLED_APPS = [
     # 'rest_framework.authtoken',
     # new for JWT
     'rest_framework_simplejwt',
-    # 'rest_framework_simplejwt.token_blacklist', # new 
-    # new for Access-Control-Allow-Origin for browser
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
 
 
@@ -184,8 +183,9 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': False,
 }
 
-# MEDIA_URL = '/media/'
-# MEDIA_ROOT = BASE_DIR / 'media'
+#  for avatar
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # To allow all origins  to access your API  from browser
 CORS_ALLOW_ALL_ORIGINS = True

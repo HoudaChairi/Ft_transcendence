@@ -3,14 +3,24 @@ export const SIGNIN = `<div class="sign-in">SIGN IN</div>
 	<div class="login-sign">
 		<div class="section">
 			<div class="email-parent">
-				<input type="text" class="username" placeholder="Username" id="username"/>
+				<input
+					type="text"
+					class="username"
+					placeholder="Username"
+					id="username"
+				/>
 				<div class="frame-child-sign"></div>
 			</div>
 			<img class="iv-icon" alt="" src="/textures/svg/usser.svg" />
 		</div>
 		<div class="section">
 			<div class="email-parent">
-				<input type="password" class="password" placeholder="Password" id="password"/>
+				<input
+					type="password"
+					class="password"
+					placeholder="Password"
+					id="password"
+				/>
 				<div class="frame-child-sign"></div>
 			</div>
 			<img class="iv-icon1" alt="" src="/textures/svg/pass.svg" />
@@ -32,8 +42,8 @@ export const SIGNIN = `<div class="sign-in">SIGN IN</div>
 	<img class="subtract-icon" alt="" src="/textures/svg/Subtract.svg" />
 </div>
 <div class="parent">
-	<img class="icon" alt="" src="/textures/svg/42.svg" data-id="42"/>
-	<img class="icon" alt="" src="/textures/svg/Google.svg" data-id="google"/>
+	<img class="icon" alt="" src="/textures/svg/42.svg" data-id="42" />
+	<img class="icon" alt="" src="/textures/svg/Google.svg" data-id="google" />
 </div>`;
 
 export const SIGNUP = `<div class="sign-up">SIGN UP</div>
@@ -41,31 +51,61 @@ export const SIGNUP = `<div class="sign-up">SIGN UP</div>
 	<div class="login-sign">
 		<div class="section">
 			<div class="email-parent">
-				<input type="email" class="username" placeholder="Email" id="email"/>
+				<input
+					type="email"
+					class="username"
+					placeholder="Email"
+					id="email"
+				/>
+				<div class="frame-child-sign"></div>
+			</div>
+			<img class="iv-icon" alt="" src="/textures/svg/email.svg" />
+		</div>
+		<div class="section">
+			<div class="email-parent">
+				<input
+					type="text"
+					class="username"
+					placeholder="Username"
+					id="username"
+				/>
 				<div class="frame-child-sign"></div>
 			</div>
 			<img class="iv-icon" alt="" src="/textures/svg/usser.svg" />
 		</div>
 		<div class="section">
 			<div class="email-parent">
-				<input type="text" class="username" placeholder="Username" id="username"/>
+				<input
+					type="password"
+					class="password"
+					placeholder="Password"
+					id="password"
+				/>
 				<div class="frame-child-sign"></div>
 			</div>
-			<img class="iv-icon" alt="" src="/textures/svg/usser.svg" />
+			<img class="iv-icon2" alt="" src="/textures/svg/pass.svg" />
 		</div>
 		<div class="section">
 			<div class="email-parent">
-				<input type="password" class="password" placeholder="Password" id="password"/>
+				<input
+					type="password"
+					class="password"
+					placeholder="Confirm Password"
+					id="confpassword"
+				/>
 				<div class="frame-child-sign"></div>
 			</div>
 			<img class="iv-icon2" alt="" src="/textures/svg/pass.svg" />
 		</div>
 		<div class="section">
 			<div class="email-parent">
-				<input type="password" class="password" placeholder="Confirm Password" id="confpassword"/>
+				<select name="gender" id="gender" class="password">
+					<option value="M">Male</option>
+					<option value="F">Female</option>
+				</select>
 				<div class="frame-child-sign"></div>
 			</div>
-			<img class="iv-icon2" alt="" src="/textures/svg/pass.svg" />
+			<img class="iv-icon2" alt="" src="/textures/svg/gender.svg" />
 		</div>
 	</div>
 	<div class="login-group">
@@ -84,6 +124,6 @@ export const SIGNUP = `<div class="sign-up">SIGN UP</div>
 	<img class="subtract-icon" alt="" src="/textures/svg/Subtract.svg" />
 </div>
 <div class="parent">
-	<img class="icon" alt="" src="/textures/svg/42.svg" data-id="42"/>
-	<img class="icon" alt="" src="/textures/svg/Google.svg" data-id="google"/>
+	<img class="icon" alt="" src="/textures/svg/42.svg" data-id="42" />
+	<img class="icon" alt="" src="/textures/svg/Google.svg" data-id="google" />
 </div>`;
