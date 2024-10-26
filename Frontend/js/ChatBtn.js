@@ -1,23 +1,23 @@
-export const BLOCK = `<div class="frame-wrapper">
-	<div class="rectangle-parent-user">
-		<img
-			class="rectangle-icon-user"
-			alt=""
-			src="/textures/svg/RectangleUP.svg"
-		/>
+// export const BLOCK = `<div class="frame-wrapper">
+// 	<div class="rectangle-parent-user">
+// 		<img
+// 			class="rectangle-icon-user"
+// 			alt=""
+// 			src="/textures/svg/RectangleUP.svg"
+// 		/>
 
-		<div class="change-username">Block User</div>
-	</div>
-</div>
-<div class="block-mel-moun-parent">
-	<div class="block-mel-moun">Block mel-moun ?</div>
-	<div class="sette-wrapper">
-		<div class="block-user">YES</div>
-	</div>
-	<div class="sette-wrapper">
-		<div class="block-user">NO</div>
-	</div>
-</div>`;
+// 		<div class="change-username">Block User</div>
+// 	</div>
+// </div>
+// <div class="block-mel-moun-parent">
+// 	<div class="block-mel-moun">Block mel-moun ?</div>
+// 	<div class="sette-wrapper">
+// 		<div class="block-user">YES</div>
+// 	</div>
+// 	<div class="sette-wrapper">
+// 		<div class="block-user">NO</div>
+// 	</div>
+// </div>`;
 
 export const ADD = `<div class="frame-wrapper">
 	<div class="rectangle-parent-user">
@@ -71,6 +71,48 @@ export const REMOVE = `<div class="frame-wrapper">
 </div>
 <div class="send-invite-to-mel-moun-parent">
     <div class="send-invite-to">Remove User from friends?</div>
+    <div class="sette-wrapper" id="yes">
+        <div class="add-user">YES</div>
+    </div>
+    <div class="sette-wrapper" id="no">
+        <div class="add-user">NO</div>
+    </div>
+</div>`;
+
+export const BLOCK = `<div class="frame-wrapper">
+    <div class="rectangle-parent-user">
+        <img
+            class="rectangle-icon-user"
+            alt=""
+            src="/textures/svg/RectangleUP.svg"
+        />
+
+        <div class="change-username">BLOCK User</div>
+    </div>
+</div>
+<div class="send-invite-to-mel-moun-parent">
+    <div class="send-invite-to">Block this user?</div>
+    <div class="sette-wrapper" id="yes">
+        <div class="add-user">YES</div>
+    </div>
+    <div class="sette-wrapper" id="no">
+        <div class="add-user">NO</div>
+    </div>
+</div>`;
+
+export const UNBLOCK = `<div class="frame-wrapper">
+    <div class="rectangle-parent-user">
+        <img
+            class="rectangle-icon-user"
+            alt=""
+            src="/textures/svg/RectangleUP.svg"
+        />
+
+        <div class="change-username">UNBLOCK User</div>
+    </div>
+</div>
+<div class="send-invite-to-mel-moun-parent">
+    <div class="send-invite-to">Unblock this user?</div>
     <div class="sette-wrapper" id="yes">
         <div class="add-user">YES</div>
     </div>
