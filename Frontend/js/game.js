@@ -345,6 +345,39 @@ class Game {
 		setting[btn.dataset.id]();
 	}
 
+	// async #addUser(user) {
+	// 	try {
+	// 		this.#css2DObject.chatBtn.element.innerHTML = ADD;
+	// 		this.#css2DObject.chatBtn.element.querySelector(
+	// 			'.send-invite-to'
+	// 		).textContent = `Send Invite to ${user} ?`;
+	
+	// 		['chatBtn', 'btnOverlay'].forEach(ele => {
+	// 			this.#scene.add(this.#css2DObject[ele]);
+	// 		});
+	
+	// 		const noButton = this.#css2DObject.chatBtn.element.querySelector('#no');
+	// 		const yesButton = this.#css2DObject.chatBtn.element.querySelector('#yes');
+	
+	// 		if (noButton) {
+	// 			noButton.addEventListener('click', () => {
+	// 				console.log("no");
+	// 				this.#toggleChatBtn();
+	// 			});
+	// 		}
+
+	// 		if (yesButton) {
+	// 			yesButton.addEventListener('click', () => {
+	// 				console.log("yes");
+	// 				this.#toggleChatBtn();
+	// 			});
+	// 		}
+
+	// 	} catch (error) {
+	// 		console.error("Error adding user:", error);
+	// 	}
+	// }
+
 	async #addUser(user) {
 		try {
 			this.#css2DObject.chatBtn.element.innerHTML = ADD;
@@ -365,18 +398,45 @@ class Game {
 					this.#toggleChatBtn();
 				});
 			}
-
+	
 			if (yesButton) {
-				yesButton.addEventListener('click', () => {
+				yesButton.addEventListener('click', async () => {
 					console.log("yes");
-					this.#toggleChatBtn();
+					try {
+						// Send a friend request
+						const response = await fetch(`api/manage/friendship/add/${user}/`, {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+								Authorization: `Bearer ${localStorage.getItem(
+									'accessToken'
+								)}`, // Assuming you're using JWT stored in localStorage
+							},
+						});
+	
+						if (!response.ok) {
+							const errorData = await response.json();
+							console.error("Error sending friend request:", errorData);
+							alert(`Error: ${errorData.error || 'Something went wrong'}`);
+							return;
+						}
+	
+						const data = await response.json();
+						console.log("Friend request sent:", data);
+						alert(`Friend request sent to ${user}!`);
+						this.#toggleChatBtn(); // Optionally hide the button after action
+	
+					} catch (error) {
+						console.error("Error adding user:", error);
+					}
 				});
 			}
-
+	
 		} catch (error) {
 			console.error("Error adding user:", error);
 		}
 	}
+	
 	
 
 	#playUser(user) {
