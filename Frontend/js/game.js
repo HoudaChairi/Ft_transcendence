@@ -345,15 +345,39 @@ class Game {
 		setting[btn.dataset.id]();
 	}
 
-	#addUser(user) {
-		this.#css2DObject.chatBtn.element.innerHTML = ADD;
-		this.#css2DObject.chatBtn.element.querySelector(
-			'.send-invite-to'
-		).textContent = `Send Invite to ${user} ?`;
-		['chatBtn', 'btnOverlay'].forEach(ele => {
-			this.#scene.add(this.#css2DObject[ele]);
-		});
+	async #addUser(user) {
+		try {
+			this.#css2DObject.chatBtn.element.innerHTML = ADD;
+			this.#css2DObject.chatBtn.element.querySelector(
+				'.send-invite-to'
+			).textContent = `Send Invite to ${user} ?`;
+	
+			['chatBtn', 'btnOverlay'].forEach(ele => {
+				this.#scene.add(this.#css2DObject[ele]);
+			});
+	
+			const noButton = this.#css2DObject.chatBtn.element.querySelector('#no');
+			const yesButton = this.#css2DObject.chatBtn.element.querySelector('#yes');
+	
+			if (noButton) {
+				noButton.addEventListener('click', () => {
+					console.log("no");
+					this.#toggleChatBtn();
+				});
+			}
+
+			if (yesButton) {
+				yesButton.addEventListener('click', () => {
+					console.log("yes");
+					this.#toggleChatBtn();
+				});
+			}
+
+		} catch (error) {
+			console.error("Error adding user:", error);
+		}
 	}
+	
 
 	#playUser(user) {
 		this.#css2DObject.chatBtn.element.innerHTML = PLAY;
