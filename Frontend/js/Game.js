@@ -3,14 +3,31 @@ import * as THREE from 'three';
 import { HOME, GAME, CHAT, LEADERBOARD } from './Home';
 import { PANER } from './Paner';
 import { SBOOK, SETTINGS } from './Settings';
-import { USERSPROFILE } from './UsersProfile';
-import { CHAT_INFO, ELEMENT, MAINCHAT, RECIVED, SENT } from './Chat';
-import { ADD, BLOCK, PLAY, REMOVE, UNBLOCK} from './ChatBtn';
+import { MATCHESSCORE, USERSPROFILE } from './UsersProfile';
+import {
+	ALL_PLAYERS,
+	BLOCKED,
+	CHAT_INFO,
+	ELEMENT,
+	FRIENDS,
+	MAINCHAT,
+	PENDING,
+	RECIVED,
+	SENT,
+} from './Chat';
+import { ADD, BLOCK, PLAY } from './ChatBtn';
 import { LEGEND, LEGEND_CHAT, LEGEND_LEADERBOARD } from './Legend';
 import { LEADERBOARDMAIN } from './Leaderboard';
 import { SIGNIN, SIGNUP } from './Sign';
 import { LOGIN } from './Login';
-import { CHANGE_AVATAR, CHANGE_USERNAME } from './Sbook';
+import {
+	CHANGE_AVATAR,
+	CHANGE_EMAIL,
+	CHANGE_FIRST_NAME,
+	CHANGE_LAST_NAME,
+	CHANGE_PASSWORD,
+	CHANGE_USERNAME,
+} from './Sbook';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -158,7 +175,7 @@ class Game {
 			this.#toggleSBook()
 		);
 		this.#css2DObject.profilepic.element.addEventListener('click', () =>
-			this.#toggleUsersProfile()
+			this.#toggleUsersProfile(this.#loggedUser)
 		);
 		this.#css2DObject.chat.element
 			.querySelector('.vector-icon')
@@ -224,22 +241,27 @@ class Game {
 		this.#css2DObject.btnOverlay.element.addEventListener('click', e =>
 			this.#toggleChatBtn()
 		);
+		this.#css2DObject.chat.element
+			.querySelector('.all-players')
+			.addEventListener('click', e => {
+				const btn = e.target.closest('.radio-button-unchecked-icon');
+				if (btn) this.#switchChatTab(btn);
+			});
 	}
 
 	async #login42() {
 		try {
 			const backendLoginUrl = `api/auth/42/login/`;
-	
+
 			window.location.href = backendLoginUrl;
 		} catch (error) {
 			console.error('Login initiation error:', error);
 		}
 	}
-	
 
 	async #loginGoogle() {
 		try {
-			const backendLoginUrl = `/api/auth/google/`;
+			const backendLoginUrl = `api/auth/google/`;
 
 			window.location.href = backendLoginUrl;
 		} catch (error) {
@@ -248,10 +270,264 @@ class Game {
 	}
 
 	#changeUsername() {
-		this.#css2DObject.sbsetting.element.innerHTML = CHANGE_USERNAME;
-		['sbsetting', 'sbsettingOverlay'].forEach(ele => {
-			this.#scene.add(this.#css2DObject[ele]);
-		});
+		try {
+			this.#css2DObject.sbsetting.element.innerHTML = CHANGE_USERNAME;
+			['sbsetting', 'sbsettingOverlay'].forEach(ele => {
+				this.#scene.add(this.#css2DObject[ele]);
+			});
+			this.#css2DObject.sbsetting.element
+				.querySelector('.sette-wrapper')
+				.addEventListener('click', async e => {
+					const username =
+						this.#css2DObject.sbsetting.element.querySelector(
+							'.username-user'
+						).value;
+
+					const response = await fetch(`api/update-infos/`, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							Authorization: `Bearer ${localStorage.getItem(
+								'accessToken'
+							)}`,
+						},
+						body: JSON.stringify({
+							tournament_username: username,
+						}),
+					});
+					const data = await response.json();
+					if (response.ok) {
+						this.#toggleSettings();
+						this.#switchHome(window.location.pathname.slice(1));
+					} else {
+						const errorMessage =
+							Object.values(data).flat().join(', ') ||
+							'An error occurred. Please try again.';
+						alert('Error updating password: ' + errorMessage);
+						this.#css2DObject.sbsetting.element.querySelector(
+							'.username-user'
+						).value = '';
+					}
+				});
+		} catch (error) {
+			alert(error);
+		}
+	}
+
+	#changePassword() {
+		try {
+			this.#css2DObject.sbsetting.element.innerHTML = CHANGE_PASSWORD;
+			['sbsetting', 'sbsettingOverlay'].forEach(ele => {
+				this.#scene.add(this.#css2DObject[ele]);
+			});
+
+			this.#css2DObject.sbsetting.element
+				.querySelector('.sette-wrapper')
+				.addEventListener('click', async e => {
+					const oldpass =
+						this.#css2DObject.sbsetting.element.querySelector(
+							'#oldpass'
+						).value;
+					const newpass =
+						this.#css2DObject.sbsetting.element.querySelector(
+							'#newpass'
+						).value;
+					const confpass =
+						this.#css2DObject.sbsetting.element.querySelector(
+							'#confpass'
+						).value;
+
+					if (newpass !== confpass) {
+						this.#css2DObject.sbsetting.element.querySelector(
+							'#newpass'
+						).value = '';
+						this.#css2DObject.sbsetting.element.querySelector(
+							'#confpass'
+						).value = '';
+						alert("Passwords don't match");
+						return;
+					}
+
+					const response = await fetch(`api/update-password/`, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							Authorization: `Bearer ${localStorage.getItem(
+								'accessToken'
+							)}`,
+						},
+						body: JSON.stringify({
+							old_password: oldpass,
+							new_password: newpass,
+						}),
+					});
+
+					const data = await response.json();
+
+					if (response.ok) {
+						this.#toggleSettings();
+					} else {
+						this.#css2DObject.sbsetting.element.querySelector(
+							'#oldpass'
+						).value = '';
+						this.#css2DObject.sbsetting.element.querySelector(
+							'#newpass'
+						).value = '';
+						this.#css2DObject.sbsetting.element.querySelector(
+							'#confpass'
+						).value = '';
+						const errorMessage =
+							Object.values(data).flat().join(', ') ||
+							'An error occurred. Please try again.';
+						alert('Error updating password: ' + errorMessage);
+					}
+				});
+		} catch (error) {
+			alert('An unexpected error occurred: ' + error.message);
+		}
+	}
+
+	#changeFirstName() {
+		try {
+			this.#css2DObject.sbsetting.element.innerHTML = CHANGE_FIRST_NAME;
+			['sbsetting', 'sbsettingOverlay'].forEach(ele => {
+				this.#scene.add(this.#css2DObject[ele]);
+			});
+			this.#css2DObject.sbsetting.element
+				.querySelector('.sette-wrapper')
+				.addEventListener('click', async e => {
+					const first =
+						this.#css2DObject.sbsetting.element.querySelector(
+							'.username-user'
+						).value;
+
+					const response = await fetch(`api/update-infos/`, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							Authorization: `Bearer ${localStorage.getItem(
+								'accessToken'
+							)}`,
+						},
+						body: JSON.stringify({
+							first_name: first,
+						}),
+					});
+					const data = await response.json();
+					if (response.ok) {
+						this.#toggleSettings();
+					} else {
+						alert('Error updating First Name: ' + data.message);
+						this.#css2DObject.sbsetting.element.querySelector(
+							'.username-user'
+						).value = '';
+					}
+				});
+		} catch (error) {
+			alert(error);
+		}
+	}
+
+	#changeLastName() {
+		try {
+			this.#css2DObject.sbsetting.element.innerHTML = CHANGE_LAST_NAME;
+			['sbsetting', 'sbsettingOverlay'].forEach(ele => {
+				this.#scene.add(this.#css2DObject[ele]);
+			});
+			this.#css2DObject.sbsetting.element
+				.querySelector('.sette-wrapper')
+				.addEventListener('click', async e => {
+					const last =
+						this.#css2DObject.sbsetting.element.querySelector(
+							'.username-user'
+						).value;
+
+					const response = await fetch(`api/update-infos/`, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							Authorization: `Bearer ${localStorage.getItem(
+								'accessToken'
+							)}`,
+						},
+						body: JSON.stringify({
+							last_name: last,
+						}),
+					});
+
+					const data = await response.json();
+
+					if (response.ok) {
+						this.#toggleSettings();
+					} else {
+						console.error('Full response:', data);
+						alert(
+							'Error updating Last Name: ' +
+								(data.message || 'Unknown error occurred.')
+						);
+					}
+				});
+		} catch (error) {
+			alert('Error: ' + error.message);
+		}
+	}
+
+	async #changeEmail() {
+		try {
+			this.#css2DObject.sbsetting.element.innerHTML = CHANGE_EMAIL;
+			['sbsetting', 'sbsettingOverlay'].forEach(ele => {
+				this.#scene.add(this.#css2DObject[ele]);
+			});
+
+			const emailInput =
+				this.#css2DObject.sbsetting.element.querySelector(
+					'.username-user'
+				);
+			const submitButton =
+				this.#css2DObject.sbsetting.element.querySelector(
+					'.sette-wrapper'
+				);
+
+			emailInput.value = '';
+
+			submitButton.addEventListener('click', async e => {
+				const email = emailInput.value;
+
+				const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+				if (!emailPattern.test(email)) {
+					alert('Please enter a valid email address.');
+					return;
+				}
+
+				try {
+					const response = await fetch(`api/update-infos/`, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							Authorization: `Bearer ${localStorage.getItem(
+								'accessToken'
+							)}`,
+						},
+						body: JSON.stringify({ email: email }),
+					});
+
+					const data = await response.json();
+
+					if (response.ok) {
+						this.#toggleSettings();
+					} else {
+						const errorMessage =
+							Object.values(data).flat().join(', ') ||
+							'An error occurred. Please try again.';
+						alert('Error updating email: ' + errorMessage);
+					}
+				} catch (error) {
+					alert('Network error: ' + fetchError.message);
+				}
+			});
+		} catch (error) {
+			alert('Error: ' + error.message);
+		}
 	}
 
 	#changeAvatar() {
@@ -261,7 +537,7 @@ class Game {
 		});
 
 		this.#css2DObject.sbsetting.element
-			.querySelector('.change-avatar')
+			.querySelector('.sette-wrapper')
 			.addEventListener('click', async e => {
 				const fileInput =
 					this.#css2DObject.sbsetting.element.querySelector(
@@ -273,24 +549,23 @@ class Game {
 					formData.append('avatar', file);
 
 					try {
-						const response = await fetch(`/upload-avatar/`, {
+						const response = await fetch(`api/avatar/`, {
 							method: 'POST',
-							body: formData,
 							headers: {
 								Authorization: `Bearer ${localStorage.getItem(
 									'accessToken'
 								)}`,
 							},
+							body: formData,
 						});
 
 						if (!response.ok) {
 							throw new Error('Network response was not ok');
 						}
-
 						const data = await response.json();
-						console.log('Success:', data);
+						this.#css2DObject.profilepic.element.src = data.avatar;
+						this.#toggleSettings();
 					} catch (error) {
-						console.error('Error:', error);
 						alert('Failed to upload avatar. Please try again.');
 					}
 				} else {
@@ -329,15 +604,44 @@ class Game {
 		factor.classList.toggle('factor-authentication-op');
 	}
 
-	#logout() {
-		this.#toggleSBook();
-		this.#switchHome('home');
-		this.#LoginPage();
+	async #logout() {
+		try {
+			const response = await fetch(`api/logout/`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${localStorage.getItem(
+						'accessToken'
+					)}`,
+				},
+				body: JSON.stringify({
+					refresh: localStorage.getItem('refreshToken'),
+				}),
+			});
+
+			if (response.ok) {
+				localStorage.removeItem('accessToken');
+				localStorage.removeItem('refreshToken');
+
+				this.#switchHome('home');
+				this.#toggleSBook();
+				this.#LoginPage();
+			} else {
+				const errorData = await response.json();
+				throw new Error(errorData.detail || 'Logout failed');
+			}
+		} catch (error) {
+			alert(error);
+		}
 	}
 
 	#sbookSettings(btn) {
 		const setting = {
 			username: this.#changeUsername.bind(this),
+			password: this.#changePassword.bind(this),
+			first: this.#changeFirstName.bind(this),
+			last: this.#changeLastName.bind(this),
+			email: this.#changeEmail.bind(this),
 			avatar: this.#changeAvatar.bind(this),
 			twofa: this.#handleTwoFA.bind(this, btn),
 			logout: this.#logout.bind(this),
@@ -345,247 +649,42 @@ class Game {
 		setting[btn.dataset.id]();
 	}
 
-	async #addUser(user) {
-		try {
-			this.#css2DObject.chatBtn.element.innerHTML = ADD;
-			this.#css2DObject.chatBtn.element.querySelector(
-				'.send-invite-to'
-			).textContent = `Send Invite to ${user} ?`;
-	
-			['chatBtn', 'btnOverlay'].forEach(ele => {
-				this.#scene.add(this.#css2DObject[ele]);
-			});
-	
-			const noButton = this.#css2DObject.chatBtn.element.querySelector('#no');
-			const yesButton = this.#css2DObject.chatBtn.element.querySelector('#yes');
-	
-			if (noButton) {
-				noButton.addEventListener('click', () => {
-					console.log("no");
-					this.#toggleChatBtn();
-				});
-			}
-	
-			if (yesButton) {
-				yesButton.addEventListener('click', async () => {
-					console.log("yes");
-					try {
-						const response = await fetch(`api/manage/friendship/add/${user}/`, {
-							method: 'POST',
-							headers: {
-								'Content-Type': 'application/json',
-								Authorization: `Bearer ${localStorage.getItem(
-									'accessToken'
-								)}`,
-							},
-						});
-	
-						if (!response.ok) {
-							const errorData = await response.json();
-							console.error("Error sending friend request:", errorData);
-							alert(`Error: ${errorData.error || 'Something went wrong'}`);
-							return;
-						}
-	
-						const data = await response.json();
-						console.log("Friend request sent:", data);
-						this.#toggleChatBtn();
-	
-					} catch (error) {
-						console.error("Error adding user:", error);
-					}
-				});
-			}
-	
-		} catch (error) {
-			console.error("Error adding user:", error);
-		}
+	#addUser(user) {
+		this.#css2DObject.chatBtn.element.innerHTML = ADD;
+		this.#css2DObject.chatBtn.element.querySelector(
+			'.send-invite-to'
+		).textContent = `Send Invite to ${user} ?`;
+		['chatBtn', 'btnOverlay'].forEach(ele => {
+			this.#scene.add(this.#css2DObject[ele]);
+		});
 	}
-	
-	async #removeUser(user) {
-		try {
-			this.#css2DObject.chatBtn.element.innerHTML = REMOVE; 
-			this.#css2DObject.chatBtn.element.querySelector(
-				'.send-invite-to'
-			).textContent = `Remove ${user} from friends?`;
-	
-			['chatBtn', 'btnOverlay'].forEach(ele => {
-				this.#scene.add(this.#css2DObject[ele]);
-			});
-	
-			const noButton = this.#css2DObject.chatBtn.element.querySelector('#no');
-			const yesButton = this.#css2DObject.chatBtn.element.querySelector('#yes');
-	
-			if (noButton) {
-				noButton.addEventListener('click', () => {
-					console.log("User removal canceled");
-					this.#toggleChatBtn();
-				});
-			}
-	
-			if (yesButton) {
-				yesButton.addEventListener('click', async () => {
-					console.log("Removing user:", user);
-					try {
-						const response = await fetch(`api/manage/friendship/remove/${user}/`, {
-							method: 'POST',
-							headers: {
-								'Content-Type': 'application/json',
-								Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-							},
-						});
-	
-						if (!response.ok) {
-							const errorData = await response.json();
-							console.error("Error removing friend:", errorData);
-							return;
-						}
-	
-						const data = await response.json();
-						console.log("User removed:", data);
-						this.#toggleChatBtn();
-	
-					} catch (error) {
-						console.error("Error removing user:", error);
-					}
-				});
-			}
-	
-		} catch (error) {
-			console.error("Error removing user:", error);
-		}
-	}
-		
 
 	#playUser(user) {
-		// this.#css2DObject.chatBtn.element.innerHTML = PLAY;
-		// this.#css2DObject.chatBtn.element.querySelector(
-		// 	'.select-new-username'
-		// ).textContent = `Start a Game With ${user}`;
-		// ['chatBtn', 'btnOverlay'].forEach(ele => {
-		// 	this.#scene.add(this.#css2DObject[ele]);
-		// });
-
-		// this.#removeUser(user);
-		this.#unblockUser(user);
+		this.#css2DObject.chatBtn.element.innerHTML = PLAY;
+		this.#css2DObject.chatBtn.element.querySelector(
+			'.select-new-username'
+		).textContent = `Start a Game With ${user}`;
+		['chatBtn', 'btnOverlay'].forEach(ele => {
+			this.#scene.add(this.#css2DObject[ele]);
+		});
 	}
 
-	async #blockUser(user) {
-		try {
-			this.#css2DObject.chatBtn.element.innerHTML = BLOCK; 
-			this.#css2DObject.chatBtn.element.querySelector(
-				'.send-invite-to'
-			).textContent = `Block ${user}?`;
-	
-			['chatBtn', 'btnOverlay'].forEach(ele => {
-				this.#scene.add(this.#css2DObject[ele]);
-			});
-	
-			const noButton = this.#css2DObject.chatBtn.element.querySelector('#no');
-			const yesButton = this.#css2DObject.chatBtn.element.querySelector('#yes');
-	
-			if (noButton) {
-				noButton.addEventListener('click', () => {
-					console.log("Block action canceled");
-					this.#toggleChatBtn();
-				});
-			}
-	
-			if (yesButton) {
-				yesButton.addEventListener('click', async () => {
-					console.log("Blocking user:", user);
-					try {
-						const response = await fetch(`api/manage/friendship/block/${user}/`, {
-							method: 'POST',
-							headers: {
-								'Content-Type': 'application/json',
-								Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-							},
-						});
-	
-						if (!response.ok) {
-							const errorData = await response.json();
-							console.error("Error blocking user:", errorData);
-							return;
-						}
-	
-						const data = await response.json();
-						console.log("User blocked:", data);
-						this.#toggleChatBtn();
-	
-					} catch (error) {
-						console.error("Error blocking user:", error);
-					}
-				});
-			}
-	
-		} catch (error) {
-			console.error("Error blocking user:", error);
-		}
+	#blockUser(user) {
+		this.#css2DObject.chatBtn.element.innerHTML = BLOCK;
+		this.#css2DObject.chatBtn.element.querySelector(
+			'.block-mel-moun'
+		).textContent = `Block ${user} ?`;
+		['chatBtn', 'btnOverlay'].forEach(ele => {
+			this.#scene.add(this.#css2DObject[ele]);
+		});
 	}
-	
-	async #unblockUser(user) {
-		try {
-			this.#css2DObject.chatBtn.element.innerHTML = UNBLOCK; 
-			this.#css2DObject.chatBtn.element.querySelector(
-				'.send-invite-to'
-			).textContent = `Unblock ${user}?`;
-	
-			['chatBtn', 'btnOverlay'].forEach(ele => {
-				this.#scene.add(this.#css2DObject[ele]);
-			});
-	
-			const noButton = this.#css2DObject.chatBtn.element.querySelector('#no');
-			const yesButton = this.#css2DObject.chatBtn.element.querySelector('#yes');
-	
-			if (noButton) {
-				noButton.addEventListener('click', () => {
-					console.log("Unblock action canceled");
-					this.#toggleChatBtn();
-				});
-			}
-	
-			if (yesButton) {
-				yesButton.addEventListener('click', async () => {
-					console.log("Unblocking user:", user);
-					try {
-						const response = await fetch(`api/manage/friendship/unblock/${user}/`, {
-							method: 'POST',
-							headers: {
-								'Content-Type': 'application/json',
-								Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-							},
-						});
-	
-						if (!response.ok) {
-							const errorData = await response.json();
-							console.error("Error unblocking user:", errorData);
-							return;
-						}
-	
-						const data = await response.json();
-						console.log("User unblocked:", data);
-						this.#toggleChatBtn(); 
-	
-					} catch (error) {
-						console.error("Error unblocking user:", error);
-					}
-				});
-			}
-	
-		} catch (error) {
-			console.error("Error unblocking user:", error);
-		}
-	}
-	
+
 	#chatBtns(btn, user) {
 		const usr = {
-			// profile:,
+			profile: this.#toggleUsersProfile.bind(this, user),
 			add: this.#addUser.bind(this, user),
 			play: this.#playUser.bind(this, user),
 			block: this.#blockUser.bind(this, user),
-			remove: this.#removeUser.bind(this, user),
-			unblock: this.#unblockUser.bind(this, user),
 		};
 		usr[btn.dataset.id]();
 	}
@@ -751,7 +850,6 @@ class Game {
 		const ppContainer = document.createElement('img');
 		ppContainer.className = 'profile-pic-icon';
 		ppContainer.alt = '';
-		ppContainer.src = '/textures/svg/Profile pic.svg';
 		ppContainer.id = 'profilePicImage';
 
 		this.#css2DObject.profilepic = new CSS2DObject(ppContainer);
@@ -774,6 +872,17 @@ class Game {
 		this.#css2DObject.upOverlay.renderOrder = 5;
 	}
 
+	#switchChatTab(btn) {
+		const id = {
+			1: ALL_PLAYERS,
+			2: FRIENDS,
+			3: PENDING,
+			4: BLOCKED,
+		};
+		this.#css2DObject.chat.element.querySelector('.all-players').innerHTML =
+			id[btn.dataset.id];
+	}
+
 	async #loadChat(user, userData) {
 		try {
 			this.#chatWebSocket[user].elem
@@ -789,7 +898,9 @@ class Game {
 				this.#chatWebSocket[user].elem.querySelector(
 					'.indicator-icon'
 				).src;
-			info.querySelector('.meriem-el-mountasser').textContent = user;
+			info.querySelector(
+				'.meriem-el-mountasser'
+			).textContent = `${userData.first.trim()} ${userData.last.trim()}`;
 
 			const chatInfoElement =
 				this.#css2DObject.chat.element.querySelector('.infos-chat');
@@ -806,7 +917,7 @@ class Game {
 			recived.innerHTML = '';
 
 			const response = await fetch(
-				`/api/chat/room/${this.#loggedUser}/${user}/`,
+				`api/chat/room/${this.#loggedUser}/${user}/`,
 				{
 					method: 'GET',
 					headers: {
@@ -842,12 +953,9 @@ class Game {
 				userTemp.innerHTML = ELEMENT.trim();
 
 				const userHTML = userTemp.content.firstChild;
-				userHTML.querySelector(
-					'.element-child'
-				).src = `/textures/svg/Rectangle 1.svg`;
-				userHTML.querySelector(
-					'.sword-prowess-lv'
-				).textContent = `${user.username}`;
+				userHTML.querySelector('.element-child').src = user.avatar;
+				userHTML.querySelector('.sword-prowess-lv').textContent =
+					user.username;
 				userHTML.querySelector(
 					'.indicator-icon'
 				).src = `/textures/svg/Indicator online.svg`;
@@ -895,7 +1003,7 @@ class Game {
 			this.#css2DObject.chat.element.querySelector(
 				'.mel-moun'
 			).textContent = this.#loggedUser;
-			const response = await fetch(`/api/users/`, {
+			const response = await fetch(`api/users/`, {
 				method: 'GET',
 				headers: {
 					Authorization: `Bearer ${localStorage.getItem(
@@ -912,12 +1020,74 @@ class Game {
 		}
 	}
 
-	#toggleUsersProfile() {
+	#setMatchHistory(matches) {
+		this.#css2DObject.usersprofile.element.querySelector(
+			'.matches-score-parent'
+		).innerHTML = '';
+		matches.slice(-10).forEach(match => {
+			const matchTemp = document.createElement('template');
+			matchTemp.innerHTML = MATCHESSCORE.trim();
+			const matchHTML = matchTemp.content.firstChild;
+
+			matchHTML.querySelector('.user-2').textContent = match.player1;
+			matchHTML.querySelector('.user-1').textContent = match.player2;
+			matchHTML.querySelector('#score1').textContent =
+				match.score_player1;
+			matchHTML.querySelector('#score2').textContent =
+				match.score_player2;
+			matchHTML.querySelector('#avatar1').src = match.player1_avatar;
+			matchHTML.querySelector('#avatar2').src = match.player2_avatar;
+
+			this.#css2DObject.usersprofile.element
+				.querySelector('.matches-score-parent')
+				.appendChild(matchHTML);
+		});
+	}
+
+	#setUserProfileFields(data) {
+		const profile = this.#css2DObject.usersprofile.element;
+		const gender = { F: 'Female', M: 'Male', null: '__' };
+
+		profile.querySelector('.frame-icon').src = data.avatar;
+		profile.querySelector('#first').textContent = data.first_name;
+		profile.querySelector('#last').textContent = data.last_name;
+		profile.querySelector('#username').textContent = data.username;
+		profile.querySelector('#gender').textContent = gender[data.gender];
+		profile.querySelector('#t_games').textContent = data.t_games;
+		profile.querySelector('#wins').textContent = data.wins;
+		profile.querySelector('#losses').textContent = data.losses;
+		profile.querySelector('#t_points').textContent = data.t_points;
+		profile.querySelector('#goals_f').textContent = data.goals_f;
+		profile.querySelector('#goals_a').textContent = data.goals_a;
+	}
+
+	async #loadUserProfile(user) {
+		try {
+			const response = await fetch(`api/user/${user}`, {
+				method: 'GET',
+				headers: {
+					Authorization: `Bearer ${localStorage.getItem(
+						'accessToken'
+					)}`,
+				},
+			});
+			const data = await response.json();
+			if (response.ok) {
+				this.#setUserProfileFields(data);
+				this.#setMatchHistory(data.matches);
+			}
+		} catch (error) {
+			alert(error);
+		}
+	}
+
+	#toggleUsersProfile(user) {
 		if (this.#scene.getObjectByName('usersprofile')) {
 			this.#scene.remove(this.#css2DObject.usersprofile);
 			this.#scene.remove(this.#css2DObject.upOverlay);
 			return;
 		}
+		this.#loadUserProfile(user);
 		this.#scene.add(this.#css2DObject.usersprofile);
 		this.#scene.add(this.#css2DObject.upOverlay);
 	}
@@ -1188,9 +1358,9 @@ class Game {
 	}
 
 	#checkCollisions() {
-		this.#wallsBoxes.forEach(wallBox => {
+		this.#wallsBoxes.forEach((wallBox, i) => {
 			if (this.#ballBox.intersectsBox(wallBox)) {
-				this.#handleBallWallCollision();
+				this.#handleBallWallCollision(i);
 			}
 		});
 
@@ -1229,7 +1399,17 @@ class Game {
 		);
 	}
 
-	#handleBallWallCollision() {
+	#handleBallWallCollision(i) {
+		const wallBox = this.#wallsBoxes[i];
+		const intersectionBox = this.#ballBox.clone().intersect(wallBox);
+		const point = new THREE.Vector3();
+		intersectionBox.getCenter(point);
+
+		if (i === 1 && point.z < wallBox.min.z)
+			this.#ball.position.z = wallBox.min.z;
+		if (i === 0 && point.z > wallBox.max.z)
+			this.#ball.position.z = wallBox.max.z;
+
 		this.#ballDirection.y = -this.#ballDirection.y;
 	}
 
@@ -1345,7 +1525,7 @@ class Game {
 			const refresh = localStorage.getItem('refreshToken');
 
 			if (access) {
-				const response = await fetch(`/api/verify-token/`, {
+				const response = await fetch(`api/verify-token/`, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
@@ -1356,12 +1536,13 @@ class Game {
 				});
 				if (response.ok) {
 					const data = await response.json();
+					this.#css2DObject.profilepic.element.src = data.avatar;
 					this.#loggedUser = data.username;
 					return true;
 				} else {
 					if (refresh) {
 						const refreshResponse = await fetch(
-							`/api/refresh-token/`,
+							`api/refresh-token/`,
 							{
 								method: 'POST',
 								headers: {
@@ -1375,6 +1556,8 @@ class Game {
 
 						if (refreshResponse.ok) {
 							const data = await refreshResponse.json();
+							this.#css2DObject.profilepic.element.src =
+								data.avatar;
 							this.#loggedUser = data.username;
 							localStorage.setItem('accessToken', data.access);
 							return true;
@@ -1403,6 +1586,8 @@ class Game {
 			this.#css2DObject.register.element.querySelector('#password');
 		const { value: confirmPassword } =
 			this.#css2DObject.register.element.querySelector('#confpassword');
+		const { value: gender } =
+			this.#css2DObject.register.element.querySelector('#gender');
 
 		const errors = [];
 
@@ -1428,7 +1613,7 @@ class Game {
 		}
 
 		try {
-			const response = await fetch(`/api/register/`, {
+			const response = await fetch(`api/register/`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -1438,6 +1623,7 @@ class Game {
 					username,
 					password,
 					confirmPassword,
+					gender,
 				}),
 			});
 
@@ -1445,6 +1631,7 @@ class Game {
 			if (response.ok) {
 				localStorage.setItem('accessToken', data.access);
 				localStorage.setItem('refreshToken', data.refresh);
+				this.#css2DObject.profilepic.element.src = data.avatar;
 				this.#loggedUser = data.username;
 				this.#HomePage();
 			} else {
@@ -1488,7 +1675,8 @@ class Game {
 			if (response.ok) {
 				const data = await response.json();
 				const tokens = data.tokens;
-				this.#loggedUser = tokens.username;
+				this.#css2DObject.profilepic.element.src = data.avatar;
+				this.#loggedUser = data.username;
 				localStorage.setItem('accessToken', tokens.access);
 				localStorage.setItem('refreshToken', tokens.refresh);
 				this.#HomePage();
@@ -1553,7 +1741,37 @@ class Game {
 		}
 		if (home === 'chat') this.#chatUsers();
 
+		history.replaceState(null, null, `/${home}`);
 		this.#scene.add(this.#css2DObject[home]);
+	}
+
+	async test() {
+		try {
+			const response = await fetch(`api/add-match/`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${localStorage.getItem(
+						'accessToken'
+					)}`,
+				},
+				body: JSON.stringify({
+					player1: 'hchairi',
+					player2: 'agimi',
+					score_player1: 10,
+					score_player2: 5,
+					winner: 'hchairi',
+					loser: 'agimi',
+				}),
+			});
+			const data = await response.json();
+			if (response.ok) {
+			} else {
+				alert(data.message);
+			}
+		} catch (error) {
+			alert(error);
+		}
 	}
 }
 
