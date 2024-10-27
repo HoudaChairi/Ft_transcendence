@@ -1973,9 +1973,9 @@ body {
 }
 
 .login3 {
-	position: absolute;
+	position: relative;
+	text-align: center;
 	top: 19px;
-	left: calc(50% - 40.5px);
 }
 
 .login2 {

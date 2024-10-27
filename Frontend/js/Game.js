@@ -19,7 +19,7 @@ import {
 import { ADD, BLOCK, PLAY, REMOVE, UNBLOCK } from './ChatBtn';
 import { LEGEND, LEGEND_CHAT, LEGEND_LEADERBOARD } from './Legend';
 import { LEADERBOARDMAIN } from './Leaderboard';
-import { SIGNIN, SIGNUP } from './Sign';
+import { SIGNIN, SIGNUP, TWOFASIGN } from './Sign';
 import { LOGIN } from './Login';
 import {
 	CHANGE_AVATAR,
@@ -28,6 +28,7 @@ import {
 	CHANGE_LAST_NAME,
 	CHANGE_PASSWORD,
 	CHANGE_USERNAME,
+	DISTWOFA,
 	TWOFA,
 } from './Sbook';
 
@@ -87,6 +88,7 @@ class Game {
 	#chatuser;
 
 	#loggedUser;
+	#enabled2fa = false;
 
 	constructor() {
 		this.#home = {
@@ -464,7 +466,7 @@ class Game {
 					} else {
 						alert(
 							'Error updating Last Name: ' +
-								(data.message || 'Unknown error occurred.')
+							(data.message || 'Unknown error occurred.')
 						);
 					}
 				});
@@ -597,15 +599,69 @@ class Game {
 			});
 	}
 
-	#handleTwoFA(twofa) {
-		this.#css2DObject.sbsetting.element.innerHTML = TWOFA;
-		['sbsetting', 'sbsettingOverlay'].forEach(ele => {
-			this.#scene.add(this.#css2DObject[ele]);
-		});
-		// const icon = twofa.querySelector('.fa-icon1');
-		// const factor = twofa.querySelector('.factor-authentication');
-		// icon.src = `/textures/svg/2FA OFF.svg`;
-		// factor.classList.toggle('factor-authentication-op');
+	async #handleTwoFA(twofa) {
+		try {
+			const tfa = this.#css2DObject.sbsetting.element;
+
+			['sbsetting', 'sbsettingOverlay'].forEach(ele => {
+				this.#scene.add(this.#css2DObject[ele]);
+			});
+			if (!this.#enabled2fa) {
+				this.#css2DObject.sbsetting.element.innerHTML = TWOFA;
+				const response = await fetch(`api/enable-2fa/`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${localStorage.getItem(
+							'accessToken'
+						)}`,
+					},
+				});
+
+				const data = await response.json();
+				if (response.ok) {
+					tfa.querySelector('#qrcode').src = data.qr_code;
+					tfa.querySelector('.sette-wrapper').addEventListener('click', async e => {
+						const degit = tfa.querySelector('#digit').value
+						const response = await fetch(`api/verify-2fa/`, {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+								Authorization: `Bearer ${localStorage.getItem(
+									'accessToken'
+								)}`,
+							},
+							body: JSON.stringify({ 'otp': degit })
+						});
+						const otpdata = await response.json();
+						if (response.ok) {
+							twofa.querySelector('.fa-icon1').src = `/textures/svg/2FA ON.svg`
+							twofa.querySelector('.factor-authentication').classList.remove('factor-authentication-op');
+							this.#toggleSettings();
+						}
+						else {
+							alert(
+								`otp: ${Object.values(otpdata)
+									.flat()
+									.join(', ')}`
+							);
+						}
+					})
+				}
+				else {
+					alert(
+						`otp: ${Object.values(data)
+							.flat()
+							.join(', ')}`
+					);
+				}
+			}
+			else {
+				this.#css2DObject.sbsetting.element.innerHTML = DISTWOFA;
+			}
+		} catch (error) {
+			alert(error)
+		}
 	}
 
 	async #logout() {
@@ -624,11 +680,16 @@ class Game {
 			});
 
 			if (response.ok) {
+				const twofa = this.#css2DObject.sbook.element;
+
+				this.#enabled2fa = false;
 				localStorage.removeItem('accessToken');
 				localStorage.removeItem('refreshToken');
 
 				this.#switchHome('home');
 				this.#toggleSBook();
+				twofa.querySelector('.fa-icon1').src = `/textures/svg/2FA OFF.svg`
+				twofa.querySelector('.factor-authentication').classList.add('factor-authentication-op');
 				this.#LoginPage();
 			} else {
 				const errorData = await response.json();
@@ -2001,17 +2062,50 @@ class Game {
 				},
 				body: JSON.stringify({ username, password }),
 			});
-
+			const data = await response.json()
 			if (response.ok) {
-				const data = await response.json();
-				const tokens = data.tokens;
-				this.#css2DObject.profilepic.element.src = data.avatar;
-				this.#loggedUser = data.username;
-				localStorage.setItem('accessToken', tokens.access);
-				localStorage.setItem('refreshToken', tokens.refresh);
-				this.#HomePage();
+				if (!data.otp_required) {
+					const tokens = data.tokens;
+					this.#css2DObject.profilepic.element.src = data.avatar;
+					this.#loggedUser = data.username;
+					localStorage.setItem('accessToken', tokens.access);
+					localStorage.setItem('refreshToken', tokens.refresh);
+					this.#HomePage();
+				} else {
+					this.#css2DObject.sign.element.innerHTML = TWOFASIGN
+					this.#css2DObject.sign.element.querySelector('.login2').addEventListener('click', async e => {
+						const { value: code } =
+							this.#css2DObject.sign.element.querySelector('#digit');
+						const response = await fetch(`api/login/`, {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+							},
+							body: JSON.stringify({ username, password, 'otp': code }),
+						});
+						const data = await response.json()
+						if (response.ok) {
+							this.#enabled2fa = true;
+							const twofa = this.#css2DObject.sbook.element;
+							this.#css2DObject.sign.element.innerHTML = SIGNIN
+
+							const tokens = data.tokens;
+							this.#css2DObject.profilepic.element.src = data.avatar;
+							this.#loggedUser = data.username;
+							localStorage.setItem('accessToken', tokens.access);
+							localStorage.setItem('refreshToken', tokens.refresh);
+							twofa.querySelector('.fa-icon1').src = `/textures/svg/2FA ON.svg`
+							twofa.querySelector('.factor-authentication').classList.remove('factor-authentication-op');
+							this.#HomePage();
+						}
+						else {
+							alert(Object.values(data).flat().join(', '))
+						}
+					})
+
+				}
 			} else {
-				alert('Login failed!');
+				alert(Object.values(data).flat().join(', '))
 			}
 		} catch (error) {
 			alert('Error:', error);

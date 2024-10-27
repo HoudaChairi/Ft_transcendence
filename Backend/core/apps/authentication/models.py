@@ -28,6 +28,10 @@ class Player(AbstractUser):
     is_2fa_enabled = models.BooleanField(default=False)
     otp_secret = models.CharField(max_length=32, blank=True, null=True)
     
+    def verify_otp(self, otp):
+        totp = pyotp.TOTP(self.otp_secret)
+        return totp.verify(otp)
+    
     def generate_otp_secret(self):
         self.otp_secret = pyotp.random_base32()
         self.save()

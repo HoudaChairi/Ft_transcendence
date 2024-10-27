@@ -1,3 +1,30 @@
+export const TWOFASIGN = `<div class="sign-in">Enter 2FA Code</div>
+<div class="login-parent">
+	<div class="login-sign">
+		<div class="section">
+			<div class="email-parent">
+			<input
+				type="text"
+				inputmode="numeric"
+				maxlength="6"
+				class="username"
+				placeholder="6 Digit Code"
+				oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6)"
+				id="digit"
+			/>
+				<div class="frame-child-sign"></div>
+			</div>
+			<img class="iv-icon" alt="" src="/textures/svg/key.svg" />
+		</div>
+	</div>
+	<div class="login-group">
+		<div class="login2">
+			<img class="bsign-icon" alt="" src="/textures/svg/BSign.svg" />
+			<div class="login3">Validate</div>
+		</div>
+	</div>
+</div>`
+
 export const SIGNIN = `<div class="sign-in">SIGN IN</div>
 <div class="login-parent">
 	<div class="login-sign">

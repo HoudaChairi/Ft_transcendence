@@ -62,8 +62,11 @@ class LoginSerializer(serializers.ModelSerializer):
     tokens = serializers.SerializerMethodField()
     avatar = serializers.SerializerMethodField()
 
+    class Meta:
+        model = Player
+        fields = ['username', 'password', 'tokens', 'avatar']
+
     def get_tokens(self, user):
-        # Now `user` is the Player instance
         return {
             'refresh': user.tokens()['refresh'],
             'access': user.tokens()['access'],
@@ -72,21 +75,30 @@ class LoginSerializer(serializers.ModelSerializer):
     def get_avatar(self, user):
         return user.get_avatar_url()
 
-    class Meta:
-        model = Player
-        fields = ['username', 'password', 'tokens', 'avatar']
-
     def validate(self, attrs):
         username = attrs.get('username', '')
         password = attrs.get('password', '')
-        user = auth.authenticate(username=username, password=password)
+        
+        user = authenticate(username=username, password=password)
 
         if not user:
-            raise AuthenticationFailed('Invalid credentials, try again')
-        if not user.is_active:
-            raise AuthenticationFailed('Account disabled, contact admin')
+            raise AuthenticationFailed('Invalid credentials, try again.')
         
-        return user
+        if not user.is_active:
+            raise AuthenticationFailed('Account disabled, contact admin.')
+
+        if user.is_2fa_enabled:
+            return {
+                'username': user.username,
+                'otp_required': True,
+                'message': '2FA required'
+            }
+
+        return {
+            'user': user,
+            'tokens': self.get_tokens(user),
+            'avatar': self.get_avatar(user)
+        }
 
         
 # new Logout serializer:

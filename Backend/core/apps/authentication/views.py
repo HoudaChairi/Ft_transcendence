@@ -36,21 +36,45 @@ class RegisterView(APIView):
 
 
 class LoginAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
     def post(self, request):
-        serializer = LoginSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.validated_data
-            
-            # Check if user has 2FA enabled
-            if user.is_2fa_enabled:
-                return Response({'message': '2FA required', 'otp_required': True, 'username': user.username}, status=status.HTTP_200_OK)
-            
-            # Generate tokens if 2FA is not required
-            return Response(serializer.data, status=status.HTTP_200_OK)
+        username = request.data.get('username')
+        password = request.data.get('password')
+        otp = request.data.get('otp')
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if not otp:
+            serializer = LoginSerializer(data={'username': username, 'password': password})
+            
+            if serializer.is_valid():
+                validated_data = serializer.validated_data
+                
+                if validated_data.get('otp_required'):
+                    return Response({
+                        'message': validated_data['message'],
+                        'otp_required': validated_data['otp_required'],
+                        'username': validated_data['username']
+                    }, status=status.HTTP_200_OK)
+                
+                return Response({
+                    'username': validated_data['user'].username,
+                    'tokens': validated_data['tokens'],
+                    'avatar': validated_data['avatar']
+                }, status=status.HTTP_200_OK)
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        else:
+            user = authenticate(username=username, password=password)
+            if not user or not user.verify_otp(otp):
+                return Response({
+                    'message': 'Invalid OTP, please try again.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            serializer = LoginSerializer(user)
+            return Response({
+                'username': user.username,
+                'tokens': serializer.get_tokens(user),
+                'avatar': serializer.get_avatar(user)
+            }, status=status.HTTP_200_OK)
     
     
 class LogoutAPIView(APIView):
@@ -192,8 +216,18 @@ class Enable2FA(APIView):
         totp = pyotp.TOTP(player.otp_secret)
         otp_uri = totp.provisioning_uri(name=player.email, issuer_name='Ft_transcendence')
 
-        # Generate QR code
-        img = qrcode.make(otp_uri)
+        # Generate QR code without border
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=0  # Setting border to 0 to remove borders
+        )
+        qr.add_data(otp_uri)
+        qr.make(fit=True)
+
+        # Create an image from the QR Code
+        img = qr.make_image(fill_color="black", back_color="white")
         buffer = BytesIO()
         img.save(buffer, format='PNG')
         img_str = base64.b64encode(buffer.getvalue()).decode()

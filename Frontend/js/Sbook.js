@@ -163,7 +163,7 @@ export const TWOFA = `<div class="frame-wrapper">
 </div>
 <div class="factor-authentication-parent">
 	<div class="factor-authentication1">2Factor Authentication</div>
-	<img class="qrcode" id="qrcode" src="/textures/svg/qr.svg" alt="qrcode" />
+	<img class="qrcode" id="qrcode" src="" alt="qrcode" />
 	<div class="username-wrapper">
 		<input
 			type="text"
@@ -172,9 +172,42 @@ export const TWOFA = `<div class="frame-wrapper">
 			class="username-user"
 			placeholder="6 Digit Code"
 			oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6)"
+			id="digit"
 		/>
 	</div>
 	<div class="sette-wrapper">
 		<div class="change-username">Enable</div>
 	</div>
 </div>`;
+
+export const DISTWOFA = `<div class="frame-wrapper">
+<div class="rectangle-parent-user">
+	<img
+		class="rectangle-icon-user"
+		alt=""
+		src="/textures/svg/RectangleUP.svg"
+	/>
+
+	<div class="change-username">Disable 2FA</div>
+</div>
+</div>
+<div class="send-invite-to-mel-moun-parent">
+<div class="send-invite-to">Want to Disable 2FA?</div>
+<div class="username-wrapper">
+		<input
+			type="text"
+			inputmode="numeric"
+			maxlength="6"
+			class="username-user"
+			placeholder="6 Digit Code"
+			oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6)"
+			id="digit"
+		/>
+	</div>
+<div class="sette-wrapper" id="yes">
+	<div class="add-user">YES</div>
+</div>
+<div class="sette-wrapper" id="no">
+	<div class="add-user">NO</div>
+</div>
+</div>`
