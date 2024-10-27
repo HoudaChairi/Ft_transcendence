@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class TwoFactorConfig(AppConfig):
+class FriendsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'core.apps.two_factor'
+    name = 'core.apps.friends'

@@ -22,14 +22,10 @@ def room(request, user1, user2):
             'sender': message.sender.username,
             'receiver': message.receiver.username,
             'content': message.content,
-            # 'timestamp': message.timestamp.isoformat()
         }
         for message in messages
     ]
 
     return JsonResponse({
-        # 'user1': user1,
-        # 'user2': user2,
-        # 'room_name': room_name,
         'messages': messages_list,
     })
