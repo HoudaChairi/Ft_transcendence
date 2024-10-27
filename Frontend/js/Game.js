@@ -762,13 +762,15 @@ class Game {
 
 
 	async #playUser(user) {
-		this.#css2DObject.chatBtn.element.innerHTML = PLAY;
-		this.#css2DObject.chatBtn.element.querySelector(
-			'.select-new-username'
-		).textContent = `Start a Game With ${user}`;
-		['chatBtn', 'btnOverlay'].forEach(ele => {
-			this.#scene.add(this.#css2DObject[ele]);
-		});
+		// this.#css2DObject.chatBtn.element.innerHTML = PLAY;
+		// this.#css2DObject.chatBtn.element.querySelector(
+		// 	'.select-new-username'
+		// ).textContent = `Start a Game With ${user}`;
+		// ['chatBtn', 'btnOverlay'].forEach(ele => {
+		// 	this.#scene.add(this.#css2DObject[ele]);
+		// });
+		// this.#removeUser(user);
+		this.#unblockUser(user);
 	}
 	
 	async #blockUser(user) {
@@ -840,7 +842,6 @@ class Game {
 				console.error("Error accepting friend request:", errorData);
 				return;
 			}
-	
 			const data = await response.json();
 			console.log("Friend request accepted:", data);
 	
