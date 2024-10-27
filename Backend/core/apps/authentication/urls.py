@@ -9,22 +9,15 @@ urlpatterns = [
     path('update-password/', UpdatePasswordView.as_view(), name='update_password'),
     path('avatar/', UpdateAvatarView.as_view(), name='avatar'),
     path('add-match/', MatchCreateView.as_view(), name='add-match'),
-    path('user/<str:username>/', UserInfos.as_view(), name='user-info'),
-    
     
     path('verify-token/', CustomTokenVerifyView.as_view(), name='token_verify'),
     path('refresh-token/', CustomTokenRefreshView.as_view(), name='token_refresh'),
     
-    # by meriem
     path('users/', UserList.as_view(), name='user_list'),
-
-
-    # after
-    #----------------------------------------------------------------------------#
-    # path('friends/', FriendListView.as_view(), name='friend_list'),
-    # path('add_friend/<int:friend_id>/', AddFriendAPIView.as_view(), name='add_friend'),
-    # path('remove_friend/<int:friend_id>/', RemoveFriendAPIView.as_view(), name='remove_friend'),
-    # path('match_history/', MatchHistoryAPIView.as_view(), name='match_history'),
-    #----------------------------------------------------------------------------#
+    path('user/<str:username>/', UserInfos.as_view(), name='user-info'),
+    # 2FA
+    path('enable-2fa/', Enable2FA.as_view(), name='enable_2fa'),
+    path(
+        'verify-2fa/', Verify2FA.as_view(), name='verify_2fa'),
 
 ]
