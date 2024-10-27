@@ -1029,6 +1029,16 @@ body {
 	display: none;
 }
 
+.indicator-icon2 {
+	position: absolute;
+	top: calc(50% - 16px);
+	right: 72px;
+	width: 32px;
+	height: 32px;
+	overflow: hidden;
+	object-fit: cover;
+}
+
 .element-parent {
 	align-self: stretch;
 	display: flex;

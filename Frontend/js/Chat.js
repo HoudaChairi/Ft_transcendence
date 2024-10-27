@@ -7,6 +7,8 @@ export const SENT = `<div class="sent">
 	<div class="you"></div>
 </div>`;
 
+export const SECOND = `<img class="indicator-icon2" alt="" id="" src="" />`;
+
 // element-parent
 export const ELEMENT = `<div class="element">
 	<img class="element-child" alt="" src="/textures/svg/Rectangle 1.svg" />
@@ -15,8 +17,8 @@ export const ELEMENT = `<div class="element">
 	<img
 		class="indicator-icon1"
 		alt=""
+		id="message"
 	/>
-
 	<img
 		class="indicator-icon"
 		alt=""
