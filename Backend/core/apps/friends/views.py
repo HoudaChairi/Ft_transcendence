@@ -14,15 +14,15 @@ class ManageFriendshipView(APIView):
     def get(self, request):
         try:
             pending_friendships = Friendship.objects.filter(
-                Q(from_user=request.user) | Q(to_user=request.user),
+                to_user=request.user,
                 status='pending'
             )
-            
+
             blocked_friendships = Friendship.objects.filter(
                 from_user=request.user,
                 status='blocked'
             )
-            
+
             accepted_friendships = Friendship.objects.filter(
                 Q(from_user=request.user) | Q(to_user=request.user),
                 status='accepted'
