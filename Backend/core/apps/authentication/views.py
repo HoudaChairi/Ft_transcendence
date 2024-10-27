@@ -15,6 +15,8 @@ from io import BytesIO
 import base64
 
 # ------------------------------------- Register/Login/Logout ------------------------------------- #
+from core.apps.friends.models import Friendship
+
 class RegisterView(APIView):
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
@@ -221,8 +223,19 @@ class UserList(APIView):
 
     def get(self, request):
         try:
-            users = Player.objects.only('username', 'avatar', 'first_name', 'last_name')
-            
+            blocked_users = Friendship.objects.filter(
+                from_user=request.user,
+                status='blocked'
+            ).values_list('to_user', flat=True)
+
+            users_blocked_by_others = Friendship.objects.filter(
+                to_user=request.user,
+                status='blocked'
+            ).values_list('from_user', flat=True)
+
+            excluded_user_ids = list(blocked_users) + list(users_blocked_by_others)
+            users = Player.objects.exclude(id__in=excluded_user_ids).only('username', 'avatar', 'first_name', 'last_name')
+
             users_list = [
                 {
                     'username': user.username,
@@ -232,11 +245,12 @@ class UserList(APIView):
                 }
                 for user in users
             ]
-            
+
             return Response({'users': users_list})
         
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class UserInfos(APIView):
     permission_classes = [IsAuthenticated]

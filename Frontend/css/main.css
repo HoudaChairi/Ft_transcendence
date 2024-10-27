@@ -1029,6 +1029,16 @@ body {
 	display: none;
 }
 
+.indicator-icon2 {
+	position: absolute;
+	top: calc(50% - 16px);
+	right: 72px;
+	width: 32px;
+	height: 32px;
+	overflow: hidden;
+	object-fit: cover;
+}
+
 .element-parent {
 	align-self: stretch;
 	display: flex;
@@ -2233,6 +2243,82 @@ body {
 	align-items: center;
 	justify-content: center;
 	padding: 0rem 1.312rem;
+	gap: 1.25rem;
+	color: #6b3783;
+}
+
+.all-players1 {
+	position: relative;
+	line-height: 150%;
+}
+
+.frame-child-chat {
+	align-self: stretch;
+	position: relative;
+	max-width: 100%;
+	overflow: hidden;
+	height: 0rem;
+	flex-shrink: 0;
+}
+
+.all-players-group {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	justify-content: flex-start;
+}
+
+.radio-button-unchecked-icon {
+	width: 1.5rem;
+	position: relative;
+	height: 1.5rem;
+}
+
+.all-players {
+	align-self: stretch;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.all-players-parent {
+	position: absolute;
+	top: calc(50% - 270.5px);
+	left: calc(50% - 275px);
+	width: 34.438rem;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	justify-content: flex-start;
+	gap: 1.562rem;
+}
+
+.qrcode {
+	width: 7.5rem;
+	position: relative;
+	height: 7.5rem;
+	overflow: hidden;
+	flex-shrink: 0;
+}
+
+.factor-authentication1 {
+	align-self: stretch;
+	position: relative;
+	line-height: 150%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 4.5rem;
+	flex-shrink: 0;
+}
+
+.factor-authentication-parent {
+	width: 17.688rem;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
 	gap: 1.25rem;
 	color: #6b3783;
 }
