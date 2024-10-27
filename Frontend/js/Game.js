@@ -762,21 +762,15 @@ class Game {
 
 
 	async #playUser(user) {
-		// this.#css2DObject.chatBtn.element.innerHTML = PLAY;
-		// this.#css2DObject.chatBtn.element.querySelector(
-		// 	'.select-new-username'
-		// ).textContent = `Start a Game With ${user}`;
-		// ['chatBtn', 'btnOverlay'].forEach(ele => {
-		// 	this.#scene.add(this.#css2DObject[ele]);
-		// });
-
-		// this.#removeUser(user);
-		// this.#unblockUser(user);
-
-		// this.#acceptUser(user);
-		// this.#declineUser(user);
+		this.#css2DObject.chatBtn.element.innerHTML = PLAY;
+		this.#css2DObject.chatBtn.element.querySelector(
+			'.select-new-username'
+		).textContent = `Start a Game With ${user}`;
+		['chatBtn', 'btnOverlay'].forEach(ele => {
+			this.#scene.add(this.#css2DObject[ele]);
+		});
 	}
-
+	
 	async #blockUser(user) {
 		try {
 			this.#css2DObject.chatBtn.element.innerHTML = BLOCK;
