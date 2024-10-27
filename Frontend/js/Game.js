@@ -1305,6 +1305,9 @@ class Game {
 				);
 				this.#chatWebSocket[user.username].sock.onmessage = e => {
 					const data = JSON.parse(e.data);
+					if (data.error) {
+						return;
+					}
 					if (user.username === this.#chatuser) {
 						if (data.sender === user.username)
 							this.#addRecivedMessage(data.message);

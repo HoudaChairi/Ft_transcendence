@@ -3,7 +3,8 @@ from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from core.apps.authentication.models import Player
 from .models import Message
-
+from core.apps.friends.models import Friendship
+from django.db.models import Q
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -32,6 +33,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         sender = await self.get_user(sender_username)
         receiver = await self.get_user(receiver_username)
 
+        if not await self.are_friends(sender, receiver):
+            await self.send(text_data=json.dumps({'error': 'You are not friends with this user.'}))
+            return
+
         await self.save_message(sender, receiver, message)
 
         await self.channel_layer.group_send(
@@ -58,3 +63,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def get_user(self, username):
         return Player.objects.get(username=username)
+
+    @database_sync_to_async
+    def are_friends(self, user1, user2):
+        return Friendship.objects.filter(
+            ((Q(from_user=user1) & Q(to_user=user2)) |
+             (Q(from_user=user2) & Q(to_user=user1))),
+            status='accepted'
+        ).exists()
