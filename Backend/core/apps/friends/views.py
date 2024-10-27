@@ -79,8 +79,7 @@ class ManageFriendshipView(APIView):
 
         elif action == 'remove':
             if friendship and friendship.status == 'accepted':
-                friendship.status = 'none'
-                friendship.save()
+                friendship.delete()
                 return Response({"message": "Friendship removed"}, status=status.HTTP_200_OK)
             return Response({"error": "No active friendship to remove"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -108,12 +107,23 @@ class ManageFriendshipView(APIView):
                 )
                 return Response({"message": "User blocked"}, status=status.HTTP_200_OK)
 
-
         elif action == 'unblock':
             if friendship and friendship.status == 'blocked' and friendship.from_user == request.user:
-                friendship.status = 'none'
-                friendship.save()
+                friendship.delete()
                 return Response({"message": "User unblocked"}, status=status.HTTP_200_OK)
             return Response({"error": "User is not blocked by you"}, status=status.HTTP_400_BAD_REQUEST)
+
+        elif action == 'accept':
+            if friendship and friendship.status == 'pending' and friendship.to_user == request.user:
+                friendship.status = 'accepted'
+                friendship.save()
+                return Response(FriendshipSerializer(friendship).data, status=status.HTTP_200_OK)
+            return Response({"error": "No pending friend request to accept"}, status=status.HTTP_400_BAD_REQUEST)
+
+        elif action == 'decline':
+            if friendship and friendship.status == 'pending' and friendship.to_user == request.user:
+                friendship.delete()
+                return Response({"message": "Friend request declined"}, status=status.HTTP_200_OK)
+            return Response({"error": "No pending friend request to decline"}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({"error": "Invalid action"}, status=status.HTTP_400_BAD_REQUEST)

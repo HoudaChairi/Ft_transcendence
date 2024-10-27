@@ -761,7 +761,7 @@ class Game {
 	}
 
 
-	#playUser(user) {
+	async #playUser(user) {
 		// this.#css2DObject.chatBtn.element.innerHTML = PLAY;
 		// this.#css2DObject.chatBtn.element.querySelector(
 		// 	'.select-new-username'
@@ -772,60 +772,113 @@ class Game {
 
 		this.#removeUser(user);
 		// this.#unblockUser(user);
+
+		// ACCEPT:
+		// try {
+		// 	console.log(`Accepting friend request from: ${user}`);
+	
+		// 	const response = await fetch(`api/manage/friendship/accept/${user}/`, {
+		// 		method: 'POST',
+		// 		headers: {
+		// 			'Content-Type': 'application/json',
+		// 			Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+		// 		},
+		// 	});
+	
+		// 	if (!response.ok) {
+		// 		const errorData = await response.json();
+		// 		console.error("Error accepting friend request:", errorData);
+		// 		return;
+		// 	}
+	
+		// 	const data = await response.json();
+		// 	console.log("Friend request accepted:", data);
+		// 	// Optionally update the UI here to reflect the change
+	
+		// } catch (error) {
+		// 	console.error("Error accepting friend request:", error);
+		// }
 	}
 
 	async #blockUser(user) {
+		// try {
+		// 	this.#css2DObject.chatBtn.element.innerHTML = BLOCK;
+		// 	this.#css2DObject.chatBtn.element.querySelector(
+		// 		'.send-invite-to'
+		// 	).textContent = `Block ${user}?`;
+
+		// 	['chatBtn', 'btnOverlay'].forEach(ele => {
+		// 		this.#scene.add(this.#css2DObject[ele]);
+		// 	});
+
+		// 	const noButton = this.#css2DObject.chatBtn.element.querySelector('#no');
+		// 	const yesButton = this.#css2DObject.chatBtn.element.querySelector('#yes');
+
+		// 	if (noButton) {
+		// 		noButton.addEventListener('click', () => {
+		// 			console.log("Block action canceled");
+		// 			this.#toggleChatBtn();
+		// 		});
+		// 	}
+
+		// 	if (yesButton) {
+		// 		yesButton.addEventListener('click', async () => {
+		// 			console.log("Blocking user:", user);
+		// 			try {
+		// 				const response = await fetch(`api/manage/friendship/block/${user}/`, {
+		// 					method: 'POST',
+		// 					headers: {
+		// 						'Content-Type': 'application/json',
+		// 						Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+		// 					},
+		// 				});
+
+		// 				if (!response.ok) {
+		// 					const errorData = await response.json();
+		// 					console.error("Error blocking user:", errorData);
+		// 					return;
+		// 				}
+
+		// 				const data = await response.json();
+		// 				console.log("User blocked:", data);
+		// 				this.#toggleChatBtn();
+
+		// 			} catch (error) {
+		// 				console.error("Error blocking user:", error);
+		// 			}
+		// 		});
+		// 	}
+
+		// } catch (error) {
+		// 	console.error("Error blocking user:", error);
+		// }
+
 		try {
-			this.#css2DObject.chatBtn.element.innerHTML = BLOCK;
-			this.#css2DObject.chatBtn.element.querySelector(
-				'.send-invite-to'
-			).textContent = `Block ${user}?`;
-
-			['chatBtn', 'btnOverlay'].forEach(ele => {
-				this.#scene.add(this.#css2DObject[ele]);
+			// Confirm decline
+			console.log(`Declining friend request from: ${user}`);
+	
+			const response = await fetch(`api/manage/friendship/decline/${user}/`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+				},
 			});
-
-			const noButton = this.#css2DObject.chatBtn.element.querySelector('#no');
-			const yesButton = this.#css2DObject.chatBtn.element.querySelector('#yes');
-
-			if (noButton) {
-				noButton.addEventListener('click', () => {
-					console.log("Block action canceled");
-					this.#toggleChatBtn();
-				});
+	
+			if (!response.ok) {
+				const errorData = await response.json();
+				console.error("Error declining friend request:", errorData);
+				return;
 			}
-
-			if (yesButton) {
-				yesButton.addEventListener('click', async () => {
-					console.log("Blocking user:", user);
-					try {
-						const response = await fetch(`api/manage/friendship/block/${user}/`, {
-							method: 'POST',
-							headers: {
-								'Content-Type': 'application/json',
-								Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-							},
-						});
-
-						if (!response.ok) {
-							const errorData = await response.json();
-							console.error("Error blocking user:", errorData);
-							return;
-						}
-
-						const data = await response.json();
-						console.log("User blocked:", data);
-						this.#toggleChatBtn();
-
-					} catch (error) {
-						console.error("Error blocking user:", error);
-					}
-				});
-			}
-
+	
+			const data = await response.json();
+			console.log("Friend request declined:", data);
+			// Optionally update the UI here to reflect the change
+	
 		} catch (error) {
-			console.error("Error blocking user:", error);
+			console.error("Error declining friend request:", error);
 		}
+
 	}
 
 	async #unblockUser(user) {
