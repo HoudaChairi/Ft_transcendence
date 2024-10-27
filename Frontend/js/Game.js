@@ -770,8 +770,8 @@ class Game {
 		// 	this.#scene.add(this.#css2DObject[ele]);
 		// });
 
-		// this.#removeUser(user);
-		this.#unblockUser(user);
+		this.#removeUser(user);
+		// this.#unblockUser(user);
 	}
 
 	async #blockUser(user) {

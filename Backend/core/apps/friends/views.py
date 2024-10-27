@@ -78,11 +78,12 @@ class ManageFriendshipView(APIView):
                 return Response(FriendshipSerializer(friendship).data, status=status.HTTP_201_CREATED)
 
         elif action == 'remove':
-            if friendship and friendship.status in ['accepted', 'pending']:
+            if friendship and friendship.status == 'accepted':
                 friendship.status = 'none'
                 friendship.save()
                 return Response({"message": "Friendship removed"}, status=status.HTTP_200_OK)
             return Response({"error": "No active friendship to remove"}, status=status.HTTP_400_BAD_REQUEST)
+
 
         elif action == 'block':
             if friendship:
