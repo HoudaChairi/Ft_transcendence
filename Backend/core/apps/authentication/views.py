@@ -13,9 +13,9 @@ import pyotp
 import qrcode
 from io import BytesIO
 import base64
+from core.apps.friends.models import Friendship
 
 # ------------------------------------- Register/Login/Logout ------------------------------------- #
-from core.apps.friends.models import Friendship
 
 class RegisterView(APIView):
     def post(self, request):
