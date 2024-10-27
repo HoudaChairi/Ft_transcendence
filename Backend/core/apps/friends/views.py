@@ -84,7 +84,6 @@ class ManageFriendshipView(APIView):
                 return Response({"message": "Friendship removed"}, status=status.HTTP_200_OK)
             return Response({"error": "No active friendship to remove"}, status=status.HTTP_400_BAD_REQUEST)
 
-
         elif action == 'block':
             if friendship:
                 if friendship.status == 'blocked' and friendship.from_user == request.user:
