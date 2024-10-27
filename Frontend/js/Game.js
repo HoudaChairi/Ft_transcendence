@@ -28,6 +28,7 @@ import {
 	CHANGE_LAST_NAME,
 	CHANGE_PASSWORD,
 	CHANGE_USERNAME,
+	TWOFA,
 } from './Sbook';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -597,11 +598,14 @@ class Game {
 	}
 
 	#handleTwoFA(twofa) {
-		const icon = twofa.querySelector('.fa-icon1');
-		const factor = twofa.querySelector('.factor-authentication');
-
-		icon.src = `/textures/svg/2FA OFF.svg`;
-		factor.classList.toggle('factor-authentication-op');
+		this.#css2DObject.sbsetting.element.innerHTML = TWOFA;
+		['sbsetting', 'sbsettingOverlay'].forEach(ele => {
+			this.#scene.add(this.#css2DObject[ele]);
+		});
+		// const icon = twofa.querySelector('.fa-icon1');
+		// const factor = twofa.querySelector('.factor-authentication');
+		// icon.src = `/textures/svg/2FA OFF.svg`;
+		// factor.classList.toggle('factor-authentication-op');
 	}
 
 	async #logout() {
