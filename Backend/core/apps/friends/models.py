@@ -12,7 +12,6 @@ class Friendship(models.Model):
     from_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="friendship_requests_sent", on_delete=models.CASCADE)
     to_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="friendship_requests_received", on_delete=models.CASCADE)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='none')
-    # blocked by
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
