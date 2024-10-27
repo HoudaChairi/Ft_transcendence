@@ -92,12 +92,13 @@ class ManageFriendshipView(APIView):
                     friendship.status = 'blocked'
                     friendship.save()
                     return Response({"message": "User blocked"}, status=status.HTTP_200_OK)
+                elif friendship.to_user == request.user and friendship.status == 'blocked':
+                    return Response({"error": "Cannot block a user that has already blocked you"}, status=status.HTTP_400_BAD_REQUEST)
                 else:
-                    friendship = Friendship.objects.create(
-                        from_user=request.user,
-                        to_user=target_user,
-                        status='blocked'
-                    )
+                    friendship.from_user = request.user
+                    friendship.to_user = target_user
+                    friendship.status = 'blocked'
+                    friendship.save()
                     return Response({"message": "User blocked"}, status=status.HTTP_200_OK)
             else:
                 friendship = Friendship.objects.create(
@@ -106,6 +107,7 @@ class ManageFriendshipView(APIView):
                     status='blocked'
                 )
                 return Response({"message": "User blocked"}, status=status.HTTP_200_OK)
+
 
         elif action == 'unblock':
             if friendship and friendship.status == 'blocked' and friendship.from_user == request.user:
