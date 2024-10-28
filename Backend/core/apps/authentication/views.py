@@ -21,8 +21,8 @@ class RegisterView(APIView):
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
-            user = serializer.save()  # Create the user
-            tokens = user.tokens()    # Get the tokens for the newly created user
+            user = serializer.save()
+            tokens = user.tokens()
             
             return Response({
                 'email': user.email,
@@ -340,13 +340,10 @@ class UserInfos(APIView):
 
     def get(self, request, username):
         try:
-            # Fetch the user by username
             user = Player.objects.get(username=username)
-
-            # Retrieve all matches where the user is either player1 or player2
+            
             matches = Match.objects.filter(Q(player1=user) | Q(player2=user)).select_related('player1', 'player2', 'winner', 'loser').order_by('id')
 
-            # Format the matches data
             matches_data = [{
                 'player1': match.player1.username,
                 'player2': match.player2.username,

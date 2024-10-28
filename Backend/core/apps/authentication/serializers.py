@@ -55,7 +55,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         )
         return user
     
-# new Login serializer:
+# Login serializer:
 class LoginSerializer(serializers.ModelSerializer):
     username = serializers.CharField(max_length=255, min_length=3)
     password = serializers.CharField(max_length=68, min_length=6, write_only=True)
@@ -101,7 +101,7 @@ class LoginSerializer(serializers.ModelSerializer):
         }
 
         
-# new Logout serializer:
+# Logout serializer:
 class LogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField()
 
@@ -139,7 +139,6 @@ class UpdateInfosSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Tournament username is already taken.")
         return value
 
-    # email
     def validate_email(self, value):
         if self.instance.remote:
             raise serializers.ValidationError("Remote Login can't change email.")
@@ -147,13 +146,11 @@ class UpdateInfosSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Email is already taken.")
         return value
 
-    # first name
     def validate_first_name(self, value):
         if not value.strip():
             raise serializers.ValidationError("First name cannot be empty.")
         return value
 
-    # last name
     def validate_last_name(self, value):
         if not value.strip():
             raise serializers.ValidationError("Last name cannot be empty.")
@@ -210,11 +207,9 @@ class AvatarSerializer(serializers.ModelSerializer):
         fields = ['avatar']
 
     def validate_avatar(self, value):
-        # Check file type
         if not value.name.endswith(('.png', '.jpg', '.jpeg', '.gif')):
             raise serializers.ValidationError("File type is not supported. Please upload an image.")
         
-        # Check file size (e.g., limit to 5 MB)
         if value.size > 5 * 1024 * 1024:
             raise serializers.ValidationError("File size should be less than 5 MB.")
         
@@ -227,7 +222,6 @@ class MatchSerializer(serializers.ModelSerializer):
         fields = ['player1', 'player2', 'score_player1', 'score_player2', 'winner', 'loser']
 
     def validate(self, attrs):
-        # Ensure player1 and player2 are different
         if attrs['player1'] == attrs['player2']:
             raise serializers.ValidationError("Players cannot be the same.")
         return attrs
