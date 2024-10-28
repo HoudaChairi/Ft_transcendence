@@ -211,22 +211,19 @@ class Enable2FA(APIView):
     def post(self, request):
         player = request.user
         player.generate_otp_secret()
-
-        # Generate the OTP URI
+        
         totp = pyotp.TOTP(player.otp_secret)
         otp_uri = totp.provisioning_uri(name=player.email, issuer_name='Ft_transcendence')
 
-        # Generate QR code without border
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
             box_size=10,
-            border=0  # Setting border to 0 to remove borders
+            border=0
         )
         qr.add_data(otp_uri)
         qr.make(fit=True)
 
-        # Create an image from the QR Code
         img = qr.make_image(fill_color="black", back_color="white")
         buffer = BytesIO()
         img.save(buffer, format='PNG')
@@ -249,6 +246,37 @@ class Verify2FA(APIView):
             return Response({'message': '2FA enabled successfully!'}, status=status.HTTP_200_OK)
         else:
             return Response({'error': 'Invalid OTP! Please try again.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+# View for Disabling 2FA
+class Disable2FA(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        player = request.user
+
+        if player.is_2fa_enabled:
+            player.is_2fa_enabled = False
+            player.otp_secret = None  # Optional: Clear the OTP secret
+            player.save()
+            return Response({'message': '2FA disabled successfully!'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': '2FA is not enabled!'}, status=status.HTTP_400_BAD_REQUEST)
+
+# # View for Disabling 2FA and Regenerating OTP Secret
+# class Disable2FA(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def post(self, request):
+#         player = request.user
+
+#         if player.is_2fa_enabled:
+#             player.is_2fa_enabled = False
+#             player.generate_otp_secret()  # Regenerate the OTP secret
+#             player.save()
+#             return Response({'message': '2FA disabled and OTP secret regenerated successfully!'}, status=status.HTTP_200_OK)
+#         else:
+#             return Response({'error': '2FA is not enabled!'}, status=status.HTTP_400_BAD_REQUEST)
+
 
 #  ------------------------------------- List and Infos User ------------------------------------- #
 
