@@ -11,7 +11,6 @@ def room(request, user1, user2):
     except Player.DoesNotExist:
         return JsonResponse({'error': 'Player not found.'}, status=404)
 
-    # query
     messages = Message.objects.filter(
         sender__in=[user1_obj, user2_obj],
         receiver__in=[user1_obj, user2_obj]
