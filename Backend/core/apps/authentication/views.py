@@ -210,6 +210,10 @@ class Enable2FA(APIView):
 
     def post(self, request):
         player = request.user
+        
+        if player.remote:
+            return Response({'error': "Remote login cannot enable 2FA."}, status=status.HTTP_403_FORBIDDEN)
+
         player.generate_otp_secret()
         
         totp = pyotp.TOTP(player.otp_secret)
@@ -230,6 +234,29 @@ class Enable2FA(APIView):
         img_str = base64.b64encode(buffer.getvalue()).decode()
 
         return Response({'qr_code': f'data:image/png;base64,{img_str}'}, status=status.HTTP_200_OK)
+
+
+class Confirm2FA(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        player = request.user
+        otp = request.data.get('otp')
+
+        if not player.otp_secret:
+            return Response({'error': '2FA has not been initialized yet.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not otp:
+            return Response({'error': 'OTP is required to confirm 2FA.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        totp = pyotp.TOTP(player.otp_secret)
+        if totp.verify(otp):
+            player.is_2fa_enabled = True
+            player.save()
+            return Response({'message': '2FA enabled successfully!'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'Invalid OTP. Please try again.'}, status=status.HTTP_400_BAD_REQUEST)
+
 
 # View for Verifying OTP
 class Verify2FA(APIView):
@@ -253,30 +280,24 @@ class Disable2FA(APIView):
 
     def post(self, request):
         player = request.user
+        otp = request.data.get('otp')
+        print(otp)
 
-        if player.is_2fa_enabled:
-            player.is_2fa_enabled = False
-            player.otp_secret = None  # Optional: Clear the OTP secret
-            player.save()
-            return Response({'message': '2FA disabled successfully!'}, status=status.HTTP_200_OK)
-        else:
+        if not player.is_2fa_enabled:
             return Response({'error': '2FA is not enabled!'}, status=status.HTTP_400_BAD_REQUEST)
 
-# # View for Disabling 2FA and Regenerating OTP Secret
-# class Disable2FA(APIView):
-#     permission_classes = [IsAuthenticated]
+        if not otp:
+            return Response({'error': 'OTP is required to disable 2FA.'}, status=status.HTTP_400_BAD_REQUEST)
 
-#     def post(self, request):
-#         player = request.user
+        totp = pyotp.TOTP(player.otp_secret)
+        if not totp.verify(otp):
+            return Response({'error': 'Invalid OTP. Please try again.'}, status=status.HTTP_400_BAD_REQUEST)
 
-#         if player.is_2fa_enabled:
-#             player.is_2fa_enabled = False
-#             player.generate_otp_secret()  # Regenerate the OTP secret
-#             player.save()
-#             return Response({'message': '2FA disabled and OTP secret regenerated successfully!'}, status=status.HTTP_200_OK)
-#         else:
-#             return Response({'error': '2FA is not enabled!'}, status=status.HTTP_400_BAD_REQUEST)
-
+        player.is_2fa_enabled = False
+        player.otp_secret = None
+        player.save()
+        
+        return Response({'message': '2FA disabled successfully!'}, status=status.HTTP_200_OK)
 
 #  ------------------------------------- List and Infos User ------------------------------------- #
 
@@ -376,8 +397,12 @@ class CustomTokenVerifyView(TokenVerifyView):
             user = Player.objects.get(id=user_id)
             username = user.username
             avatar = user.get_avatar_url()
+            otp = user.is_2fa_enabled
+            remote = user.remote
+            response.data['otp_required'] = otp
             response.data['username'] = username
             response.data['avatar'] = avatar
+            response.data['remote'] = remote
         except Exception as e:
             return Response({'error': 'Invalid token or user not found'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -396,8 +421,12 @@ class CustomTokenRefreshView(TokenRefreshView):
             user = Player.objects.get(id=user_id)
             username = user.username
             avatar = user.get_avatar_url()
+            otp = user.is_2fa_enabled
+            remote = user.remote
+            response.data['otp_required'] = otp
             response.data['username'] = username
             response.data['avatar'] = avatar
+            response.data['remote'] = remote
         except Exception as e:
             return Response({'error': 'Invalid refresh token or user not found'}, status=status.HTTP_400_BAD_REQUEST)
 

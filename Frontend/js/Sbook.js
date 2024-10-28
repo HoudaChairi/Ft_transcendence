@@ -151,6 +151,20 @@ export const CHANGE_AVATAR = `<div class="frame-wrapper">
 	</div>
 </div>`;
 
+export const REMOTE = `<div class="frame-wrapper">
+<div class="rectangle-parent-user">
+	<img
+		class="rectangle-icon-user"
+		alt=""
+		src="/textures/svg/RectangleUP.svg"
+	/>
+	<div class="change-username">Remote</div>
+</div>
+</div>
+<div class="select-new-username-parent">
+<div class="select-new-username">You can't enable 2FA in a Remote account</div>
+</div>`
+
 export const TWOFA = `<div class="frame-wrapper">
 	<div class="rectangle-parent-user">
 		<img

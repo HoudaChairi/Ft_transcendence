@@ -17,6 +17,7 @@ urlpatterns = [
     path('user/<str:username>/', UserInfos.as_view(), name='user-info'),
     # 2FA
     path('enable-2fa/', Enable2FA.as_view(), name='enable_2fa'),
+    path('confirm-2fa/', Confirm2FA.as_view(), name='confirm_2fa'),
     path('verify-2fa/', Verify2FA.as_view(), name='verify_2fa'),
     path('disable-2fa/', Disable2FA.as_view(), name='disable-2fa'),
 
