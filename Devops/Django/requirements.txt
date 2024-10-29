@@ -33,3 +33,4 @@ Pillow
 pyotp
 qrcode
 django-otp
+django-redis
