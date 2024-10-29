@@ -65,10 +65,6 @@ class ManageFriendshipView(APIView):
                     return Response({"error": "You are already friends"}, status=status.HTTP_400_BAD_REQUEST)
                 elif friendship.status == 'blocked':
                     return Response({"error": "You cannot send a friend request to a blocked user"}, status=status.HTTP_400_BAD_REQUEST)
-                elif friendship.status == 'none':
-                    friendship.status = 'pending'
-                    friendship.save()
-                    return Response(FriendshipSerializer(friendship).data, status=status.HTTP_201_CREATED)
             else:
                 friendship = Friendship.objects.create(
                     from_user=request.user,
