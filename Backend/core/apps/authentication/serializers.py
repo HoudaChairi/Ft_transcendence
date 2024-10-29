@@ -55,15 +55,18 @@ class RegisterSerializer(serializers.ModelSerializer):
         )
         return user
     
-# new Login serializer:
+# Login serializer:
 class LoginSerializer(serializers.ModelSerializer):
     username = serializers.CharField(max_length=255, min_length=3)
     password = serializers.CharField(max_length=68, min_length=6, write_only=True)
     tokens = serializers.SerializerMethodField()
     avatar = serializers.SerializerMethodField()
 
+    class Meta:
+        model = Player
+        fields = ['username', 'password', 'tokens', 'avatar']
+
     def get_tokens(self, user):
-        # Now `user` is the Player instance
         return {
             'refresh': user.tokens()['refresh'],
             'access': user.tokens()['access'],
@@ -72,24 +75,33 @@ class LoginSerializer(serializers.ModelSerializer):
     def get_avatar(self, user):
         return user.get_avatar_url()
 
-    class Meta:
-        model = Player
-        fields = ['username', 'password', 'tokens', 'avatar']
-
     def validate(self, attrs):
         username = attrs.get('username', '')
         password = attrs.get('password', '')
-        user = auth.authenticate(username=username, password=password)
+        
+        user = authenticate(username=username, password=password)
 
         if not user:
-            raise AuthenticationFailed('Invalid credentials, try again')
-        if not user.is_active:
-            raise AuthenticationFailed('Account disabled, contact admin')
+            raise AuthenticationFailed('Invalid credentials, try again.')
         
-        return user
+        if not user.is_active:
+            raise AuthenticationFailed('Account disabled, contact admin.')
+
+        if user.is_2fa_enabled:
+            return {
+                'username': user.username,
+                'otp_required': True,
+                'message': '2FA required'
+            }
+
+        return {
+            'user': user,
+            'tokens': self.get_tokens(user),
+            'avatar': self.get_avatar(user)
+        }
 
         
-# new Logout serializer:
+# Logout serializer:
 class LogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField()
 
@@ -127,7 +139,6 @@ class UpdateInfosSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Tournament username is already taken.")
         return value
 
-    # email
     def validate_email(self, value):
         if self.instance.remote:
             raise serializers.ValidationError("Remote Login can't change email.")
@@ -135,13 +146,11 @@ class UpdateInfosSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Email is already taken.")
         return value
 
-    # first name
     def validate_first_name(self, value):
         if not value.strip():
             raise serializers.ValidationError("First name cannot be empty.")
         return value
 
-    # last name
     def validate_last_name(self, value):
         if not value.strip():
             raise serializers.ValidationError("Last name cannot be empty.")
@@ -198,11 +207,9 @@ class AvatarSerializer(serializers.ModelSerializer):
         fields = ['avatar']
 
     def validate_avatar(self, value):
-        # Check file type
         if not value.name.endswith(('.png', '.jpg', '.jpeg', '.gif')):
             raise serializers.ValidationError("File type is not supported. Please upload an image.")
         
-        # Check file size (e.g., limit to 5 MB)
         if value.size > 5 * 1024 * 1024:
             raise serializers.ValidationError("File size should be less than 5 MB.")
         
@@ -215,7 +222,6 @@ class MatchSerializer(serializers.ModelSerializer):
         fields = ['player1', 'player2', 'score_player1', 'score_player2', 'winner', 'loser']
 
     def validate(self, attrs):
-        # Ensure player1 and player2 are different
         if attrs['player1'] == attrs['player2']:
             raise serializers.ValidationError("Players cannot be the same.")
         return attrs

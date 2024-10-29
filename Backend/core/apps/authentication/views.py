@@ -9,14 +9,20 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from .models import Player, Match
 from rest_framework_simplejwt.views import TokenVerifyView, TokenRefreshView
 from django.db.models import Q
+import pyotp
+import qrcode
+from io import BytesIO
+import base64
 from core.apps.friends.models import Friendship
+
+# ------------------------------------- Register/Login/Logout ------------------------------------- #
 
 class RegisterView(APIView):
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
-            user = serializer.save()  # Create the user
-            tokens = user.tokens()    # Get the tokens for the newly created user
+            user = serializer.save()
+            tokens = user.tokens()
             
             return Response({
                 'email': user.email,
@@ -31,10 +37,44 @@ class RegisterView(APIView):
 
 class LoginAPIView(APIView):
     def post(self, request):
-        serializer = LoginSerializer(data=request.data)
-        if serializer.is_valid():
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        username = request.data.get('username')
+        password = request.data.get('password')
+        otp = request.data.get('otp')
+
+        if not otp:
+            serializer = LoginSerializer(data={'username': username, 'password': password})
+            
+            if serializer.is_valid():
+                validated_data = serializer.validated_data
+                
+                if validated_data.get('otp_required'):
+                    return Response({
+                        'message': validated_data['message'],
+                        'otp_required': validated_data['otp_required'],
+                        'username': validated_data['username']
+                    }, status=status.HTTP_200_OK)
+                
+                return Response({
+                    'username': validated_data['user'].username,
+                    'tokens': validated_data['tokens'],
+                    'avatar': validated_data['avatar']
+                }, status=status.HTTP_200_OK)
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        else:
+            user = authenticate(username=username, password=password)
+            if not user or not user.verify_otp(otp):
+                return Response({
+                    'message': 'Invalid OTP, please try again.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            serializer = LoginSerializer(user)
+            return Response({
+                'username': user.username,
+                'tokens': serializer.get_tokens(user),
+                'avatar': serializer.get_avatar(user)
+            }, status=status.HTTP_200_OK)
     
     
 class LogoutAPIView(APIView):
@@ -46,13 +86,13 @@ class LogoutAPIView(APIView):
             serializer.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-# ---------------------------------------------------------------------------------
-# 
+    
+# ------------------------------------- Infos UPDATE ------------------------------------- #
 class UpdateInfosView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        user = request.user 
+        user = request.user
         data = request.data
 
         serializer = UpdateInfosSerializer(user, data=data, partial=True)
@@ -96,7 +136,7 @@ class UpdatePasswordView(APIView):
 #             return Response({"message": "Display name updated successfully"}, status=status.HTTP_200_OK)
 #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
+# ------------------------------------- Avatar UPDATE ------------------------------------- #
 class UpdateAvatarView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -109,7 +149,8 @@ class UpdateAvatarView(APIView):
                 "avatar": user.get_avatar_url()
             }, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
+# ------------------------------------- Match HISTORY ------------------------------------- #
 class MatchCreateView(APIView):
     def post(self, request, *args, **kwargs):
         player1_username = request.data.get('player1')
@@ -161,51 +202,104 @@ class MatchCreateView(APIView):
             return Response(MatchSerializer(match).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+#  ------------------------------------- 2FA AUTHENTICATION ------------------------------------- #
 
-# friend list
-# class FriendListView(APIView):
-#     permission_classes = [IsAuthenticated]
+# View for Enabling 2FA
+class Enable2FA(APIView):
+    permission_classes = [IsAuthenticated]
 
-#     def get(self, request):
-#         user = request.user
-#         friends = user.friends.all()
-#         serializer = FriendSerializer(friends, many=True)
-#         return Response(serializer.data)
+    def post(self, request):
+        player = request.user
+        
+        if player.remote:
+            return Response({'error': "Remote login cannot enable 2FA."}, status=status.HTTP_403_FORBIDDEN)
 
-# new: views to add and remove friends.
-# class AddFriendAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
+        player.generate_otp_secret()
+        
+        totp = pyotp.TOTP(player.otp_secret)
+        otp_uri = totp.provisioning_uri(name=player.email, issuer_name='Ft_transcendence')
 
-#     def post(self, request, friend_id):
-#         friend = get_object_or_404(Player, id=friend_id)
-#         Friendship.objects.get_or_create(user=request.user, friend=friend)
-#         return Response({"message": "Friend added!"}, status=status.HTTP_201_CREATED)
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=0
+        )
+        qr.add_data(otp_uri)
+        qr.make(fit=True)
 
-# class RemoveFriendAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffer = BytesIO()
+        img.save(buffer, format='PNG')
+        img_str = base64.b64encode(buffer.getvalue()).decode()
 
-#     def post(self, request, friend_id):
-#         friendship = get_object_or_404(Friendship, user=request.user, friend_id=friend_id)
-#         friendship.delete()
-#         return Response({"message": "Friend removed!"}, status=status.HTTP_204_NO_CONTENT)
+        return Response({'qr_code': f'data:image/png;base64,{img_str}'}, status=status.HTTP_200_OK)
 
-# # new: Create an endpoint to retrieve match history.
-# class MatchHistoryAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
 
-#     def get(self, request):
-#         matches = Match.objects.filter(user=request.user).values('opponent__username', 'result', 'date')
-#         return Response(matches, status=status.HTTP_200_OK)
+class Confirm2FA(APIView):
+    permission_classes = [IsAuthenticated]
 
-# or : 
-# class MatchHistoryView(APIView):
-#     permission_classes = [IsAuthenticated]
+    def post(self, request):
+        player = request.user
+        otp = request.data.get('otp')
 
-#     def get(self, request):
-#         user = request.user
-#         match_history = user.match_set.all()  # Assuming you have a Match model
-#         return Response(match_history)
+        if not player.otp_secret:
+            return Response({'error': '2FA has not been initialized yet.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        if not otp:
+            return Response({'error': 'OTP is required to confirm 2FA.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        totp = pyotp.TOTP(player.otp_secret)
+        if totp.verify(otp):
+            player.is_2fa_enabled = True
+            player.save()
+            return Response({'message': '2FA enabled successfully!'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'Invalid OTP. Please try again.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# View for Verifying OTP
+class Verify2FA(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        otp = request.data.get('otp')
+        player = request.user
+
+        totp = pyotp.TOTP(player.otp_secret)
+        if totp.verify(otp):
+            player.is_2fa_enabled = True
+            player.save()
+            return Response({'message': '2FA enabled successfully!'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'Invalid OTP! Please try again.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+# View for Disabling 2FA
+class Disable2FA(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        player = request.user
+        otp = request.data.get('otp')
+        print(otp)
+
+        if not player.is_2fa_enabled:
+            return Response({'error': '2FA is not enabled!'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not otp:
+            return Response({'error': 'OTP is required to disable 2FA.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        totp = pyotp.TOTP(player.otp_secret)
+        if not totp.verify(otp):
+            return Response({'error': 'Invalid OTP. Please try again.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        player.is_2fa_enabled = False
+        player.otp_secret = None
+        player.save()
+        
+        return Response({'message': '2FA disabled successfully!'}, status=status.HTTP_200_OK)
+
+#  ------------------------------------- List and Infos User ------------------------------------- #
 
 class UserList(APIView):
     permission_classes = [IsAuthenticated]
@@ -246,13 +340,10 @@ class UserInfos(APIView):
 
     def get(self, request, username):
         try:
-            # Fetch the user by username
             user = Player.objects.get(username=username)
-
-            # Retrieve all matches where the user is either player1 or player2
+            
             matches = Match.objects.filter(Q(player1=user) | Q(player2=user)).select_related('player1', 'player2', 'winner', 'loser').order_by('id')
 
-            # Format the matches data
             matches_data = [{
                 'player1': match.player1.username,
                 'player2': match.player2.username,
@@ -289,11 +380,8 @@ class UserInfos(APIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# ------------------------------------- Tokens verification ------------------------------------- #
 
-
-
-
-#------------------------------------------------
 # Custom TokenVerifyView to return username
 class CustomTokenVerifyView(TokenVerifyView):
     def post(self, request, *args, **kwargs):
@@ -306,8 +394,12 @@ class CustomTokenVerifyView(TokenVerifyView):
             user = Player.objects.get(id=user_id)
             username = user.username
             avatar = user.get_avatar_url()
+            otp = user.is_2fa_enabled
+            remote = user.remote
+            response.data['otp_required'] = otp
             response.data['username'] = username
             response.data['avatar'] = avatar
+            response.data['remote'] = remote
         except Exception as e:
             return Response({'error': 'Invalid token or user not found'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -326,8 +418,12 @@ class CustomTokenRefreshView(TokenRefreshView):
             user = Player.objects.get(id=user_id)
             username = user.username
             avatar = user.get_avatar_url()
+            otp = user.is_2fa_enabled
+            remote = user.remote
+            response.data['otp_required'] = otp
             response.data['username'] = username
             response.data['avatar'] = avatar
+            response.data['remote'] = remote
         except Exception as e:
             return Response({'error': 'Invalid refresh token or user not found'}, status=status.HTTP_400_BAD_REQUEST)
 

@@ -30,3 +30,6 @@ psycopg[binary]
 social-auth-app-django
 requests
 Pillow
+pyotp
+qrcode
+django-otp

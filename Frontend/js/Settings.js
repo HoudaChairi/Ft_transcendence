@@ -23,9 +23,9 @@ export const SBOOK = `<img class="rectangle-icon17" alt="" src="/textures/svg/SB
 	</div>
 	<div class="setting-frame" data-id="twofa">
 		<div class="fa-icon">
-			<img class="fa-icon1" alt="" src="/textures/svg/2FA ON.svg" />
+			<img class="fa-icon1" alt="" src="/textures/svg/2FA OFF.svg" />
 		</div>
-		<div class="factor-authentication">Factor Authentication</div>
+		<div class="factor-authentication factor-authentication-op">Factor Authentication</div>
 	</div>
 	<div class="setting-frame" data-id="logout">
 		<div class="setting-12">Logout</div>

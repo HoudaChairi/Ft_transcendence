@@ -1973,9 +1973,9 @@ body {
 }
 
 .login3 {
-	position: absolute;
+	position: relative;
+	text-align: center;
 	top: 19px;
-	left: calc(50% - 40.5px);
 }
 
 .login2 {
@@ -2292,4 +2292,33 @@ body {
 	align-items: flex-start;
 	justify-content: flex-start;
 	gap: 1.562rem;
+}
+
+.qrcode {
+	width: 7.5rem;
+	position: relative;
+	height: 7.5rem;
+	overflow: hidden;
+	flex-shrink: 0;
+}
+
+.factor-authentication1 {
+	align-self: stretch;
+	position: relative;
+	line-height: 150%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 4.5rem;
+	flex-shrink: 0;
+}
+
+.factor-authentication-parent {
+	width: 17.688rem;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 1.25rem;
+	color: #6b3783;
 }

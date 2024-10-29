@@ -48,16 +48,15 @@ INSTALLED_APPS = [
 
     # 'core.apps.users',
     'rest_framework',
+    
     # 'rest_framework.authtoken',
     # new for JWT
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
-
-
     ##
     'channels',
-     'social_django',
+    'social_django',
     'django.contrib.sites', 
 ]
 
@@ -72,8 +71,9 @@ MIDDLEWARE = [
     # new for browser 
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-
     'social_django.middleware.SocialAuthExceptionMiddleware',
+    # for 2fa
+    'django_otp.middleware.OTPMiddleware',
 ]
 AUTHENTICATION_BACKENDS = (
     'social_core.backends.google.GoogleOAuth2',  # Enable Google OAuth2
@@ -220,3 +220,4 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SOCIAL_AUTH_42_KEY = 'u-s4t2ud-cbb98f88ec757c172c1f5f2ec653fa1f1e0694ffe0f0e43fb5707487add59a72'
 SOCIAL_AUTH_42_SECRET = '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' 
 SOCIAL_AUTH_42_REDIRECT_URI = 'https://localhost/api/auth/42/callback/' 
+

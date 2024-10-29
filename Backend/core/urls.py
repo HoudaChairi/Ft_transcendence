@@ -10,8 +10,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/chat/', include('core.apps.chat.urls')),
     path('api/', include('core.apps.authentication.urls')),
-
-
     path('api/auth/', include('core.apps.remote_auth.urls')),
     path('api/manage/', include('core.apps.friends.urls')),
 ]
