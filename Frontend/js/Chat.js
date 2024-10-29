@@ -7,7 +7,7 @@ export const SENT = `<div class="sent">
 	<div class="you"></div>
 </div>`;
 
-export const SECOND = `<img class="indicator-icon2" alt="" id="" src="" />`;
+export const SECOND = `<img class="indicator-icon2 skip" alt="" id="" src="" />`;
 
 // element-parent
 export const ELEMENT = `<div class="element">
@@ -15,7 +15,7 @@ export const ELEMENT = `<div class="element">
 
 	<div class="sword-prowess-lv">Sword Prowess Lv 2</div>
 	<img
-		class="indicator-icon1"
+		class="indicator-icon1 skip"
 		alt=""
 		id="message"
 	/>

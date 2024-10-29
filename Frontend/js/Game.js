@@ -91,6 +91,7 @@ class Game {
 	#loggedUser;
 	#enabled2fa = false;
 	#isRemote = false;
+	#selectedTab = 1
 
 	constructor() {
 		this.#home = {
@@ -721,6 +722,7 @@ class Game {
 
 				this.#enabled2fa = false;
 				this.#isRemote = false;
+				this.#selectedTab = 1;
 				localStorage.removeItem('accessToken');
 				localStorage.removeItem('refreshToken');
 
@@ -789,6 +791,7 @@ class Game {
 				const data = await response.json();
 				if (response.ok) {
 					this.#toggleChatBtn();
+					this.#switchChatTab(this.#selectedTab);
 				} else {
 					alert(
 						`Error declining friend request: ${Object.values(data)
@@ -899,6 +902,7 @@ class Game {
 				const data = await response.json();
 				if (response.ok) {
 					this.#toggleChatBtn();
+					this.#switchChatTab(this.#selectedTab);
 				} else {
 					alert(
 						`Error declining friend request: ${Object.values(data)
@@ -1286,6 +1290,11 @@ class Game {
 		try {
 			for (const key in this.#chatWebSocket)
 				this.#chatWebSocket[key].sock.close();
+			this.#css2DObject.chat.element.querySelector(
+				'.infos-chat'
+			).innerHTML = '';
+			this.#css2DObject.chat.element.querySelector('.recived-parent').innerHTML = '';
+			this.#chatuser = undefined;
 			const id = {
 				1: ALL_PLAYERS,
 				2: FRIENDS,
@@ -1295,7 +1304,7 @@ class Game {
 			this.#css2DObject.chat.element.querySelector(
 				'.all-players'
 			).innerHTML = id[btn];
-
+			this.#selectedTab = btn;
 			const response = await fetch(`api/manage/friendship/`, {
 				method: 'GET',
 				headers: {
@@ -1402,10 +1411,12 @@ class Game {
 					.appendChild(userHTML);
 
 				userHTML.addEventListener('click', e => {
-					const data = e.target
-						.closest('.element')
-						.querySelector('.sword-prowess-lv').textContent;
-					if (data) this.#loadChat(data, user);
+					if (!e.target.classList.contains('skip')) {
+						const data = e.target
+							.closest('.element')
+							.querySelector('.sword-prowess-lv').textContent;
+						if (data) this.#loadChat(data, user);
+					}
 				});
 
 				const room = [this.#loggedUser, user.username].sort().join('_');
@@ -2225,7 +2236,7 @@ class Game {
 			);
 			this.#scene.remove(this.#css2DObject.legend);
 		}
-		if (home === 'chat') this.#chatUsers();
+		if (home === 'chat') {this.#switchChatTab(1)}
 
 		history.replaceState(null, null, `/${home}`);
 		this.#scene.add(this.#css2DObject[home]);
