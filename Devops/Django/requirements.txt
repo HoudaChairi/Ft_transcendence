@@ -34,3 +34,4 @@ pyotp
 qrcode
 django-otp
 django-redis
+channels_redis
