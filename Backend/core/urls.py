@@ -4,6 +4,7 @@ from django.urls import path, include
 # new:
 from django.conf import settings
 from django.conf.urls.static import static
+from core.apps.game.routing import websocket_urlpatterns
 
 
 urlpatterns = [
