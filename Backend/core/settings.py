@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'core.apps.chat',
     'core.apps.remote_auth',
     'core.apps.friends',
+    'core.apps.game',
 
     # 'core.apps.users',
     'rest_framework',
