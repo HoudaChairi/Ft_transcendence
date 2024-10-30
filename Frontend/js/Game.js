@@ -2255,6 +2255,63 @@ class Game {
 		});
 	}
 
+	#initializeGame(data) {
+		this.#ball.position.set(
+			data.ballPosition.x,
+			data.ballPosition.y,
+			data.ballPosition.z
+		);
+		this.#walls.children[0].position.set(
+			data.wallPositions[0].x,
+			data.wallPositions[0].y,
+			data.wallPositions[0].z
+		);
+		this.#walls.children[1].position.set(
+			data.wallPositions[1].x,
+			data.wallPositions[1].y,
+			data.wallPositions[1].z
+		);
+		this.#goalL.position.set(
+			data.goalPositions[0].x,
+			data.goalPositions[0].y,
+			data.goalPositions[0].z
+		);
+		this.#goalR.position.set(
+			data.goalPositions[1].x,
+			data.goalPositions[1].y,
+			data.goalPositions[1].z
+		);
+		this.#player.position.set(
+			data.paddlePositions[0].position.x,
+			data.paddlePositions[0].position.y,
+			data.paddlePositions[0].position.z
+		);
+		this.#player2.position.set(
+			data.paddlePositions[1].position.x,
+			data.paddlePositions[1].position.y,
+			data.paddlePositions[1].position.z
+		);
+	}
+
+	#updateGameState(game_data) {
+		// this.#ball.position.set(
+		// 	game_data.ballPosition.x,
+		// 	game_data.ballPosition.y,
+		// 	game_data.ballPosition.z
+		// );
+
+		game_data.paddlePositions.forEach(paddle => {
+			const paddleMesh =
+				paddle.playerId === 'player' ? this.#player : this.#player2;
+
+			paddleMesh.position.set(
+				paddle.position.x,
+				paddle.position.y,
+				paddle.position.z
+			);
+		});
+	}
+
 	#GamePage() {
 		this.#gameWebSocket = new WebSocket(
 			`wss://${window.location.host}/api/ws/game/`
@@ -2272,42 +2329,9 @@ class Game {
 			const data = JSON.parse(e.data);
 
 			if (data.type === 'init') {
-				console.log(`Players connected: ${data.usernames.join(', ')}`);
-				this.#ball.position.set(
-					data.ballPosition.x,
-					data.ballPosition.y,
-					data.ballPosition.z
-				);
-				this.#walls.children[0].position.set(
-					data.wallPositions[0].x,
-					data.wallPositions[0].y,
-					data.wallPositions[0].z
-				);
-				this.#walls.children[1].position.set(
-					data.wallPositions[1].x,
-					data.wallPositions[1].y,
-					data.wallPositions[1].z
-				);
-				this.#goalL.position.set(
-					data.goalPositions[0].x,
-					data.goalPositions[0].y,
-					data.goalPositions[0].z
-				);
-				this.#goalR.position.set(
-					data.goalPositions[1].x,
-					data.goalPositions[1].y,
-					data.goalPositions[1].z
-				);
-				this.#player.position.set(
-					data.paddlePositions[0].position.x,
-					data.paddlePositions[0].position.y,
-					data.paddlePositions[0].position.z
-				);
-				this.#player2.position.set(
-					data.paddlePositions[1].position.x,
-					data.paddlePositions[1].position.y,
-					data.paddlePositions[1].position.z
-				);
+				this.#initializeGame(data);
+			} else if (data.type === 'update') {
+				this.#updateGameState(data.game_data);
 			}
 		};
 
@@ -2389,6 +2413,23 @@ class Game {
 		} catch (error) {
 			alert(error);
 		}
+	}
+
+	sendMovement(direction) {
+		this.#gameWebSocket?.send(
+			JSON.stringify({
+				action: 'move',
+				direction: direction,
+			})
+		);
+	}
+
+	stopMovement() {
+		this.#gameWebSocket?.send(
+			JSON.stringify({
+				action: 'stop_move',
+			})
+		);
 	}
 }
 
