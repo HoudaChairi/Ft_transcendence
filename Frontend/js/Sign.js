@@ -23,7 +23,7 @@ export const TWOFASIGN = `<div class="sign-in">Enter 2FA Code</div>
 			<div class="login3">Validate</div>
 		</div>
 	</div>
-</div>`
+</div>`;
 
 export const SIGNIN = `<div class="sign-in">SIGN IN</div>
 <div class="login-parent">

@@ -163,7 +163,7 @@ export const REMOTE = `<div class="frame-wrapper">
 </div>
 <div class="select-new-username-parent">
 <div class="select-new-username">You can't enable 2FA in a Remote account</div>
-</div>`
+</div>`;
 
 export const TWOFA = `<div class="frame-wrapper">
 	<div class="rectangle-parent-user">
@@ -224,4 +224,4 @@ export const DISTWOFA = `<div class="frame-wrapper">
 <div class="sette-wrapper" id="no">
 	<div class="add-user">NO</div>
 </div>
-</div>`
+</div>`;
