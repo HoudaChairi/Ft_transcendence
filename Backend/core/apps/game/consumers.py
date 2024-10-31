@@ -5,6 +5,7 @@ class GameConsumer(AsyncWebsocketConsumer):
     connected_players = {}
     player_groups = {}
     paddle_positions = {}
+    player_labels = {}
 
     async def connect(self):
         self.username = None
@@ -47,6 +48,9 @@ class GameConsumer(AsyncWebsocketConsumer):
         self.player_groups[player1] = player2
         self.player_groups[player2] = player1
 
+        self.player_labels[player1] = 'player'
+        self.player_labels[player2] = 'player2'
+
         self.paddle_positions[player1] = {"x": -1300, "y": 0, "z": 0}
         self.paddle_positions[player2] = {"x": 1300, "y": 0, "z": 0}
 
@@ -63,8 +67,8 @@ class GameConsumer(AsyncWebsocketConsumer):
                 {"x": -1600, "y": 0, "z": 50}
             ],
             "paddlePositions": [
-                {"playerId": 'player', "position": self.paddle_positions[player1]},
-                {"playerId": 'player2', "position": self.paddle_positions[player2]},
+                {"playerId": self.player_labels[player1], "position": self.paddle_positions[player1]},
+                {"playerId": self.player_labels[player2], "position": self.paddle_positions[player2]},
             ]
         }
 
@@ -101,7 +105,7 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def update_paddle_positions(self):
         game_data = {
             "paddlePositions": [
-                {"playerId": 'player' if player_id == list(self.player_groups.keys())[0] else 'player2', "position": position}
+                {"playerId": self.player_labels[player_id], "position": position}
                 for player_id, position in self.paddle_positions.items()
             ]
         }
