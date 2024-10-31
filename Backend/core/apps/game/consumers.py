@@ -78,16 +78,16 @@ class GameConsumer(AsyncWebsocketConsumer):
             return
 
         if direction == 'moveUp':
-            new_y = self.paddle_positions[player_id]['y'] - 30
+            new_y = self.paddle_positions[player_id]['y'] - 60
         elif direction == 'moveDown':
-            new_y = self.paddle_positions[player_id]['y'] + 30
+            new_y = self.paddle_positions[player_id]['y'] + 60
         else:
             return
 
-        if new_y < -740:
-            new_y = -740
-        elif new_y > 740:
-            new_y = 740
+        if new_y < -520:
+            new_y = -520
+        elif new_y > 520:
+            new_y = 520
 
         self.paddle_positions[player_id]['y'] = new_y
 

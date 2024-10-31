@@ -94,6 +94,8 @@ class Game {
 	#isRemote = false;
 	#selectedTab = 1;
 
+	#game_data;
+
 	constructor() {
 		this.#home = {
 			home: HOME,
@@ -1700,45 +1702,45 @@ class Game {
 	#animate() {
 		const now = performance.now();
 		const delta = (now - this.#lastFrameTime) / 1000;
+
 		if (now - this.#lastFrameTime > 1000 / this.#frameRate) {
 			this.#lastFrameTime = now;
 			this.#update();
+			if (this.#game_data) this.#smoothMovePaddles(this.#game_data);
 			if (this.#mixer) this.#mixer.update(delta);
 			if (this.#hasChanges) this.#render();
 			this.#hasChanges = false;
 		}
+
 		requestAnimationFrame(() => this.#animate());
 		this.#css2DRenderer.render(this.#scene, this.#camera);
 		this.#renderer.render(this.#scene, this.#camera);
 	}
 
 	#update() {
-		this.#hasChanges = false;
-
-		if (this.#ball) {
-			this.#ball.position.add(this.#ballDirection);
-			this.#ballBox.setFromObject(this.#ball);
-			this.#checkCollisions();
-			this.#hasChanges = true;
-		}
-
-		if (this.#player) {
-			this.#handelePlayerMovement(
-				this.#player,
-				this.#playerBox,
-				this.#playerDirection,
-				'Racket'
-			);
-		}
-
-		if (this.#player2) {
-			this.#handelePlayerMovement(
-				this.#player2,
-				this.#player2Box,
-				this.#player2Direction,
-				'Racket001'
-			);
-		}
+		// this.#hasChanges = false;
+		// if (this.#ball) {
+		// 	this.#ball.position.add(this.#ballDirection);
+		// 	this.#ballBox.setFromObject(this.#ball);
+		// 	this.#checkCollisions();
+		// 	this.#hasChanges = true;
+		// }
+		// if (this.#player) {
+		// 	this.#handelePlayerMovement(
+		// 		this.#player,
+		// 		this.#playerBox,
+		// 		this.#playerDirection,
+		// 		'Racket'
+		// 	);
+		// }
+		// if (this.#player2) {
+		// 	this.#handelePlayerMovement(
+		// 		this.#player2,
+		// 		this.#player2Box,
+		// 		this.#player2Direction,
+		// 		'Racket001'
+		// 	);
+		// }
 	}
 
 	#resetScore() {
@@ -1798,21 +1800,21 @@ class Game {
 		}
 	}
 
-	#handelePlayerMovement(player, playerBox, playerDirection, name) {
-		const wallBox =
-			playerDirection === 1 ? this.#wallsBoxes[0] : this.#wallsBoxes[1];
+	// #handelePlayerMovement(player, playerBox, playerDirection, name) {
+	// 	const wallBox =
+	// 		playerDirection === 1 ? this.#wallsBoxes[0] : this.#wallsBoxes[1];
 
-		playerBox.setFromObject(player.getObjectByName(name));
-		const target = player.position.y + this.#velocity * playerDirection;
-		for (
-			;
-			player.position.y !== target;
-			player.position.y += playerDirection
-		) {
-			if (playerBox.intersectsBox(wallBox)) break;
-		}
-		this.#hasChanges = true;
-	}
+	// 	playerBox.setFromObject(player.getObjectByName(name));
+	// 	const target = player.position.y + this.#velocity * playerDirection;
+	// 	for (
+	// 		;
+	// 		player.position.y !== target;
+	// 		player.position.y += playerDirection
+	// 	) {
+	// 		if (playerBox.intersectsBox(wallBox)) break;
+	// 	}
+	// 	this.#hasChanges = true;
+	// }
 
 	#checkPlayerCollisions(player, playerDirection, name) {
 		const newPlayer = player.clone();
@@ -1913,68 +1915,68 @@ class Game {
 		this.#resetScore();
 	}
 
-	moveUp() {
-		if (this.#checkPlayerCollisions(this.#player, -1, 'Racket')) {
-			this.#playerDirection = -1;
-			this.#hasChanges = true;
-		} else {
-			this.#playerDirection = 0;
-			this.#hasChanges = true;
-		}
-	}
+	// moveUp() {
+	// 	if (this.#checkPlayerCollisions(this.#player, -1, 'Racket')) {
+	// 		this.#playerDirection = -1;
+	// 		this.#hasChanges = true;
+	// 	} else {
+	// 		this.#playerDirection = 0;
+	// 		this.#hasChanges = true;
+	// 	}
+	// }
 
-	moveDown() {
-		if (this.#checkPlayerCollisions(this.#player, 1, 'Racket')) {
-			this.#playerDirection = 1;
-			this.#hasChanges = true;
-		} else {
-			this.#playerDirection = 0;
-			this.#hasChanges = true;
-		}
-	}
+	// moveDown() {
+	// 	if (this.#checkPlayerCollisions(this.#player, 1, 'Racket')) {
+	// 		this.#playerDirection = 1;
+	// 		this.#hasChanges = true;
+	// 	} else {
+	// 		this.#playerDirection = 0;
+	// 		this.#hasChanges = true;
+	// 	}
+	// }
 
-	moveUp2() {
-		if (this.#checkPlayerCollisions(this.#player2, -1, 'Racket001')) {
-			this.#player2Direction = -1;
-			this.#hasChanges = true;
-		} else {
-			this.#player2Direction = 0;
-			this.#hasChanges = true;
-		}
-	}
+	// moveUp2() {
+	// 	if (this.#checkPlayerCollisions(this.#player2, -1, 'Racket001')) {
+	// 		this.#player2Direction = -1;
+	// 		this.#hasChanges = true;
+	// 	} else {
+	// 		this.#player2Direction = 0;
+	// 		this.#hasChanges = true;
+	// 	}
+	// }
 
-	moveDown2() {
-		if (this.#checkPlayerCollisions(this.#player2, 1, 'Racket001')) {
-			this.#player2Direction = 1;
-			this.#hasChanges = true;
-		} else {
-			this.#player2Direction = 0;
-			this.#hasChanges = true;
-		}
-	}
+	// moveDown2() {
+	// 	if (this.#checkPlayerCollisions(this.#player2, 1, 'Racket001')) {
+	// 		this.#player2Direction = 1;
+	// 		this.#hasChanges = true;
+	// 	} else {
+	// 		this.#player2Direction = 0;
+	// 		this.#hasChanges = true;
+	// 	}
+	// }
 
-	startBall() {
-		let x = this.#random(-1.0, 1.0);
-		let y = this.#random(-1.0, 1.0);
+	// startBall() {
+	// 	let x = this.#random(-1.0, 1.0);
+	// 	let y = this.#random(-1.0, 1.0);
 
-		if (Math.abs(x) < this.#minDir) x = Math.sign(x) * this.#minDir;
-		if (Math.abs(y) < this.#minDir) y = Math.sign(y) * this.#minDir;
+	// 	if (Math.abs(x) < this.#minDir) x = Math.sign(x) * this.#minDir;
+	// 	if (Math.abs(y) < this.#minDir) y = Math.sign(y) * this.#minDir;
 
-		this.#ballDirection = new THREE.Vector3(x, y).multiplyScalar(
-			this.#velocity * this.#factor
-		);
-		this.#hasChanges = true;
-	}
+	// 	this.#ballDirection = new THREE.Vector3(x, y).multiplyScalar(
+	// 		this.#velocity * this.#factor
+	// 	);
+	// 	this.#hasChanges = true;
+	// }
 
-	stopPlayerMovement() {
-		this.#playerDirection = 0;
-		this.#hasChanges = true;
-	}
+	// stopPlayerMovement() {
+	// 	this.#playerDirection = 0;
+	// 	this.#hasChanges = true;
+	// }
 
-	stopPlayer2Movement() {
-		this.#player2Direction = 0;
-		this.#hasChanges = true;
-	}
+	// stopPlayer2Movement() {
+	// 	this.#player2Direction = 0;
+	// 	this.#hasChanges = true;
+	// }
 
 	#random(min, max) {
 		return Math.random() * (max - min) + min;
@@ -2293,23 +2295,35 @@ class Game {
 		);
 	}
 
+	#smoothMovePaddles() {
+		const lerpFactor = 0.06;
+
+		this.#game_data.paddlePositions.forEach(paddle => {
+			const paddleMesh =
+				paddle.playerId === 'player' ? this.#player : this.#player2;
+
+			if (paddleMesh) {
+				paddleMesh.position.lerp(
+					new THREE.Vector3(
+						paddle.position.x,
+						paddle.position.y,
+						paddle.position.z
+					),
+					lerpFactor
+				);
+			}
+		});
+
+		this.#hasChanges = true;
+	}
+
 	#updateGameState(game_data) {
+		this.#game_data = game_data;
 		// this.#ball.position.set(
 		// 	game_data.ballPosition.x,
 		// 	game_data.ballPosition.y,
 		// 	game_data.ballPosition.z
 		// );
-
-		game_data.paddlePositions.forEach(paddle => {
-			const paddleMesh =
-				paddle.playerId === 'player' ? this.#player : this.#player2;
-
-			paddleMesh.position.set(
-				paddle.position.x,
-				paddle.position.y,
-				paddle.position.z
-			);
-		});
 	}
 
 	#GamePage() {
