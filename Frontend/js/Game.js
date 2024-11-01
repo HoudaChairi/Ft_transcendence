@@ -67,8 +67,8 @@ class Game {
 	#scoreL = 0;
 	#scoreR = 0;
 
-	#velocity = 30;
-	#factor = 2;
+	#velocity = 5;
+	#factor = 1;
 	#ballDirection = new THREE.Vector3();
 	#minDir = 0.69;
 	#playerDirection = 0;
@@ -93,8 +93,6 @@ class Game {
 	#enabled2fa = false;
 	#isRemote = false;
 	#selectedTab = 1;
-
-	#game_data;
 
 	constructor() {
 		this.#home = {
@@ -1706,7 +1704,6 @@ class Game {
 		if (now - this.#lastFrameTime > 1000 / this.#frameRate) {
 			this.#lastFrameTime = now;
 			this.#update();
-			if (this.#game_data) this.#smoothMovePaddles(this.#game_data);
 			if (this.#mixer) this.#mixer.update(delta);
 			if (this.#hasChanges) this.#render();
 			this.#hasChanges = false;
@@ -1718,29 +1715,29 @@ class Game {
 	}
 
 	#update() {
-		// this.#hasChanges = false;
-		// if (this.#ball) {
-		// 	this.#ball.position.add(this.#ballDirection);
-		// 	this.#ballBox.setFromObject(this.#ball);
-		// 	this.#checkCollisions();
-		// 	this.#hasChanges = true;
-		// }
-		// if (this.#player) {
-		// 	this.#handelePlayerMovement(
-		// 		this.#player,
-		// 		this.#playerBox,
-		// 		this.#playerDirection,
-		// 		'Racket'
-		// 	);
-		// }
-		// if (this.#player2) {
-		// 	this.#handelePlayerMovement(
-		// 		this.#player2,
-		// 		this.#player2Box,
-		// 		this.#player2Direction,
-		// 		'Racket001'
-		// 	);
-		// }
+		this.#hasChanges = false;
+		if (this.#ball) {
+			this.#ball.position.add(this.#ballDirection);
+			this.#ballBox.setFromObject(this.#ball);
+			// this.#checkCollisions();
+			this.#hasChanges = true;
+		}
+		if (this.#player) {
+			this.#handelePlayerMovement(
+				this.#player,
+				this.#playerBox,
+				this.#playerDirection,
+				'Racket'
+			);
+		}
+		if (this.#player2) {
+			this.#handelePlayerMovement(
+				this.#player2,
+				this.#player2Box,
+				this.#player2Direction,
+				'Racket001'
+			);
+		}
 	}
 
 	#resetScore() {
@@ -1800,21 +1797,21 @@ class Game {
 		}
 	}
 
-	// #handelePlayerMovement(player, playerBox, playerDirection, name) {
-	// 	const wallBox =
-	// 		playerDirection === 1 ? this.#wallsBoxes[0] : this.#wallsBoxes[1];
+	#handelePlayerMovement(player, playerBox, playerDirection, name) {
+		const wallBox =
+			playerDirection === 1 ? this.#wallsBoxes[0] : this.#wallsBoxes[1];
 
-	// 	playerBox.setFromObject(player.getObjectByName(name));
-	// 	const target = player.position.y + this.#velocity * playerDirection;
-	// 	for (
-	// 		;
-	// 		player.position.y !== target;
-	// 		player.position.y += playerDirection
-	// 	) {
-	// 		if (playerBox.intersectsBox(wallBox)) break;
-	// 	}
-	// 	this.#hasChanges = true;
-	// }
+		playerBox.setFromObject(player.getObjectByName(name));
+		const target = player.position.y + this.#velocity * playerDirection;
+		for (
+			;
+			player.position.y !== target;
+			player.position.y += playerDirection
+		) {
+			if (playerBox.intersectsBox(wallBox)) break;
+		}
+		this.#hasChanges = true;
+	}
 
 	#checkPlayerCollisions(player, playerDirection, name) {
 		const newPlayer = player.clone();
@@ -1875,17 +1872,7 @@ class Game {
 		);
 	}
 
-	#handleBallWallCollision(i) {
-		const wallBox = this.#wallsBoxes[i];
-		const intersectionBox = this.#ballBox.clone().intersect(wallBox);
-		const point = new THREE.Vector3();
-		intersectionBox.getCenter(point);
-
-		if (i === 1 && point.z < wallBox.min.z)
-			this.#ball.position.z = wallBox.min.z;
-		if (i === 0 && point.z > wallBox.max.z)
-			this.#ball.position.z = wallBox.max.z;
-
+	#handleBallWallCollision() {
 		this.#ballDirection.y = -this.#ballDirection.y;
 	}
 
@@ -2295,12 +2282,19 @@ class Game {
 		);
 	}
 
-	#smoothMovePaddles() {
-		const lerpFactor = 0.06;
+	#updateGameState(game_data) {
+		if (this.#ball) {
+			this.#ball.position.set(
+				game_data.ballPosition.x,
+				game_data.ballPosition.y,
+				game_data.ballPosition.z
+			);
+		}
+		// this.#ballDirection = game_data.ballDirection;
 
-		this.#game_data.paddlePositions.forEach(paddle => {
+		game_data.paddlePositions.forEach(paddle => {
 			const paddleMesh =
-				paddle.playerId === 'player' ? this.#player : this.#player2;
+				paddle.playerId === 'player1' ? this.#player : this.#player2;
 
 			if (paddleMesh) {
 				paddleMesh.position.lerp(
@@ -2309,21 +2303,17 @@ class Game {
 						paddle.position.y,
 						paddle.position.z
 					),
-					lerpFactor
+					0.09
 				);
 			}
 		});
 
 		this.#hasChanges = true;
-	}
 
-	#updateGameState(game_data) {
-		this.#game_data = game_data;
-		// this.#ball.position.set(
-		// 	game_data.ballPosition.x,
-		// 	game_data.ballPosition.y,
-		// 	game_data.ballPosition.z
-		// );
+		if (game_data.scoreL !== undefined && game_data.scoreR !== undefined) {
+			this.#updateScoreL(String(game_data.scoreL));
+			this.#updateScoreR(String(game_data.scoreR));
+		}
 	}
 
 	#GamePage() {
