@@ -2345,8 +2345,6 @@ class Game {
 		this.#gameWebSocket.onmessage = e => {
 			const data = JSON.parse(e.data);
 
-			console.log(data);
-
 			if (data.type === 'update') {
 				this.#updateGameState(data);
 			}
