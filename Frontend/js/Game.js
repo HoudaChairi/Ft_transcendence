@@ -2290,7 +2290,6 @@ class Game {
 				game_data.ballPosition.z
 			);
 		}
-		// this.#ballDirection = game_data.ballDirection;
 
 		game_data.paddlePositions.forEach(paddle => {
 			const paddleMesh =
@@ -2335,7 +2334,7 @@ class Game {
 			if (data.type === 'init') {
 				this.#initializeGame(data);
 			} else if (data.type === 'update') {
-				this.#updateGameState(data.game_data);
+				this.#updateGameState(data);
 			}
 		};
 

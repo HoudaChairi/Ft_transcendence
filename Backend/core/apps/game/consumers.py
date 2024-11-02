@@ -1,6 +1,6 @@
-import asyncio
-import json
 from channels.generic.websocket import AsyncWebsocketConsumer
+import json
+import asyncio
 
 class GameConsumer(AsyncWebsocketConsumer):
     connected_players = {}
@@ -12,10 +12,19 @@ class GameConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
     async def disconnect(self, close_code):
-        if self.username in self.connected_players:
+        if self.username:
             group_id = self.player_groups.get(self.username)
             if group_id:
+                await self.channel_layer.group_discard(group_id, self.channel_name)
                 await self.remove_player_from_game(group_id)
+            self.connected_players.pop(self.username, None)
+            self.player_groups.pop(self.username, None)
+
+    async def remove_player_from_game(self, group_id):
+        if group_id in self.games_data:
+            self.games_data[group_id]["connected_players"].pop(self.username, None)
+            if not self.games_data[group_id]["connected_players"]:
+                del self.games_data[group_id]
 
     async def receive(self, text_data):
         data = json.loads(text_data)
@@ -40,137 +49,187 @@ class GameConsumer(AsyncWebsocketConsumer):
         player2 = player_list[-1]
         group_id = f"{player1}_{player2}"
 
-        self.player_groups[player1] = group_id
-        self.player_groups[player2] = group_id
+        for player in [player1, player2]:
+            self.player_groups[player] = group_id
+            await self.channel_layer.group_add(
+                group_id,
+                self.connected_players[player]
+            )
 
         self.games_data[group_id] = {
-            "player_labels": {player1: 'player', player2: 'player2'},
+            "connected_players": {player1: {}, player2: {}},
+            "player_labels": {player1: 'player1', player2: 'player2'},
             "paddle_positions": {
                 player1: {"x": -1300, "y": 0, "z": 0},
                 player2: {"x": 1300, "y": 0, "z": 0}
             },
             "ball_position": {"x": 0, "y": 0, "z": 0},
-            "ball_direction": {"x": 1, "y": 1, "z": 0},  # Example direction vector
+            "ball_direction": {"x": 1, "y": 1, "z": 0},
             "scoreL": 0,
             "scoreR": 0,
+            "is_running": True
         }
 
-        await self.send_initialization_data(player1, group_id)
-        await self.send_initialization_data(player2, group_id)
+        # Send initialization data to both players
+        for player in [player1, player2]:
+            await self.channel_layer.group_send(
+                group_id,
+                {
+                    'type': 'game_initialization',
+                    'username': player,
+                    'group_id': group_id
+                }
+            )
 
-        await asyncio.sleep(5)  # Delay to start ball movement
-        asyncio.create_task(self.start_ball_movement(group_id))  # Start ball movement in background
+        await asyncio.sleep(5)
+        asyncio.create_task(self.run_game_loop(group_id))
 
-    async def start_ball_movement(self, group_id):
-        while True:
-            game = self.games_data[group_id]
-            ball_pos = game["ball_position"]
-            ball_dir = game["ball_direction"]
-
-            # Update ball position based on direction vector
-            ball_pos["x"] += ball_dir["x"]
-            ball_pos["y"] += ball_dir["y"]
-
-            # Placeholder for collision detection
-            await self.detect_collisions(group_id)
-
-            # Send updated positions to players
-            await self.update_positions(group_id)
-
-            await asyncio.sleep(0.05)  # Ball update interval
-
-    async def detect_collisions(self, group_id):
+    async def game_initialization(self, event):
+        """Handler for game initialization messages"""
+        username = event['username']
+        group_id = event['group_id']
         game = self.games_data[group_id]
-        ball_pos = game["ball_position"]
-        ball_dir = game["ball_direction"]
+        
+        game_data = {
+            'type': 'init',
+            'player1': list(game["player_labels"].keys())[0],
+            'player2': list(game["player_labels"].keys())[1],
+            'ballPosition': game["ball_position"],
+            "wallPositions": [
+                {"x": 0, "y": -785, "z": 15},
+                {"x": 0, "y": 785, "z": 15}
+            ],
+            "goalPositions": [
+                {"x": 1600, "y": 0, "z": 50},
+                {"x": -1600, "y": 0, "z": 50}
+            ],
+            "paddlePositions": [
+                {"playerId": label, "position": pos}
+                for player_id, label in game["player_labels"].items()
+                for pos in [game["paddle_positions"][player_id]]
+            ]
+        }
+        
+        await self.send(text_data=json.dumps(game_data))
 
-        # Wall collision
-        if ball_pos["y"] >= 785 or ball_pos["y"] <= -785:
-            ball_dir["y"] *= -1
+    async def run_game_loop(self, group_id):
+        """Main game loop handling ball movement"""
+        while group_id in self.games_data and self.games_data[group_id].get("is_running", False):
+            game = self.games_data[group_id]
+            new_position = {
+                "x": game["ball_position"]["x"] + game["ball_direction"]["x"] * 10,  # Adjusted speed
+                "y": game["ball_position"]["y"] + game["ball_direction"]["y"] * 10,  # Adjusted speed
+                "z": 0
+            }
+            
+            # Ball collision with walls
+            if new_position["y"] >= 730 or new_position["y"] <= -730:
+                game["ball_direction"]["y"] *= -1
+                new_position["y"] = max(min(new_position["y"], 730), -730)
 
-        # Goal collision
-        if ball_pos["x"] >= 1600:
-            game["scoreL"] += 1
-            ball_pos["x"], ball_pos["y"] = 0, 0
-            ball_dir["x"] *= -1
-        elif ball_pos["x"] <= -1600:
-            game["scoreR"] += 1
-            ball_pos["x"], ball_pos["y"] = 0, 0
-            ball_dir["x"] *= -1
+            # Ball collision with paddles
+            for player_id, position in game["paddle_positions"].items():
+                if (abs(new_position["x"] - position["x"]) < 30 and
+                    abs(new_position["y"] - position["y"]) < 150):
+                    game["ball_direction"]["x"] *= -1
+                    break
 
-        # Paddle collision (Placeholder)
-        # Implement paddle collision based on paddle positions and ball position
+            # Ball collision with goals
+            if new_position["x"] >= 1600:
+                game["scoreL"] += 1
+                game["ball_position"] = {"x": 0, "y": 0, "z": 0}
+                new_position = game["ball_position"]
+            elif new_position["x"] <= -1600:
+                game["scoreR"] += 1
+                game["ball_position"] = {"x": 0, "y": 0, "z": 0}
+                new_position = game["ball_position"]
+            else:
+                game["ball_position"] = new_position
+
+            await self.channel_layer.group_send(
+                group_id,
+                {
+                    'type': 'game_update',
+                    'data': {
+                        "type": "update",
+                        "paddlePositions": [
+                            {
+                                "playerId": label,
+                                "position": game["paddle_positions"][player_id],
+                                "direction": 0
+                            }
+                            for player_id, label in game["player_labels"].items()
+                        ],
+                        "ballPosition": game["ball_position"],
+                        "ballDirection": game["ball_direction"],
+                        "scoreL": game["scoreL"],
+                        "scoreR": game["scoreR"]
+                    }
+                }
+            )
+            
+            await asyncio.sleep(0.033)
 
     async def move_paddle(self, direction):
         group_id = self.player_groups.get(self.username)
         if group_id and self.username in self.games_data[group_id]["paddle_positions"]:
             if direction == 'moveUp':
-                new_y = self.games_data[group_id]["paddle_positions"][self.username]['y'] - 80
+                new_y = self.games_data[group_id]["paddle_positions"][self.username]['y'] - 60
             elif direction == 'moveDown':
-                new_y = self.games_data[group_id]["paddle_positions"][self.username]['y'] + 80
+                new_y = self.games_data[group_id]["paddle_positions"][self.username]['y'] + 60
             else:
                 return
 
             new_y = max(min(new_y, 520), -520)
             self.games_data[group_id]["paddle_positions"][self.username]['y'] = new_y
 
-            await self.update_positions(group_id, player_direction=direction)
+            await self.channel_layer.group_send(
+                group_id,
+                {
+                    'type': 'game_update',
+                    'data': {
+                        "type": "update",
+                        "paddlePositions": [
+                            {
+                                "playerId": label,
+                                "position": self.games_data[group_id]["paddle_positions"][player_id],
+                                "direction": 1 if direction == 'moveDown' else -1 if player_id == self.username else 0
+                            }
+                            for player_id, label in self.games_data[group_id]["player_labels"].items()
+                        ],
+                        "ballPosition": self.games_data[group_id]["ball_position"],
+                        "ballDirection": self.games_data[group_id]["ball_direction"],
+                        "scoreL": self.games_data[group_id]["scoreL"],
+                        "scoreR": self.games_data[group_id]["scoreR"]
+                    }
+                }
+            )
 
     async def stop_paddle(self):
         group_id = self.player_groups.get(self.username)
         if group_id:
-            await self.update_positions(group_id, player_direction=0)
-
-    async def update_positions(self, group_id, player_direction=0):
-        game = self.games_data[group_id]
-
-        game_data = {
-            "paddlePositions": [
+            await self.channel_layer.group_send(
+                group_id,
                 {
-                    "playerId": label,
-                    "position": pos,
-                    "direction": 1 if player_direction == 'moveUp' else -1 if player_direction == 'moveDown' else 0
+                    'type': 'game_update',
+                    'data': {
+                        "type": "update",
+                        "paddlePositions": [
+                            {
+                                "playerId": label,
+                                "position": self.games_data[group_id]["paddle_positions"][player_id],
+                                "direction": 0
+                            }
+                            for player_id, label in self.games_data[group_id]["player_labels"].items()
+                        ],
+                        "ballPosition": self.games_data[group_id]["ball_position"],
+                        "ballDirection": self.games_data[group_id]["ball_direction"],
+                        "scoreL": self.games_data[group_id]["scoreL"],
+                        "scoreR": self.games_data[group_id]["scoreR"]
+                    }
                 }
-                for player_id, pos in game["paddle_positions"].items()
-                for label in [game["player_labels"][player_id]]
-            ],
-            "ballPosition": game["ball_position"],
-            "ballDirection": game["ball_direction"],
-            "scoreL": game["scoreL"],
-            "scoreR": game["scoreR"]
-        }
+            )
 
-        for player_id in game["player_labels"]:
-            await self.channel_layer.send(self.connected_players[player_id], {
-                'type': 'send_update',
-                'data': {
-                    'type': 'update',
-                    'game_data': game_data
-                }
-            })
-
-    async def send_initialization_data(self, username, group_id):
-        game = self.games_data[group_id]
-        game_data = {
-            'player1': list(game["player_labels"].keys())[0],
-            'player2': list(game["player_labels"].keys())[1],
-            'ballPosition': game["ball_position"],
-            "wallPositions": [{"x": 0, "y": -785, "z": 15}, {"x": 0, "y": 785, "z": 15}],
-            "goalPositions": [{"x": 1600, "y": 0, "z": 50}, {"x": -1600, "y": 0, "z": 50}],
-            "paddlePositions": [{"playerId": label, "position": pos} for player_id, pos in game["paddle_positions"].items() for label in [game["player_labels"][player_id]]]
-        }
-
-        await self.channel_layer.send(self.connected_players[username], {
-            'type': 'send_initialization',
-            'data': {
-                'type': 'init',
-                'usernames': [game_data['player1'], game_data['player2']],
-                **game_data
-            }
-        })
-
-    async def send_update(self, event):
-        await self.send(text_data=json.dumps(event['data']))
-
-    async def send_initialization(self, event):
+    async def game_update(self, event):
+        """Handler for game update messages"""
         await self.send(text_data=json.dumps(event['data']))
