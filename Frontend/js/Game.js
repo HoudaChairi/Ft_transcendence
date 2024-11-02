@@ -2244,42 +2244,48 @@ class Game {
 		});
 	}
 
-	#initializeGame(data) {
-		this.#ball.position.set(
-			data.ballPosition.x,
-			data.ballPosition.y,
-			data.ballPosition.z
-		);
-		this.#walls.children[0].position.set(
-			data.wallPositions[0].x,
-			data.wallPositions[0].y,
-			data.wallPositions[0].z
-		);
-		this.#walls.children[1].position.set(
-			data.wallPositions[1].x,
-			data.wallPositions[1].y,
-			data.wallPositions[1].z
-		);
-		this.#goalL.position.set(
-			data.goalPositions[0].x,
-			data.goalPositions[0].y,
-			data.goalPositions[0].z
-		);
-		this.#goalR.position.set(
-			data.goalPositions[1].x,
-			data.goalPositions[1].y,
-			data.goalPositions[1].z
-		);
-		this.#player.position.set(
-			data.paddlePositions[0].position.x,
-			data.paddlePositions[0].position.y,
-			data.paddlePositions[0].position.z
-		);
-		this.#player2.position.set(
-			data.paddlePositions[1].position.x,
-			data.paddlePositions[1].position.y,
-			data.paddlePositions[1].position.z
-		);
+	// #initializeGame(data) {
+	// 	this.#ball.position.set(
+	// 		data.ballPosition.x,
+	// 		data.ballPosition.y,
+	// 		data.ballPosition.z
+	// 	);
+	// 	this.#walls.children[0].position.set(
+	// 		data.wallPositions[0].x,
+	// 		data.wallPositions[0].y,
+	// 		data.wallPositions[0].z
+	// 	);
+	// 	this.#walls.children[1].position.set(
+	// 		data.wallPositions[1].x,
+	// 		data.wallPositions[1].y,
+	// 		data.wallPositions[1].z
+	// 	);
+	// 	this.#goalL.position.set(
+	// 		data.goalPositions[0].x,
+	// 		data.goalPositions[0].y,
+	// 		data.goalPositions[0].z
+	// 	);
+	// 	this.#goalR.position.set(
+	// 		data.goalPositions[1].x,
+	// 		data.goalPositions[1].y,
+	// 		data.goalPositions[1].z
+	// 	);
+	// 	this.#player.position.set(
+	// 		data.paddlePositions[0].position.x,
+	// 		data.paddlePositions[0].position.y,
+	// 		data.paddlePositions[0].position.z
+	// 	);
+	// 	this.#player2.position.set(
+	// 		data.paddlePositions[1].position.x,
+	// 		data.paddlePositions[1].position.y,
+	// 		data.paddlePositions[1].position.z
+	// 	);
+	// }
+
+	#initializeGame() {
+		this.#ball.position.set(0, 0, 0);
+		this.#player.position.set(-1300, 0, 0);
+		this.#player2.position.set(1300, 0, 0);
 	}
 
 	#updateGameState(game_data) {
@@ -2295,14 +2301,21 @@ class Game {
 			const paddleMesh =
 				paddle.playerId === 'player1' ? this.#player : this.#player2;
 
+			// if (paddleMesh) {
+			// 	paddleMesh.position.lerp(
+			// 		new THREE.Vector3(
+			// 			paddle.position.x,
+			// 			paddle.position.y,
+			// 			paddle.position.z
+			// 		),
+			// 		0.09
+			// 	);
+			// }
 			if (paddleMesh) {
-				paddleMesh.position.lerp(
-					new THREE.Vector3(
-						paddle.position.x,
-						paddle.position.y,
-						paddle.position.z
-					),
-					0.09
+				paddleMesh.position.set(
+					paddle.position.x,
+					paddle.position.y,
+					paddle.position.z
 				);
 			}
 		});
@@ -2326,14 +2339,15 @@ class Game {
 				username: this.#loggedUser,
 			};
 			this.#gameWebSocket.send(JSON.stringify(initData));
+			this.#initializeGame();
 		};
 
 		this.#gameWebSocket.onmessage = e => {
 			const data = JSON.parse(e.data);
 
-			if (data.type === 'init') {
-				this.#initializeGame(data);
-			} else if (data.type === 'update') {
+			console.log(data);
+
+			if (data.type === 'update') {
 				this.#updateGameState(data);
 			}
 		};

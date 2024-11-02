@@ -49,13 +49,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         player2 = player_list[-1]
         group_id = f"{player1}_{player2}"
 
-        for player in [player1, player2]:
-            self.player_groups[player] = group_id
-            await self.channel_layer.group_add(
-                group_id,
-                self.connected_players[player]
-            )
-
+        # Create the game data
         self.games_data[group_id] = {
             "connected_players": {player1: {}, player2: {}},
             "player_labels": {player1: 'player1', player2: 'player2'},
@@ -70,55 +64,24 @@ class GameConsumer(AsyncWebsocketConsumer):
             "is_running": True
         }
 
-        # Send initialization data to both players
+        # Add players to the group
         for player in [player1, player2]:
-            await self.channel_layer.group_send(
+            self.player_groups[player] = group_id
+            await self.channel_layer.group_add(
                 group_id,
-                {
-                    'type': 'game_initialization',
-                    'username': player,
-                    'group_id': group_id
-                }
+                self.connected_players[player]
             )
 
         await asyncio.sleep(5)
         asyncio.create_task(self.run_game_loop(group_id))
-
-    async def game_initialization(self, event):
-        """Handler for game initialization messages"""
-        username = event['username']
-        group_id = event['group_id']
-        game = self.games_data[group_id]
-        
-        game_data = {
-            'type': 'init',
-            'player1': list(game["player_labels"].keys())[0],
-            'player2': list(game["player_labels"].keys())[1],
-            'ballPosition': game["ball_position"],
-            "wallPositions": [
-                {"x": 0, "y": -785, "z": 15},
-                {"x": 0, "y": 785, "z": 15}
-            ],
-            "goalPositions": [
-                {"x": 1600, "y": 0, "z": 50},
-                {"x": -1600, "y": 0, "z": 50}
-            ],
-            "paddlePositions": [
-                {"playerId": label, "position": pos}
-                for player_id, label in game["player_labels"].items()
-                for pos in [game["paddle_positions"][player_id]]
-            ]
-        }
-        
-        await self.send(text_data=json.dumps(game_data))
 
     async def run_game_loop(self, group_id):
         """Main game loop handling ball movement"""
         while group_id in self.games_data and self.games_data[group_id].get("is_running", False):
             game = self.games_data[group_id]
             new_position = {
-                "x": game["ball_position"]["x"] + game["ball_direction"]["x"] * 10,  # Adjusted speed
-                "y": game["ball_position"]["y"] + game["ball_direction"]["y"] * 10,  # Adjusted speed
+                "x": game["ball_position"]["x"] + game["ball_direction"]["x"] * 10,
+                "y": game["ball_position"]["y"] + game["ball_direction"]["y"] * 10,
                 "z": 0
             }
             
