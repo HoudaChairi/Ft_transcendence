@@ -37,8 +37,8 @@ class GameConsumer(AsyncWebsocketConsumer):
                 await self.create_game()
 
         elif data.get('action') == 'move':
-            direction = data['direction']
-            await self.move_paddle(direction)
+            paddle_direction = data['direction']
+            await self.move_paddle(paddle_direction)
 
         elif data.get('action') == 'stop_move':
             await self.stop_paddle()
@@ -133,12 +133,12 @@ class GameConsumer(AsyncWebsocketConsumer):
             
             await asyncio.sleep(0.033)
 
-    async def move_paddle(self, direction):
+    async def move_paddle(self, paddle_direction):
         group_id = self.player_groups.get(self.username)
         if group_id and self.username in self.games_data[group_id]["paddle_positions"]:
-            if direction == 'moveUp':
+            if paddle_direction == 'moveUp':
                 new_y = self.games_data[group_id]["paddle_positions"][self.username]['y'] - 60
-            elif direction == 'moveDown':
+            elif paddle_direction == 'moveDown':
                 new_y = self.games_data[group_id]["paddle_positions"][self.username]['y'] + 60
             else:
                 return
@@ -156,7 +156,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                             {
                                 "playerId": label,
                                 "position": self.games_data[group_id]["paddle_positions"][player_id],
-                                "direction": 1 if direction == 'moveDown' else -1 if player_id == self.username else 0
+                                "direction": 1 if paddle_direction == 'moveDown' else -1 if player_id == self.username else 0
                             }
                             for player_id, label in self.games_data[group_id]["player_labels"].items()
                         ],
