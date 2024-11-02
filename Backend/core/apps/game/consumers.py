@@ -1,6 +1,7 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 import asyncio
+import random
 
 class GameConsumer(AsyncWebsocketConsumer):
     connected_players = {}
@@ -68,7 +69,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 }
             },
             "ball_position": {"x": 0, "y": 0, "z": 0},
-            "ball_direction": {"x": 1, "y": 1, "z": 0},
+            "ball_direction": self.start_ball_direction(),
             "ball_box": {
                 "min": {"x": -60, "y": -60, "z": -60},
                 "max": {"x": 60, "y": 60, "z": 60}
@@ -89,16 +90,35 @@ class GameConsumer(AsyncWebsocketConsumer):
         await asyncio.sleep(5)
         asyncio.create_task(self.run_game_loop(group_id))
 
+    def start_ball_direction(self):
+        x = random.uniform(-1.0, 1.0)
+        y = random.uniform(-1.0, 1.0)
+
+        # Ensure minimum speed
+        min_dir = 0.5  # Example minimum speed
+        if abs(x) < min_dir:
+            x = min_dir if x > 0 else -min_dir
+        if abs(y) < min_dir:
+            y = min_dir if y > 0 else -min_dir
+
+        velocity = 10  # Example velocity factor
+        factor = 1  # Can be adjusted as needed
+        return {
+            "x": x * velocity * factor,
+            "y": y * velocity * factor,
+            "z": 0
+        }
+
     async def run_game_loop(self, group_id):
         """Main game loop handling ball movement"""
         while group_id in self.games_data and self.games_data[group_id].get("is_running", False):
             game = self.games_data[group_id]
             new_position = {
-                "x": game["ball_position"]["x"] + game["ball_direction"]["x"] * 10,
-                "y": game["ball_position"]["y"] + game["ball_direction"]["y"] * 10,
+                "x": game["ball_position"]["x"] + game["ball_direction"]["x"],
+                "y": game["ball_position"]["y"] + game["ball_direction"]["y"],
                 "z": 0
             }
-            
+
             # Ball collision with walls
             if new_position["y"] >= 725 or new_position["y"] <= -725:
                 game["ball_direction"]["y"] *= -1
@@ -116,10 +136,12 @@ class GameConsumer(AsyncWebsocketConsumer):
                 game["scoreL"] += 1
                 game["ball_position"] = {"x": 0, "y": 0, "z": 0}
                 new_position = game["ball_position"]
+                game["ball_direction"] = self.start_ball_direction()  # Restart ball direction
             elif new_position["x"] <= -1600:
                 game["scoreR"] += 1
                 game["ball_position"] = {"x": 0, "y": 0, "z": 0}
                 new_position = game["ball_position"]
+                game["ball_direction"] = self.start_ball_direction()  # Restart ball direction
             else:
                 game["ball_position"] = new_position
 
@@ -140,17 +162,17 @@ class GameConsumer(AsyncWebsocketConsumer):
                         "ballPosition": game["ball_position"],
                         "ballDirection": game["ball_direction"],
                         "scoreL": game["scoreL"],
-                        "scoreR": game["scoreR"]
+                        "scoreR": game["scoreR"],
+                        "paddleBoxes": game["paddle_boxes"]  # Include updated paddle boxes
                     }
                 }
             )
-            
+
             await asyncio.sleep(0.033)
 
     async def move_paddle(self, direction):
         group_id = self.player_groups.get(self.username)
         if group_id and self.username in self.games_data[group_id]["paddle_positions"]:
-            # Calculate new Y position based on direction
             if direction == 'moveUp':
                 new_y = self.games_data[group_id]["paddle_positions"][self.username]['y'] - 60
             elif direction == 'moveDown':
@@ -158,19 +180,14 @@ class GameConsumer(AsyncWebsocketConsumer):
             else:
                 return
 
-            # Clamp new position to stay within bounds
             new_y = max(min(new_y, 520), -520)
             self.games_data[group_id]["paddle_positions"][self.username]['y'] = new_y
 
-            # Update the paddle bounding box based on the new Y position
-            if self.username == list(self.games_data[group_id]["player_labels"].keys())[0]:  # player1
-                self.games_data[group_id]["paddle_boxes"][self.username]["min"]["y"] = new_y - 340
-                self.games_data[group_id]["paddle_boxes"][self.username]["max"]["y"] = new_y + 340
-            else:  # player2
-                self.games_data[group_id]["paddle_boxes"][self.username]["min"]["y"] = new_y - 340
-                self.games_data[group_id]["paddle_boxes"][self.username]["max"]["y"] = new_y + 340
+            # Update the bounding box for the paddle
+            paddle_label = self.games_data[group_id]["player_labels"][self.username]
+            self.games_data[group_id]["paddle_boxes"][self.username]["min"]["y"] = new_y - 340
+            self.games_data[group_id]["paddle_boxes"][self.username]["max"]["y"] = new_y + 340
 
-            # Broadcast the updated paddle positions and bounding boxes
             await self.channel_layer.group_send(
                 group_id,
                 {
@@ -188,7 +205,8 @@ class GameConsumer(AsyncWebsocketConsumer):
                         "ballPosition": self.games_data[group_id]["ball_position"],
                         "ballDirection": self.games_data[group_id]["ball_direction"],
                         "scoreL": self.games_data[group_id]["scoreL"],
-                        "scoreR": self.games_data[group_id]["scoreR"]
+                        "scoreR": self.games_data[group_id]["scoreR"],
+                        "paddleBoxes": self.games_data[group_id]["paddle_boxes"]  # Send updated paddle bounding boxes
                     }
                 }
             )
@@ -213,11 +231,11 @@ class GameConsumer(AsyncWebsocketConsumer):
                         "ballPosition": self.games_data[group_id]["ball_position"],
                         "ballDirection": self.games_data[group_id]["ball_direction"],
                         "scoreL": self.games_data[group_id]["scoreL"],
-                        "scoreR": self.games_data[group_id]["scoreR"]
+                        "scoreR": self.games_data[group_id]["scoreR"],
+                        "paddleBoxes": self.games_data[group_id]["paddle_boxes"]
                     }
                 }
             )
 
     async def game_update(self, event):
-        """Handler for game update messages"""
         await self.send(text_data=json.dumps(event['data']))
