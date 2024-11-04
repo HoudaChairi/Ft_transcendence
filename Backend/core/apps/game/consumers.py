@@ -2,14 +2,21 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 import asyncio
 import random
+import math
 
 class GameConsumer(AsyncWebsocketConsumer):
     connected_players = {}
     player_groups = {}
     games_data = {}
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.min_dir = 0.5
+        self.velocity = 50
+        self.factor = 1
+        self.username = None
 
     async def connect(self):
-        self.username = None
         await self.accept()
 
     async def disconnect(self, close_code):
@@ -43,6 +50,19 @@ class GameConsumer(AsyncWebsocketConsumer):
 
         elif data.get('action') == 'stop_move':
             await self.stop_paddle()
+
+    def start_ball_direction(self):
+        x = random.uniform(-1.0, 1.0)
+        y = random.uniform(-1.0, 1.0)
+
+        x = math.copysign(max(abs(x), self.min_dir), x)
+        y = math.copysign(max(abs(y), self.min_dir), y)
+
+        return {
+            "x": x * self.velocity * self.factor,
+            "y": y * self.velocity * self.factor,
+            "z": 0
+        }
 
     async def create_game(self):
         player_list = list(self.connected_players.keys())
@@ -88,26 +108,57 @@ class GameConsumer(AsyncWebsocketConsumer):
         await asyncio.sleep(5)
         asyncio.create_task(self.run_game_loop(group_id))
 
-    def start_ball_direction(self):
-        x = random.uniform(-1.0, 1.0)
-        y = random.uniform(-1.0, 1.0)
-
-        min_dir = 0.69
-        if abs(x) < min_dir:
-            x = min_dir if x > 0 else -min_dir
-        if abs(y) < min_dir:
-            y = min_dir if y > 0 else -min_dir
-
-        velocity = 35
-        factor = 1.2
-        return {
-            "x": x * velocity * factor,
-            "y": y * velocity * factor,
+    def handle_player_collision(self, game, player_pos, ball_pos):
+        """
+        Calculate new ball direction after paddle collision with angle based on hit position
+        """
+        # Calculate relative intersection point (-1 to 1)
+        relative_intersect_y = (player_pos["y"] - ball_pos["y"]) / 340  # 340 is half paddle height
+        
+        # Normalize between -1 and 1 and clamp
+        bounce_angle = max(min(relative_intersect_y, 1.0), -1.0)
+        
+        # Determine if ball is hitting left or right paddle
+        is_left_paddle = player_pos["x"] < 0
+        
+        # Set x direction based on which paddle was hit
+        direction_x = 1 if is_left_paddle else -1
+        
+        # Calculate new direction
+        # The bounce_angle affects the Y component
+        # Higher bounce_angle = steeper upward trajectory
+        # Lower bounce_angle = steeper downward trajectory
+        direction = {
+            "x": direction_x * self.min_dir,  # Maintain minimum x direction
+            "y": -bounce_angle,  # Negative because positive relative_intersect_y means hit above center
             "z": 0
+        }
+        
+        # Normalize the direction vector
+        magnitude = math.sqrt(direction["x"]**2 + direction["y"]**2 + direction["z"]**2)
+        if magnitude > 0:
+            direction = {
+                "x": direction["x"] / magnitude,
+                "y": direction["y"] / magnitude,
+                "z": direction["z"] / magnitude
+            }
+        
+        # Apply minimum direction constraints
+        direction = {
+            "x": math.copysign(max(abs(direction["x"]), self.min_dir), direction["x"]),
+            "y": direction["y"],  # Allow y to be smaller than min_dir for glancing shots
+            "z": direction["z"]
+        }
+        
+        # Apply velocity and factor
+        return {
+            "x": direction["x"] * self.velocity * self.factor,
+            "y": direction["y"] * self.velocity * self.factor,
+            "z": direction["z"] * self.velocity * self.factor
         }
 
     async def run_game_loop(self, group_id):
-        """Main game loop handling ball movement"""
+        """Main game loop handling ball movement with updated collision logic"""
         while group_id in self.games_data and self.games_data[group_id].get("is_running", False):
             game = self.games_data[group_id]
             new_position = {
@@ -120,10 +171,28 @@ class GameConsumer(AsyncWebsocketConsumer):
                 game["ball_direction"]["y"] *= -1
                 new_position["y"] = max(min(new_position["y"], 725), -725)
 
+            # Check for paddle collisions with new logic
             for player_id, paddle_box in game["paddle_boxes"].items():
                 if (paddle_box["min"]["x"] <= new_position["x"] <= paddle_box["max"]["x"] and
                     paddle_box["min"]["y"] <= new_position["y"] <= paddle_box["max"]["y"]):
-                    game["ball_direction"]["x"] *= -1
+                    # Get paddle position for collision calculation
+                    paddle_pos = game["paddle_positions"][player_id]
+                    
+                    # Calculate new direction using the new collision handler
+                    game["ball_direction"] = self.handle_player_collision(
+                        game,
+                        paddle_pos,
+                        new_position
+                    )
+                    
+                    # Fix ball position to prevent teleporting
+                    # If ball is moving right (positive x) and hits left paddle
+                    if game["ball_direction"]["x"] > 0 and paddle_pos["x"] < 0:
+                        new_position["x"] = paddle_box["max"]["x"] + 10
+                    # If ball is moving left (negative x) and hits right paddle
+                    elif game["ball_direction"]["x"] < 0 and paddle_pos["x"] > 0:
+                        new_position["x"] = paddle_box["min"]["x"] - 10
+                    
                     break
 
             if new_position["x"] >= 1600:
@@ -168,9 +237,9 @@ class GameConsumer(AsyncWebsocketConsumer):
         group_id = self.player_groups.get(self.username)
         if group_id and self.username in self.games_data[group_id]["paddle_positions"]:
             if direction == 'moveUp':
-                new_y = self.games_data[group_id]["paddle_positions"][self.username]['y'] - 120
+                new_y = self.games_data[group_id]["paddle_positions"][self.username]['y'] - 200
             elif direction == 'moveDown':
-                new_y = self.games_data[group_id]["paddle_positions"][self.username]['y'] + 120
+                new_y = self.games_data[group_id]["paddle_positions"][self.username]['y'] + 200
             else:
                 return
 

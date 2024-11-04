@@ -2286,6 +2286,8 @@ class Game {
 		this.#ball.position.set(0, 0, 0);
 		this.#player.position.set(-1300, 0, 0);
 		this.#player2.position.set(1300, 0, 0);
+		this.#updateScoreL('0');
+		this.#updateScoreR('0');
 	}
 
 	#updateGameState(game_data) {
