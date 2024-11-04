@@ -1,4 +1,3 @@
-asgiref
 attrs
 autobahn
 Automat
@@ -35,3 +34,4 @@ qrcode
 django-otp
 django-redis
 channels_redis
+asgiref

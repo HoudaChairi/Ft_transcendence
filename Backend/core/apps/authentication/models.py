@@ -3,7 +3,6 @@ from django.contrib.auth.models import AbstractUser
 from rest_framework_simplejwt.tokens import RefreshToken
 import pyotp
 
-
 class Player(AbstractUser):
     GENDER_CHOICES = [
         ('M', 'Male'),
@@ -23,8 +22,7 @@ class Player(AbstractUser):
     t_points = models.IntegerField(default=0)
     goals_f = models.IntegerField(default=0)
     goals_a = models.IntegerField(default=0)
-    
-    #2FA Fields
+    # 2FA Fields
     is_2fa_enabled = models.BooleanField(default=False)
     otp_secret = models.CharField(max_length=32, blank=True, null=True)
     

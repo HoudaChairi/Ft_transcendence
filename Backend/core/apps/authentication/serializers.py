@@ -12,6 +12,7 @@ from django.contrib.auth.hashers import check_password
 from django.contrib.auth import authenticate
 import re
 
+# -------------------------------------------------------------------------------------- #
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True)
     confirmPassword = serializers.CharField(write_only=True, required=True)
@@ -126,8 +127,7 @@ class LogoutSerializer(serializers.Serializer):
         else:
             token.blacklist() 
             
-# --------------------------------------------------------------------------------------
-
+# -------------------------------------------------------------------------------------- #
 
 class UpdateInfosSerializer(serializers.ModelSerializer):
     class Meta:

@@ -2,7 +2,7 @@ from .views import *
 from django.urls import path
 
 urlpatterns = [
-    path('register/', RegisterView.as_view(), name="register"),
+    path('register/', RegisterAPIView.as_view(), name="register"),
     path('login/', LoginAPIView.as_view(), name="login"),
     path('logout/', LogoutAPIView.as_view(), name="logout"),
     path('update-infos/', UpdateInfosView.as_view(), name='update_infos'),
@@ -20,5 +20,4 @@ urlpatterns = [
     path('confirm-2fa/', Confirm2FA.as_view(), name='confirm_2fa'),
     path('verify-2fa/', Verify2FA.as_view(), name='verify_2fa'),
     path('disable-2fa/', Disable2FA.as_view(), name='disable-2fa'),
-
 ]

@@ -87,6 +87,8 @@ class Game {
 
 	#chatWebSocket = {};
 	#chatuser;
+	#onlineSocket;
+	#onlineUsers;
 
 	#loggedUser;
 	#enabled2fa = false;
@@ -1417,6 +1419,7 @@ class Game {
 		).innerHTML = '';
 		users.forEach(user => {
 			if (user.username !== this.#loggedUser) {
+				const src = this.#onlineUsers.includes(user.username) ? `/textures/svg/Indicator online.svg` : `/textures/svg/Indicator offline.svg`
 				const userTemp = document.createElement('template');
 				userTemp.innerHTML = ELEMENT.trim();
 
@@ -1426,7 +1429,7 @@ class Game {
 					user.username;
 				userHTML.querySelector(
 					'.indicator-icon'
-				).src = `/textures/svg/Indicator online.svg`;
+				).src = src;
 				this.#css2DObject.chat.element
 					.querySelector('.element-parent')
 					.appendChild(userHTML);
@@ -2257,6 +2260,7 @@ class Game {
 	#switchHome(home) {
 		for (const key in this.#chatWebSocket)
 			this.#chatWebSocket[key].sock.close();
+		if (home !== 'chat') this.#onlineSocket.close();
 
 		const legendText = {
 			chat: LEGEND_CHAT,
@@ -2288,6 +2292,25 @@ class Game {
 		}
 		if (home === 'chat') {
 			this.#switchChatTab(1);
+			this.#onlineSocket = new WebSocket(
+				`wss://${window.location.host}/api/ws/online_status/${this.#loggedUser}/`
+			);
+
+			this.#onlineSocket.onopen = e => {
+			};
+	
+			this.#onlineSocket.onmessage = e => {
+				const data = JSON.parse(e.data);
+				this.#onlineUsers = data.online_users
+				this.#switchChatTab(this.#selectedTab)
+			};
+	
+			this.#onlineSocket.onerror = error => {
+				console.error('WebSocket error:', error);
+			};
+	
+			this.#onlineSocket.onclose = e => {
+			}; 
 		}
 
 		history.replaceState(null, null, `/${home}`);

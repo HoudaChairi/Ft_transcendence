@@ -17,7 +17,7 @@ from core.apps.friends.models import Friendship
 
 # ------------------------------------- Register/Login/Logout ------------------------------------- #
 
-class RegisterView(APIView):
+class RegisterAPIView(APIView):
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
@@ -379,10 +379,8 @@ class UserInfos(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 # ------------------------------------- Tokens verification ------------------------------------- #
 
-# Custom TokenVerifyView to return username
 class CustomTokenVerifyView(TokenVerifyView):
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
@@ -406,7 +404,6 @@ class CustomTokenVerifyView(TokenVerifyView):
         return response
 
 
-# Custom TokenRefreshView to return username
 class CustomTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
