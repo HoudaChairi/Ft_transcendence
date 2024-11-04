@@ -2260,7 +2260,7 @@ class Game {
 	#switchHome(home) {
 		for (const key in this.#chatWebSocket)
 			this.#chatWebSocket[key].sock.close();
-		if (home !== 'chat') this.#onlineSocket.close();
+		if (home !== 'chat') this.#onlineSocket?.close();
 
 		const legendText = {
 			chat: LEGEND_CHAT,
