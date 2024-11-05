@@ -67,8 +67,8 @@ class Game {
 	#scoreL = 0;
 	#scoreR = 0;
 
-	#velocity = 30;
-	#factor = 2;
+	#velocity = 5;
+	#factor = 1;
 	#ballDirection = new THREE.Vector3();
 	#minDir = 0.69;
 	#playerDirection = 0;
@@ -87,6 +87,7 @@ class Game {
 
 	#chatWebSocket = {};
 	#chatuser;
+	#gameWebSocket;
 	#onlineSocket;
 	#onlineUsers;
 
@@ -1309,8 +1310,6 @@ class Game {
 
 	async #switchChatTab(btn) {
 		try {
-			for (const key in this.#chatWebSocket)
-				this.#chatWebSocket[key].sock.close();
 			this.#css2DObject.chat.element.querySelector(
 				'.infos-chat'
 			).innerHTML = '';
@@ -1414,12 +1413,16 @@ class Game {
 	}
 
 	#addChatUsers(users) {
+		for (const key in this.#chatWebSocket)
+			this.#chatWebSocket[key].sock.close();
 		this.#css2DObject.chat.element.querySelector(
 			'.element-parent'
 		).innerHTML = '';
 		users.forEach(user => {
 			if (user.username !== this.#loggedUser) {
-				const src = this.#onlineUsers.includes(user.username) ? `/textures/svg/Indicator online.svg` : `/textures/svg/Indicator offline.svg`
+				const src = this.#onlineUsers.includes(user.username)
+					? `/textures/svg/Indicator online.svg`
+					: `/textures/svg/Indicator offline.svg`;
 				const userTemp = document.createElement('template');
 				userTemp.innerHTML = ELEMENT.trim();
 
@@ -1427,9 +1430,7 @@ class Game {
 				userHTML.querySelector('.element-child').src = user.avatar;
 				userHTML.querySelector('.sword-prowess-lv').textContent =
 					user.username;
-				userHTML.querySelector(
-					'.indicator-icon'
-				).src = src;
+				userHTML.querySelector('.indicator-icon').src = src;
 				this.#css2DObject.chat.element
 					.querySelector('.element-parent')
 					.appendChild(userHTML);
@@ -1504,6 +1505,9 @@ class Game {
 			const matchTemp = document.createElement('template');
 			matchTemp.innerHTML = MATCHESSCORE.trim();
 			const matchHTML = matchTemp.content.firstChild;
+
+			const time = new Date(match.date_played);
+			matchHTML.dataset.tooltip = `${time.toLocaleString()}`;
 
 			matchHTML.querySelector('.user-2').textContent = match.player1;
 			matchHTML.querySelector('.user-1').textContent = match.player2;
@@ -1590,7 +1594,7 @@ class Game {
 		const message = this.#css2DObject.chat.element
 			.querySelector('.message')
 			.value.trim();
-		if (message && this.#chatWebSocket[this.#chatuser].sock) {
+		if (message && this.#chatWebSocket[this.#chatuser]?.sock) {
 			this.#css2DObject.chat.element
 				.querySelector('.message')
 				.addEventListener('keyup', e => {
@@ -1702,6 +1706,7 @@ class Game {
 	#animate() {
 		const now = performance.now();
 		const delta = (now - this.#lastFrameTime) / 1000;
+
 		if (now - this.#lastFrameTime > 1000 / this.#frameRate) {
 			this.#lastFrameTime = now;
 			this.#update();
@@ -1709,6 +1714,7 @@ class Game {
 			if (this.#hasChanges) this.#render();
 			this.#hasChanges = false;
 		}
+
 		requestAnimationFrame(() => this.#animate());
 		this.#css2DRenderer.render(this.#scene, this.#camera);
 		this.#renderer.render(this.#scene, this.#camera);
@@ -1716,14 +1722,14 @@ class Game {
 
 	#update() {
 		this.#hasChanges = false;
-
 		if (this.#ball) {
 			this.#ball.position.add(this.#ballDirection);
+			this.#ball.rotation.x += this.#ballDirection.x;
+			this.#ball.rotation.y += this.#ballDirection.y;
 			this.#ballBox.setFromObject(this.#ball);
-			this.#checkCollisions();
+			// this.#checkCollisions();
 			this.#hasChanges = true;
 		}
-
 		if (this.#player) {
 			this.#handelePlayerMovement(
 				this.#player,
@@ -1732,7 +1738,6 @@ class Game {
 				'Racket'
 			);
 		}
-
 		if (this.#player2) {
 			this.#handelePlayerMovement(
 				this.#player2,
@@ -1875,17 +1880,7 @@ class Game {
 		);
 	}
 
-	#handleBallWallCollision(i) {
-		const wallBox = this.#wallsBoxes[i];
-		const intersectionBox = this.#ballBox.clone().intersect(wallBox);
-		const point = new THREE.Vector3();
-		intersectionBox.getCenter(point);
-
-		if (i === 1 && point.z < wallBox.min.z)
-			this.#ball.position.z = wallBox.min.z;
-		if (i === 0 && point.z > wallBox.max.z)
-			this.#ball.position.z = wallBox.max.z;
-
+	#handleBallWallCollision() {
 		this.#ballDirection.y = -this.#ballDirection.y;
 	}
 
@@ -1915,68 +1910,68 @@ class Game {
 		this.#resetScore();
 	}
 
-	moveUp() {
-		if (this.#checkPlayerCollisions(this.#player, -1, 'Racket')) {
-			this.#playerDirection = -1;
-			this.#hasChanges = true;
-		} else {
-			this.#playerDirection = 0;
-			this.#hasChanges = true;
-		}
-	}
+	// moveUp() {
+	// 	if (this.#checkPlayerCollisions(this.#player, -1, 'Racket')) {
+	// 		this.#playerDirection = -1;
+	// 		this.#hasChanges = true;
+	// 	} else {
+	// 		this.#playerDirection = 0;
+	// 		this.#hasChanges = true;
+	// 	}
+	// }
 
-	moveDown() {
-		if (this.#checkPlayerCollisions(this.#player, 1, 'Racket')) {
-			this.#playerDirection = 1;
-			this.#hasChanges = true;
-		} else {
-			this.#playerDirection = 0;
-			this.#hasChanges = true;
-		}
-	}
+	// moveDown() {
+	// 	if (this.#checkPlayerCollisions(this.#player, 1, 'Racket')) {
+	// 		this.#playerDirection = 1;
+	// 		this.#hasChanges = true;
+	// 	} else {
+	// 		this.#playerDirection = 0;
+	// 		this.#hasChanges = true;
+	// 	}
+	// }
 
-	moveUp2() {
-		if (this.#checkPlayerCollisions(this.#player2, -1, 'Racket001')) {
-			this.#player2Direction = -1;
-			this.#hasChanges = true;
-		} else {
-			this.#player2Direction = 0;
-			this.#hasChanges = true;
-		}
-	}
+	// moveUp2() {
+	// 	if (this.#checkPlayerCollisions(this.#player2, -1, 'Racket001')) {
+	// 		this.#player2Direction = -1;
+	// 		this.#hasChanges = true;
+	// 	} else {
+	// 		this.#player2Direction = 0;
+	// 		this.#hasChanges = true;
+	// 	}
+	// }
 
-	moveDown2() {
-		if (this.#checkPlayerCollisions(this.#player2, 1, 'Racket001')) {
-			this.#player2Direction = 1;
-			this.#hasChanges = true;
-		} else {
-			this.#player2Direction = 0;
-			this.#hasChanges = true;
-		}
-	}
+	// moveDown2() {
+	// 	if (this.#checkPlayerCollisions(this.#player2, 1, 'Racket001')) {
+	// 		this.#player2Direction = 1;
+	// 		this.#hasChanges = true;
+	// 	} else {
+	// 		this.#player2Direction = 0;
+	// 		this.#hasChanges = true;
+	// 	}
+	// }
 
-	startBall() {
-		let x = this.#random(-1.0, 1.0);
-		let y = this.#random(-1.0, 1.0);
+	// startBall() {
+	// 	let x = this.#random(-1.0, 1.0);
+	// 	let y = this.#random(-1.0, 1.0);
 
-		if (Math.abs(x) < this.#minDir) x = Math.sign(x) * this.#minDir;
-		if (Math.abs(y) < this.#minDir) y = Math.sign(y) * this.#minDir;
+	// 	if (Math.abs(x) < this.#minDir) x = Math.sign(x) * this.#minDir;
+	// 	if (Math.abs(y) < this.#minDir) y = Math.sign(y) * this.#minDir;
 
-		this.#ballDirection = new THREE.Vector3(x, y).multiplyScalar(
-			this.#velocity * this.#factor
-		);
-		this.#hasChanges = true;
-	}
+	// 	this.#ballDirection = new THREE.Vector3(x, y).multiplyScalar(
+	// 		this.#velocity * this.#factor
+	// 	);
+	// 	this.#hasChanges = true;
+	// }
 
-	stopPlayerMovement() {
-		this.#playerDirection = 0;
-		this.#hasChanges = true;
-	}
+	// stopPlayerMovement() {
+	// 	this.#playerDirection = 0;
+	// 	this.#hasChanges = true;
+	// }
 
-	stopPlayer2Movement() {
-		this.#player2Direction = 0;
-		this.#hasChanges = true;
-	}
+	// stopPlayer2Movement() {
+	// 	this.#player2Direction = 0;
+	// 	this.#hasChanges = true;
+	// }
 
 	#random(min, max) {
 		return Math.random() * (max - min) + min;
@@ -2257,9 +2252,117 @@ class Game {
 		});
 	}
 
+	// #initializeGame(data) {
+	// 	this.#ball.position.set(
+	// 		data.ballPosition.x,
+	// 		data.ballPosition.y,
+	// 		data.ballPosition.z
+	// 	);
+	// 	this.#walls.children[0].position.set(
+	// 		data.wallPositions[0].x,
+	// 		data.wallPositions[0].y,
+	// 		data.wallPositions[0].z
+	// 	);
+	// 	this.#walls.children[1].position.set(
+	// 		data.wallPositions[1].x,
+	// 		data.wallPositions[1].y,
+	// 		data.wallPositions[1].z
+	// 	);
+	// 	this.#goalL.position.set(
+	// 		data.goalPositions[0].x,
+	// 		data.goalPositions[0].y,
+	// 		data.goalPositions[0].z
+	// 	);
+	// 	this.#goalR.position.set(
+	// 		data.goalPositions[1].x,
+	// 		data.goalPositions[1].y,
+	// 		data.goalPositions[1].z
+	// 	);
+	// 	this.#player.position.set(
+	// 		data.paddlePositions[0].position.x,
+	// 		data.paddlePositions[0].position.y,
+	// 		data.paddlePositions[0].position.z
+	// 	);
+	// 	this.#player2.position.set(
+	// 		data.paddlePositions[1].position.x,
+	// 		data.paddlePositions[1].position.y,
+	// 		data.paddlePositions[1].position.z
+	// 	);
+	// }
+
+	#initializeGame() {
+		this.#ball?.position.set(0, 0, 0);
+		this.#player?.position.set(-1300, 0, 0);
+		this.#player2?.position.set(1300, 0, 0);
+		this.#updateScoreL('0');
+		this.#updateScoreR('0');
+	}
+
+	#updateGameState(game_data) {
+		if (this.#ball) {
+			this.#ball.rotation.x += game_data.ballDirection.x;
+			this.#ball.rotation.y += game_data.ballDirection.y;
+			this.#ball.position.set(
+				game_data.ballPosition.x,
+				game_data.ballPosition.y,
+				game_data.ballPosition.z
+			);
+		}
+
+		game_data.paddlePositions.forEach(paddle => {
+			const paddleMesh =
+				paddle.playerId === 'player1' ? this.#player : this.#player2;
+			if (paddleMesh) {
+				paddleMesh.position.set(
+					paddle.position.x,
+					paddle.position.y,
+					paddle.position.z
+				);
+			}
+		});
+
+		this.#hasChanges = true;
+
+		if (game_data.scoreL !== undefined && game_data.scoreR !== undefined) {
+			this.#updateScoreL(String(game_data.scoreL));
+			this.#updateScoreR(String(game_data.scoreR));
+		}
+	}
+
+	#GamePage() {
+		this.#gameWebSocket = new WebSocket(
+			`wss://${window.location.host}/api/ws/game/`
+		);
+
+		this.#gameWebSocket.onopen = e => {
+			const initData = {
+				type: 'init',
+				username: this.#loggedUser,
+			};
+			this.#gameWebSocket.send(JSON.stringify(initData));
+			this.#initializeGame();
+		};
+
+		this.#gameWebSocket.onmessage = e => {
+			const data = JSON.parse(e.data);
+
+			if (data.type === 'update') {
+				this.#updateGameState(data);
+			}
+			if (data.type === 'game_end') {
+				console.log(data);
+			}
+		};
+
+		this.#gameWebSocket.onerror = error => {
+			console.error('WebSocket error:', error);
+		};
+
+		this.#gameWebSocket.onclose = e => {};
+	}
+
 	#switchHome(home) {
-		for (const key in this.#chatWebSocket)
-			this.#chatWebSocket[key].sock.close();
+		if (this.#gameWebSocket) this.#gameWebSocket.close();
 		if (home !== 'chat') this.#onlineSocket?.close();
 
 		const legendText = {
@@ -2293,24 +2396,27 @@ class Game {
 		if (home === 'chat') {
 			this.#switchChatTab(1);
 			this.#onlineSocket = new WebSocket(
-				`wss://${window.location.host}/api/ws/online_status/${this.#loggedUser}/`
+				`wss://${window.location.host}/api/ws/online_status/${
+					this.#loggedUser
+				}/`
 			);
 
-			this.#onlineSocket.onopen = e => {
-			};
-	
+			this.#onlineSocket.onopen = e => {};
+
 			this.#onlineSocket.onmessage = e => {
 				const data = JSON.parse(e.data);
-				this.#onlineUsers = data.online_users
-				this.#switchChatTab(this.#selectedTab)
+				this.#onlineUsers = data.online_users;
+				this.#switchChatTab(this.#selectedTab);
 			};
-	
+
 			this.#onlineSocket.onerror = error => {
 				console.error('WebSocket error:', error);
 			};
-	
-			this.#onlineSocket.onclose = e => {
-			}; 
+
+			this.#onlineSocket.onclose = e => {};
+		}
+		if (home === 'game') {
+			this.#GamePage();
 		}
 
 		history.replaceState(null, null, `/${home}`);
@@ -2344,6 +2450,23 @@ class Game {
 		} catch (error) {
 			alert(error);
 		}
+	}
+
+	sendMovement(direction) {
+		this.#gameWebSocket?.send(
+			JSON.stringify({
+				action: 'move',
+				direction: direction,
+			})
+		);
+	}
+
+	stopMovement() {
+		this.#gameWebSocket?.send(
+			JSON.stringify({
+				action: 'stop_move',
+			})
+		);
 	}
 }
 

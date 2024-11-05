@@ -1,5 +1,5 @@
 // matches-score
-export const MATCHESSCORE = `<div class="matches-score">
+export const MATCHESSCORE = `<div class="matches-score" data-tooltip="">
 	<div class="mb">
 		<img class="mp-1-icon" alt="" src="/textures/svg/MP 1.svg" />
 		<div class="rectangle-parent">
@@ -119,7 +119,7 @@ export const USERSPROFILE = `<div class="right">
 		<div class="personal-information">Personal Information</div>
 	</div>
 	<div class="frame-parent">
-		<img class="frame-icon" alt="" src="/textures/svg/ProfilePic.svg" />
+		<img class="frame-icon" alt="" src="" />
 
 		<div class="info-field-parent">
 			<div class="info-field">
