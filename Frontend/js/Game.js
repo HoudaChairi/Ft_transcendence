@@ -1724,8 +1724,8 @@ class Game {
 		this.#hasChanges = false;
 		if (this.#ball) {
 			this.#ball.position.add(this.#ballDirection);
-			this.#ball.rotation.x += Math.abs(this.#ballDirection.x);
-			this.#ball.rotation.y += Math.abs(this.#ballDirection.y);
+			this.#ball.rotation.x += this.#ballDirection.x;
+			this.#ball.rotation.y += this.#ballDirection.y;
 			this.#ballBox.setFromObject(this.#ball);
 			// this.#checkCollisions();
 			this.#hasChanges = true;
@@ -2300,8 +2300,8 @@ class Game {
 
 	#updateGameState(game_data) {
 		if (this.#ball) {
-			this.#ball.rotation.x += Math.abs(game_data.ballDirection.x);
-			this.#ball.rotation.y += Math.abs(game_data.ballDirection.y);
+			this.#ball.rotation.x += game_data.ballDirection.x;
+			this.#ball.rotation.y += game_data.ballDirection.y;
 			this.#ball.position.set(
 				game_data.ballPosition.x,
 				game_data.ballPosition.y,
