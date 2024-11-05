@@ -2312,17 +2312,6 @@ class Game {
 		game_data.paddlePositions.forEach(paddle => {
 			const paddleMesh =
 				paddle.playerId === 'player1' ? this.#player : this.#player2;
-
-			// if (paddleMesh) {
-			// 	paddleMesh.position.lerp(
-			// 		new THREE.Vector3(
-			// 			paddle.position.x,
-			// 			paddle.position.y,
-			// 			paddle.position.z
-			// 		),
-			// 		0.09
-			// 	);
-			// }
 			if (paddleMesh) {
 				paddleMesh.position.set(
 					paddle.position.x,
