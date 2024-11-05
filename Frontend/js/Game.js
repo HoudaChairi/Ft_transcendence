@@ -1506,6 +1506,9 @@ class Game {
 			matchTemp.innerHTML = MATCHESSCORE.trim();
 			const matchHTML = matchTemp.content.firstChild;
 
+			const time = new Date(match.date_played);
+			matchHTML.dataset.tooltip = `${time.toLocaleString()}`;
+
 			matchHTML.querySelector('.user-2').textContent = match.player1;
 			matchHTML.querySelector('.user-1').textContent = match.player2;
 			matchHTML.querySelector('#score1').textContent =

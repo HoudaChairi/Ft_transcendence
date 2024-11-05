@@ -352,7 +352,8 @@ class UserInfos(APIView):
                 'score_player1': match.score_player1,
                 'score_player2': match.score_player2,
                 'player1_avatar': match.player1.get_avatar_url(),
-                'player2_avatar': match.player2.get_avatar_url()
+                'player2_avatar': match.player2.get_avatar_url(),
+                'date_played': match.date_played
             } for match in matches]
 
             # Return the user data along with their matches

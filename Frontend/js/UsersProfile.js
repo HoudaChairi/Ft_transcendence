@@ -1,5 +1,5 @@
 // matches-score
-export const MATCHESSCORE = `<div class="matches-score">
+export const MATCHESSCORE = `<div class="matches-score" data-tooltip="">
 	<div class="mb">
 		<img class="mp-1-icon" alt="" src="/textures/svg/MP 1.svg" />
 		<div class="rectangle-parent">

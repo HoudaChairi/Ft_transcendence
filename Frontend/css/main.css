@@ -553,9 +553,19 @@ body {
 }
 
 .matches-score {
+	cursor: pointer;
 	width: 447.9px;
 	position: relative;
 	min-height: 52px;
+}
+
+.matches-score:hover::after {
+	position: relative;
+	color: #000;
+	top: -30%;
+	right: 30%;
+	text-align: center;
+	content: attr(data-tooltip);
 }
 
 .div12 {
