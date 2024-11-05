@@ -1310,9 +1310,6 @@ class Game {
 
 	async #switchChatTab(btn) {
 		try {
-			for (const key in this.#chatWebSocket)
-				this.#chatWebSocket[key].sock.close();
-
 			this.#css2DObject.chat.element.querySelector(
 				'.infos-chat'
 			).innerHTML = '';
@@ -1416,6 +1413,8 @@ class Game {
 	}
 
 	#addChatUsers(users) {
+		for (const key in this.#chatWebSocket)
+			this.#chatWebSocket[key].sock.close();
 		this.#css2DObject.chat.element.querySelector(
 			'.element-parent'
 		).innerHTML = '';
@@ -1592,7 +1591,7 @@ class Game {
 		const message = this.#css2DObject.chat.element
 			.querySelector('.message')
 			.value.trim();
-		if (message && this.#chatWebSocket[this.#chatuser].sock) {
+		if (message && this.#chatWebSocket[this.#chatuser]?.sock) {
 			this.#css2DObject.chat.element
 				.querySelector('.message')
 				.addEventListener('keyup', e => {
@@ -2367,8 +2366,6 @@ class Game {
 	}
 
 	#switchHome(home) {
-		for (const key in this.#chatWebSocket)
-			this.#chatWebSocket[key].sock.close();
 		if (this.#gameWebSocket) this.#gameWebSocket.close();
 		if (home !== 'chat') this.#onlineSocket?.close();
 
