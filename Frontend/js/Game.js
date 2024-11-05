@@ -2354,6 +2354,9 @@ class Game {
 			if (data.type === 'update') {
 				this.#updateGameState(data);
 			}
+			if (data.type === 'game_end') {
+				console.log(data);
+			}
 		};
 
 		this.#gameWebSocket.onerror = error => {
