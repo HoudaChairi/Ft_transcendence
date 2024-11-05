@@ -1312,6 +1312,7 @@ class Game {
 		try {
 			for (const key in this.#chatWebSocket)
 				this.#chatWebSocket[key].sock.close();
+
 			this.#css2DObject.chat.element.querySelector(
 				'.infos-chat'
 			).innerHTML = '';
