@@ -341,5 +341,4 @@ class GameConsumer(AsyncWebsocketConsumer):
         )
 
     async def game_update(self, event: Dict) -> None:
-        """Send game updates to WebSocket."""
         await self.send(text_data=json.dumps(event['data']))
