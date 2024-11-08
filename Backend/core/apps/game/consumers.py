@@ -300,15 +300,21 @@ class GameConsumer(AsyncWebsocketConsumer):
                 game.paddle_boxes[player_id]["min"].y = new_y - C['PADDLE_HEIGHT']
                 game.paddle_boxes[player_id]["max"].y = new_y + C['PADDLE_HEIGHT']
 
+        group_id = next((group_id for group_id, game_state in self.games_data.items() if self.username in game_state.connected_players), None)
+        if group_id:
+            asyncio.create_task(self.broadcast_game_state(group_id, game))
+
     async def move_paddle(self, direction: str) -> None:
         group_id = self.player_groups.get(self.username)
         if group_id and self.username in self.games_data[group_id].paddle_directions:
             self.games_data[group_id].paddle_directions[self.username] = Direction.from_string(direction)
+            self.update_paddle_positions(self.games_data[group_id])
 
     async def stop_paddle(self) -> None:
         group_id = self.player_groups.get(self.username)
         if group_id and self.username in self.games_data[group_id].paddle_directions:
             self.games_data[group_id].paddle_directions[self.username] = Direction.NONE
+            asyncio.create_task(self.broadcast_game_state(group_id, self.games_data[group_id]))
 
     async def broadcast_game_state(self, group_id: str, game: GameState) -> None:
         await self.channel_layer.group_send(
