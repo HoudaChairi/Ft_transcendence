@@ -56,9 +56,9 @@ class GameConsumer(AsyncWebsocketConsumer):
         'FACTOR': 1,
         'WIN_SCORE': 10,
         'PADDLE_SPEED': 45,
-        'PADDLE_HEIGHT': 340,
+        'PADDLE_HEIGHT': 280,
         'BALL_RADIUS': 60,
-        'COURT_HEIGHT': 780,
+        'COURT_HEIGHT': 785,
         'COURT_WIDTH': 1600,
         'FRAME_TIME': 0.033
     }
