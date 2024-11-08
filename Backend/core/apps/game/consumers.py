@@ -51,11 +51,11 @@ class GameState:
 class GameConsumer(AsyncWebsocketConsumer):
     # Class constants
     GAME_CONSTANTS: ClassVar[Dict] = {
-        'MIN_DIR': 0.69,
-        'VELOCITY': 70,
+        'MIN_DIR': 0.83,
+        'VELOCITY': 80,
         'FACTOR': 1,
         'WIN_SCORE': 10,
-        'PADDLE_SPEED': 30,
+        'PADDLE_SPEED': 45,
         'PADDLE_HEIGHT': 340,
         'BALL_RADIUS': 60,
         'COURT_HEIGHT': 780,
@@ -200,18 +200,19 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     def handle_player_collision(self, paddle_pos: Vector3, ball_pos: Vector3) -> Vector3:
         C = self.GAME_CONSTANTS
-        relative_intersect_y = (paddle_pos.y - ball_pos.y) / C['PADDLE_HEIGHT']
-        bounce_angle = relative_intersect_y * (math.pi / 2.4)
-        
-        is_left_paddle = paddle_pos.x < 0
         direction = Vector3(
-            math.cos(bounce_angle) * (1 if is_left_paddle else -1),
-            -math.sin(bounce_angle)
+            ball_pos.x - paddle_pos.x,
+            ball_pos.y - paddle_pos.y,
+            0
         ).normalize()
-        
+
+        direction.x = math.copysign(max(abs(direction.x), C['MIN_DIR']), direction.x)
+        direction.y = math.copysign(max(abs(direction.y), C['MIN_DIR']), direction.y)
+
         return Vector3(
             direction.x * C['VELOCITY'] * C['FACTOR'],
-            direction.y * C['VELOCITY'] * C['FACTOR']
+            direction.y * C['VELOCITY'] * C['FACTOR'],
+            0
         )
 
     async def check_win_condition(self, game: GameState, group_id: str) -> bool:
@@ -301,7 +302,7 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     async def move_paddle(self, direction: str) -> None:
         group_id = self.player_groups.get(self.username)
-        if group_id and self.username in self.games_data[group_id].paddle_positions:
+        if group_id and self.username in self.games_data[group_id].paddle_directions:
             self.games_data[group_id].paddle_directions[self.username] = Direction.from_string(direction)
 
     async def stop_paddle(self) -> None:
