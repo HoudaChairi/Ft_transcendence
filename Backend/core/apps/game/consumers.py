@@ -51,8 +51,8 @@ class GameState:
 class GameConsumer(AsyncWebsocketConsumer):
     # Class constants
     GAME_CONSTANTS: ClassVar[Dict] = {
-        'MIN_DIR': 0.5,
-        'VELOCITY': 65,
+        'MIN_DIR': 0.69,
+        'VELOCITY': 70,
         'FACTOR': 1,
         'WIN_SCORE': 10,
         'PADDLE_SPEED': 30,
@@ -278,6 +278,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 game.ball_direction = self.start_ball_direction()
                 
                 if await self.check_win_condition(game, group_id):
+                    await self.broadcast_game_state(group_id, game)
                     break
             else:
                 game.ball_position = new_position
