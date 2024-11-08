@@ -248,12 +248,10 @@ class GameConsumer(AsyncWebsocketConsumer):
             self.update_paddle_positions(game)
             new_position = game.ball_position + game.ball_direction
 
-            # Handle wall collisions
             if abs(new_position.y) >= C['COURT_HEIGHT']:
                 game.ball_direction.y *= -1
                 new_position.y = math.copysign(C['COURT_HEIGHT'], new_position.y)
 
-            # Handle paddle collisions
             for player_id, paddle_box in game.paddle_boxes.items():
                 if (paddle_box["min"].x <= new_position.x <= paddle_box["max"].x and
                     paddle_box["min"].y <= new_position.y <= paddle_box["max"].y):
@@ -268,7 +266,6 @@ class GameConsumer(AsyncWebsocketConsumer):
                                     else paddle_box["min"].x - C['BALL_RADIUS'])
                     break
 
-            # Handle scoring
             if abs(new_position.x) >= C['COURT_WIDTH']:
                 if new_position.x > 0:
                     game.score_left += 1
