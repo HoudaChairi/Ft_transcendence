@@ -1414,7 +1414,8 @@ class Game {
 
 	#addChatUsers(users) {
 		for (const key in this.#chatWebSocket)
-			this.#chatWebSocket[key].sock.close();
+			if (this.#chatWebSocket[key].sock.readyState === WebSocket.OPEN)
+				this.#chatWebSocket[key].sock.close();
 		this.#css2DObject.chat.element.querySelector(
 			'.element-parent'
 		).innerHTML = '';
