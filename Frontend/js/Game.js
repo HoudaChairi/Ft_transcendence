@@ -2386,35 +2386,6 @@ class Game {
 		this.#scene.add(this.#css2DObject[home]);
 	}
 
-	async test() {
-		try {
-			const response = await fetch(`api/add-match/`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${localStorage.getItem(
-						'accessToken'
-					)}`,
-				},
-				body: JSON.stringify({
-					player1: 'hchairi',
-					player2: 'agimi',
-					score_player1: 10,
-					score_player2: 5,
-					winner: 'hchairi',
-					loser: 'agimi',
-				}),
-			});
-			const data = await response.json();
-			if (response.ok) {
-			} else {
-				alert(data.message);
-			}
-		} catch (error) {
-			alert(error);
-		}
-	}
-
 	sendMovement(direction) {
 		this.#gameWebSocket?.send(
 			JSON.stringify({
