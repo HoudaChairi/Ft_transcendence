@@ -80,9 +80,30 @@ class GameConsumer(AsyncWebsocketConsumer):
         if self.username:
             group_id = self.player_groups.get(self.username)
             if group_id:
-                await self.handle_disconnect_win(group_id)
+                game = self.games_data.get(group_id)
+                if game and game.is_running:
+                    game.is_running = False
+                    winner = next((player for player in game.connected_players if player != self.username), None)
+                    
+                    if winner:
+                        p1 = next(key for key, value in game.player_labels.items() if value == 'player1')
+                        p2 = next(key for key, value in game.player_labels.items() if value == 'player2')
+                        await database_sync_to_async(self.create_match_record)(p1, p2, winner, game.score_left, game.score_right)
+                        await self.channel_layer.group_send(
+                            group_id,
+                            {
+                                'type': 'game_update',
+                                'data': {
+                                    "type": "game_end",
+                                    "winner": winner,
+                                    "reason": "disconnect"
+                                }
+                            }
+                        )
+
                 await self.channel_layer.group_discard(group_id, self.channel_name)
                 await self.remove_player_from_game(group_id)
+
             self.connected_players.pop(self.username, None)
             self.player_groups.pop(self.username, None)
 
@@ -99,11 +120,9 @@ class GameConsumer(AsyncWebsocketConsumer):
             winner = next((player for player in game.connected_players if player != self.username), None)
             
             if winner:
-                loser = self.username
-                score_winner = game.score_left if winner == 'player1' else game.score_right
-                score_loser = game.score_right if winner == 'player1' else game.score_left
-
-                await database_sync_to_async(self.create_match_record)(winner, loser, score_winner, score_loser)
+                p1 = next(key for key, value in game.player_labels.items() if value == 'player1')
+                p2 = next(key for key, value in game.player_labels.items() if value == 'player2')
+                await database_sync_to_async(self.create_match_record)(p1, p2, winner, game.score_left, game.score_right)
                 
                 await self.channel_layer.group_send(
                     group_id,
@@ -233,11 +252,10 @@ class GameConsumer(AsyncWebsocketConsumer):
 
         if winner:
             game.is_running = False
-
-            loser = next(player for player in game.connected_players if player != winner)
-            score_winner = game.score_left if winner == 'player1' else game.score_right
-            score_loser = game.score_right if winner == 'player1' else game.score_left
-            await database_sync_to_async(self.create_match_record)(winner, loser, score_winner, score_loser)
+            
+            p1 = next(key for key, value in game.player_labels.items() if value == 'player1')
+            p2 = next(key for key, value in game.player_labels.items() if value == 'player2')
+            await database_sync_to_async(self.create_match_record)(p1, p2, winner, game.score_left, game.score_right)
 
             await self.channel_layer.group_send(
                 group_id,
@@ -356,18 +374,21 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def game_update(self, event: Dict) -> None:
         await self.send(text_data=json.dumps(event['data']))
 
-    def create_match_record(self, winner: str, loser: str, score_winner: int, score_loser: int):
+    def create_match_record(self, player1_username: str, player2_username: str, winner: str, score_player1: int, score_player2: int):
         try:
-            player1 = Player.objects.get(username=winner)
-            player2 = Player.objects.get(username=loser)
+            player1 = Player.objects.get(username=player1_username)
+            player2 = Player.objects.get(username=player2_username)
+
+            winning_player = player1 if winner == player1.username else player2
+            losing_player = player2 if winner == player1.username else player1
 
             Match.objects.create(
                 player1=player1,
                 player2=player2,
-                winner=player1 if winner == player1.username else player2,
-                loser=player2 if loser == player2.username else player1,
-                score_player1=score_winner,
-                score_player2=score_loser
+                winner=winning_player,
+                loser=losing_player,
+                score_player1=score_player1,
+                score_player2=score_player2
             )
 
             if winner == player1.username:
@@ -378,12 +399,15 @@ class GameConsumer(AsyncWebsocketConsumer):
                 player2.wins += 1
 
             player1.t_games += 1
-            player1.goals_f += score_winner
-            player1.goals_a += score_loser
+            player1.goals_f += score_player1
+            player1.goals_a += score_player2
 
             player2.t_games += 1
-            player2.goals_f += score_loser
-            player2.goals_a += score_winner
+            player2.goals_f += score_player2
+            player2.goals_a += score_player1
+
+            player1.t_points += 3 if winner == player1.username else -1
+            player2.t_points += 3 if winner == player2.username else -1
 
             player1.save()
             player2.save()
