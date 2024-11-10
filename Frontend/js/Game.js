@@ -88,6 +88,7 @@ class Game {
 	#chatWebSocket = {};
 	#chatuser;
 	#gameWebSocket;
+	#tournamentWebSocket;
 	#onlineSocket;
 	#onlineUsers;
 
@@ -2292,7 +2293,7 @@ class Game {
 		}
 	}
 
-	#GamePage() {
+	#twoPlayer() {
 		this.#gameWebSocket = new WebSocket(
 			`wss://${window.location.host}/api/ws/game/`
 		);
@@ -2322,6 +2323,38 @@ class Game {
 		};
 
 		this.#gameWebSocket.onclose = e => {};
+	}
+
+	#tournament() {
+		this.#tournamentWebSocket = new WebSocket(
+			`wss://${window.location.host}/api/ws/tournament/`
+		);
+
+		this.#tournamentWebSocket.onopen = e => {
+			console.log('Connected to tournament WebSocket.');
+			this.#tournamentWebSocket.send(
+				JSON.stringify({
+					action: 'send_username',
+					username: this.#loggedUser,
+				})
+			);
+		};
+
+		this.#tournamentWebSocket.onmessage = e => {
+			const data = JSON.parse(e.data);
+			console.log(data);
+		};
+
+		this.#tournamentWebSocket.onerror = error => {
+			console.error('WebSocket error:', error);
+		};
+
+		this.#tournamentWebSocket.onclose = e => {};
+	}
+
+	#GamePage() {
+		// this.#twoPlayer();
+		this.#tournament();
 	}
 
 	#switchHome(home) {
