@@ -2345,8 +2345,10 @@ class Game {
 	}
 
 	#startTournamentMatch(matchData) {
-		// Close existing game WebSocket if there is one
-		if (this.#gameWebSocket) {
+		if (
+			this.#gameWebSocket &&
+			this.#gameWebSocket.readyState === WebSocket.OPEN
+		) {
 			this.#gameWebSocket.close();
 		}
 
@@ -2354,47 +2356,52 @@ class Game {
 			`wss://${window.location.host}/api/ws/game/`
 		);
 
+		const initData = {
+			username: this.#loggedUser,
+			tournament_data: {
+				player1: matchData.opponent, // Use consistent order
+				player2: this.#loggedUser,
+				tournament_id: matchData.tournament_id,
+				match_id: matchData.match_id,
+				consumer: matchData.consumer,
+			},
+		};
+
 		this.#gameWebSocket.onopen = () => {
-			this.#gameWebSocket.send(
-				JSON.stringify({
-					username: this.#loggedUser,
-					tournament_data: {
-						player1: this.#loggedUser,
-						player2: matchData.opponent,
-						tournament_id: matchData.tournament_id,
-						match_id: matchData.match_id,
-						consumer: matchData.consumer,
-					},
-				})
-			);
+			console.log('Tournament game connecting...', initData);
+			this.#gameWebSocket.send(JSON.stringify(initData));
 			this.#initializeGame();
 		};
 
 		this.#gameWebSocket.onmessage = e => {
-			const data = JSON.parse(e.data);
-			if (data.type === 'update') {
-				this.#updateGameState(data);
-			}
-			if (data.type === 'game_end') {
-				console.log(data);
-				// Clean up game after tournament match ends
-				if (data.winner) {
-					// Maybe show winner notification
-					console.log(`Tournament match winner: ${data.winner}`);
+			try {
+				const data = JSON.parse(e.data);
+				console.log('Game message received:', data); // Debug log
+
+				if (data.type === 'update') {
+					this.#updateGameState(data);
+				} else if (data.type === 'game_start') {
+					console.log('Tournament game starting:', data);
+					// Maybe reinitialize game here if needed
+				} else if (data.type === 'game_end') {
+					console.log('Tournament game ended:', data);
+					if (this.#gameWebSocket) {
+						this.#gameWebSocket.close();
+					}
+				} else if (data.type === 'error') {
+					console.error('Game error:', data.message);
 				}
-				// Close game connection after match ends
-				this.#gameWebSocket.close();
-				this.#resetGameState(); // Add method to reset game state
+			} catch (error) {
+				console.error('Error processing game message:', error);
 			}
 		};
 
 		this.#gameWebSocket.onerror = error => {
-			console.error('WebSocket error:', error);
+			console.error('Tournament game WebSocket error:', error);
 		};
 
 		this.#gameWebSocket.onclose = e => {
-			// Clean up game resources
-			this.#resetGameState();
+			console.log('Tournament game connection closed');
 		};
 	}
 

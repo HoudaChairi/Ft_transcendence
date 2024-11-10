@@ -144,54 +144,37 @@ class GameConsumer(AsyncWebsocketConsumer):
             if not game.connected_players:
                 del self.games_data[group_id]
 
-    async def receive(self, text_data: str) -> None:
+    async def receive(self, text_data):
         try:
-            if not self.rate_limiter.is_allowed(self.username or 'anonymous'):
-                await self.send(text_data=json.dumps({
-                    'type': 'error',
-                    'message': 'Rate limit exceeded'
-                }))
-                return
-
-            data = json.loads(text_data)
+            data = json.loads(text_data) if isinstance(text_data, str) else text_data
             
-            if not isinstance(data, dict):
-                raise ValueError("Invalid message format")
+            # WebSocket messages
+            if isinstance(data, dict):
+                if 'username' in data:
+                    await self.handle_new_player(
+                        data['username'], 
+                        data.get('tournament_data')
+                    )
+                elif 'action' in data:
+                    if data['action'] == 'move' and 'direction' in data:
+                        await self.move_paddle(data['direction'])
+                    elif data['action'] == 'stop_move':
+                        await self.stop_paddle()
 
-            if 'username' in data:
-                if not isinstance(data['username'], str):
-                    raise ValueError("Invalid username format")
-                # Pass tournament_data if it exists
-                tournament_data = data.get('tournament_data')
-                await self.handle_new_player(data['username'], tournament_data)
-                
-            elif 'action' in data:
-                if data['action'] not in ['move', 'stop_move']:
-                    raise ValueError("Invalid action")
-                    
-                if data['action'] == 'move':
-                    if 'direction' not in data:
-                        raise ValueError("Missing direction")
-                    await self.move_paddle(data['direction'])
-                else:
-                    await self.stop_paddle()
-                    
-        except json.JSONDecodeError:
-            await self.send(text_data=json.dumps({
-                'type': 'error',
-                'message': 'Invalid JSON format'
-            }))
-        except ValueError as e:
-            await self.send(text_data=json.dumps({
-                'type': 'error',
-                'message': str(e)
-            }))
         except Exception as e:
-            print(f"Error in receive: {e}")
+            print(f"Error in receive: {str(e)}")
             await self.send(text_data=json.dumps({
                 'type': 'error',
                 'message': 'Internal server error'
             }))
+
+    async def channel_message(self, event):
+        try:
+            message_type = event.get('type')
+            if message_type == 'game_update':
+                await self.send(text_data=json.dumps(event['data']))
+        except Exception as e:
+            print(f"Error in channel_message: {str(e)}")
 
     async def move_paddle(self, direction: str) -> None:
         group_id = self.player_groups.get(self.username)
@@ -210,25 +193,51 @@ class GameConsumer(AsyncWebsocketConsumer):
             self.username = username
             self.connected_players[username] = self.channel_name
 
-            # Tournament game handling
             if tournament_data:
-                print(f"Tournament game starting: {tournament_data}")
-                self.tournament_data = tournament_data  # Store tournament data
-                group_id = f"{tournament_data['player1']}_{tournament_data['player2']}"
+                # Use consistent group_id format
+                if username == tournament_data['player1']:
+                    group_id = f"{tournament_data['player1']}_{tournament_data['player2']}"
+                else:
+                    group_id = f"{tournament_data['player2']}_{tournament_data['player1']}"
+
                 self.player_groups[username] = group_id
                 
-                if len(self.connected_players) == 2:
-                    await self.create_tournament_game(
+                # If game doesn't exist yet, create it
+                if group_id not in self.games_data:
+                    self.games_data[group_id] = self.create_initial_game_state(
                         tournament_data['player1'],
-                        tournament_data['player2'],
-                        tournament_data
+                        tournament_data['player2']
                     )
+                    self.games_data[group_id].tournament_data = tournament_data
+
+                # Add player to group
+                await self.channel_layer.group_add(group_id, self.channel_name)
+
+                # If both players are connected, start the game
+                if len([p for p in self.connected_players.keys() 
+                       if p in [tournament_data['player1'], tournament_data['player2']]]) == 2:
+                    await self.channel_layer.group_send(
+                        group_id,
+                        {
+                            'type': 'game_update',
+                            'data': {
+                                "type": "game_start",
+                                "players": {
+                                    "player1": tournament_data['player1'],
+                                    "player2": tournament_data['player2']
+                                },
+                                "tournament": True
+                            }
+                        }
+                    )
+                    asyncio.create_task(self.run_game_loop(group_id))
             else:
                 if await self.handle_reconnection_attempt(username):
                     return
 
                 if len(self.connected_players) % 2 == 0:
                     await self.create_game()
+
         except Exception as e:
             print(f"Error in handle_new_player: {e}")
             await self.send(text_data=json.dumps({
@@ -255,35 +264,40 @@ class GameConsumer(AsyncWebsocketConsumer):
         return False
     
     async def create_tournament_game(self, player1: str, player2: str, tournament_data: dict) -> None:
-        group_id = f"{player1}_{player2}"
-        
-        self.games_data[group_id] = self.create_initial_game_state(player1, player2)
-        self.games_data[group_id].tournament_data = tournament_data
+        try:
+            group_id = f"{player1}_{player2}"
+            
+            self.games_data[group_id] = self.create_initial_game_state(player1, player2)
+            self.games_data[group_id].tournament_data = tournament_data
 
-        for player in (player1, player2):
-            await self.channel_layer.group_add(
+            # Add both players to the group
+            for player in (player1, player2):
+                if player in self.connected_players:
+                    await self.channel_layer.group_add(
+                        group_id,
+                        self.connected_players[player]
+                    )
+
+            await asyncio.sleep(3)
+            
+            await self.channel_layer.group_send(
                 group_id,
-                self.connected_players[player]
-            )
-
-        await asyncio.sleep(3)
-        
-        await self.channel_layer.group_send(
-            group_id,
-            {
-                'type': 'game_update',
-                'data': {
-                    "type": "game_start",
-                    "players": {
-                        "player1": player1,
-                        "player2": player2
-                    },
-                    "tournament": True
+                {
+                    'type': 'game_update',
+                    'data': {
+                        "type": "game_start",
+                        "players": {
+                            "player1": player1,
+                            "player2": player2
+                        },
+                        "tournament": True
+                    }
                 }
-            }
-        )
-        
-        asyncio.create_task(self.run_game_loop(group_id))
+            )
+            
+            asyncio.create_task(self.run_game_loop(group_id))
+        except Exception as e:
+            print(f"Error creating tournament game: {str(e)}")
 
     async def handle_game_end(self, winner: str) -> None:
         group_id = self.player_groups.get(self.username)
@@ -339,7 +353,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_send(
             group_id,
             {
-                'type': 'game_update',
+                'type': 'channel_message',
                 'data': {
                     "type": "update",
                     "paddlePositions": [
@@ -362,7 +376,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             }
         )
 
-    async def game_update(self, event: Dict) -> None:
+    async def game_update(self, event):
         await self.send(text_data=json.dumps(event['data']))
 
     def update_paddle_positions(self, game: GameState) -> None:
