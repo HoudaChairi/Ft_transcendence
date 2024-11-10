@@ -161,7 +161,9 @@ class GameConsumer(AsyncWebsocketConsumer):
             if 'username' in data:
                 if not isinstance(data['username'], str):
                     raise ValueError("Invalid username format")
-                await self.handle_new_player(data['username'])
+                # Pass tournament_data if it exists
+                tournament_data = data.get('tournament_data')
+                await self.handle_new_player(data['username'], tournament_data)
                 
             elif 'action' in data:
                 if data['action'] not in ['move', 'stop_move']:
@@ -203,14 +205,15 @@ class GameConsumer(AsyncWebsocketConsumer):
             self.games_data[group_id].paddle_directions[self.username] = Direction.NONE
             asyncio.create_task(self.broadcast_game_state(group_id, self.games_data[group_id]))
 
-    async def handle_new_player(self, username: str) -> None:
+    async def handle_new_player(self, username: str, tournament_data: Optional[dict] = None) -> None:
         try:
             self.username = username
             self.connected_players[username] = self.channel_name
 
-            # Check for tournament game
-            tournament_data = getattr(self, 'tournament_data', None)
+            # Tournament game handling
             if tournament_data:
+                print(f"Tournament game starting: {tournament_data}")
+                self.tournament_data = tournament_data  # Store tournament data
                 group_id = f"{tournament_data['player1']}_{tournament_data['player2']}"
                 self.player_groups[username] = group_id
                 

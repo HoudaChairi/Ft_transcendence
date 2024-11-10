@@ -2262,6 +2262,27 @@ class Game {
 		this.#updateScoreR('0');
 	}
 
+	#resetGameState() {
+		// Reset scores
+		this.#updateScoreL('0');
+		this.#updateScoreR('0');
+
+		// Reset ball position if needed
+		if (this.#ball) {
+			this.#ball.position.set(0, 0, 0);
+		}
+
+		// Reset paddle positions if needed
+		if (this.#player) {
+			this.#player.position.set(-1300, 0, 0);
+		}
+		if (this.#player2) {
+			this.#player2.position.set(1300, 0, 0);
+		}
+
+		this.#hasChanges = true;
+	}
+
 	#updateGameState(game_data) {
 		if (this.#ball) {
 			this.#ball.rotation.x += game_data.ballDirection.x;
@@ -2300,7 +2321,6 @@ class Game {
 
 		this.#gameWebSocket.onopen = e => {
 			const initData = {
-				type: 'init',
 				username: this.#loggedUser,
 			};
 			this.#gameWebSocket.send(JSON.stringify(initData));
@@ -2309,7 +2329,6 @@ class Game {
 
 		this.#gameWebSocket.onmessage = e => {
 			const data = JSON.parse(e.data);
-
 			if (data.type === 'update') {
 				this.#updateGameState(data);
 			}
@@ -2325,13 +2344,70 @@ class Game {
 		this.#gameWebSocket.onclose = e => {};
 	}
 
+	#startTournamentMatch(matchData) {
+		// Close existing game WebSocket if there is one
+		if (this.#gameWebSocket) {
+			this.#gameWebSocket.close();
+		}
+
+		this.#gameWebSocket = new WebSocket(
+			`wss://${window.location.host}/api/ws/game/`
+		);
+
+		this.#gameWebSocket.onopen = () => {
+			this.#gameWebSocket.send(
+				JSON.stringify({
+					username: this.#loggedUser,
+					tournament_data: {
+						player1: this.#loggedUser,
+						player2: matchData.opponent,
+						tournament_id: matchData.tournament_id,
+						match_id: matchData.match_id,
+						consumer: matchData.consumer,
+					},
+				})
+			);
+			this.#initializeGame();
+		};
+
+		this.#gameWebSocket.onmessage = e => {
+			const data = JSON.parse(e.data);
+			if (data.type === 'update') {
+				this.#updateGameState(data);
+			}
+			if (data.type === 'game_end') {
+				console.log(data);
+				// Clean up game after tournament match ends
+				if (data.winner) {
+					// Maybe show winner notification
+					console.log(`Tournament match winner: ${data.winner}`);
+				}
+				// Close game connection after match ends
+				this.#gameWebSocket.close();
+				this.#resetGameState(); // Add method to reset game state
+			}
+		};
+
+		this.#gameWebSocket.onerror = error => {
+			console.error('WebSocket error:', error);
+		};
+
+		this.#gameWebSocket.onclose = e => {
+			// Clean up game resources
+			this.#resetGameState();
+		};
+	}
+
 	#tournament() {
+		if (this.#tournamentWebSocket) {
+			this.#tournamentWebSocket.close();
+		}
+
 		this.#tournamentWebSocket = new WebSocket(
 			`wss://${window.location.host}/api/ws/tournament/`
 		);
 
 		this.#tournamentWebSocket.onopen = e => {
-			console.log('Connected to tournament WebSocket.');
 			this.#tournamentWebSocket.send(
 				JSON.stringify({
 					type: 'join_tournament',
@@ -2343,13 +2419,30 @@ class Game {
 		this.#tournamentWebSocket.onmessage = e => {
 			const data = JSON.parse(e.data);
 			console.log(data);
+			if (data.type === 'match_ready') {
+				this.#startTournamentMatch(data);
+			} else if (data.type === 'tournament_complete') {
+				console.log('Tournament completed:', data);
+				// Show tournament winner
+				if (data.winner === this.#loggedUser) {
+					console.log('You won the tournament!');
+				} else {
+					console.log(`Tournament winner: ${data.winner}`);
+				}
+			} else if (data.type === 'players_update') {
+				console.log('Players updated:', data);
+				// Update waiting players display, tournament brackets, etc.
+			}
 		};
 
 		this.#tournamentWebSocket.onerror = error => {
 			console.error('WebSocket error:', error);
 		};
 
-		this.#tournamentWebSocket.onclose = e => {};
+		this.#tournamentWebSocket.onclose = e => {
+			// Maybe reconnect if disconnected unexpectedly
+			console.log('Tournament connection closed');
+		};
 	}
 
 	#GamePage() {
