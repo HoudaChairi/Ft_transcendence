@@ -2334,7 +2334,7 @@ class Game {
 			console.log('Connected to tournament WebSocket.');
 			this.#tournamentWebSocket.send(
 				JSON.stringify({
-					action: 'send_username',
+					type: 'join_tournament',
 					username: this.#loggedUser,
 				})
 			);

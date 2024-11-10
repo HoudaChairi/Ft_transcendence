@@ -652,8 +652,8 @@ class TournamentConsumer(AsyncWebsocketConsumer):
     tournaments: Dict[str, Tournament] = {}
     player_to_tournament: Dict[str, str] = {}
     waiting_players: List[str] = []
-    connected_players: Set[str] = set()
-    player_channels: Dict[str, str] = {}  # Add this to track player channels
+    connected_players: Set[str] = set()  # Using Set prevents duplicates
+    active_connections: Dict[str, AsyncWebsocketConsumer] = {}
     PLAYERS_PER_TOURNAMENT = 4
 
     def __init__(self, *args, **kwargs):
@@ -666,20 +666,24 @@ class TournamentConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
         if self.username:
+            # Remove from waiting list if present
             if self.username in self.waiting_players:
                 self.waiting_players.remove(self.username)
             
-            self.connected_players.remove(self.username)
-            self.player_channels.pop(self.username, None)  # Remove channel
+            # Remove from connected players and active connections
+            self.connected_players.discard(self.username)
+            self.active_connections.pop(self.username, None)
             
+            # Handle tournament cleanup
             tournament_id = self.player_to_tournament.get(self.username)
             if tournament_id:
                 tournament = self.tournaments.get(tournament_id)
-                if tournament and tournament.state == TournamentState.WAITING:
-                    tournament.players.remove(self.username)
-                    if not tournament.players:
-                        del self.tournaments[tournament_id]
-                    del self.player_to_tournament[self.username]
+                if tournament:
+                    if tournament.state == TournamentState.WAITING:
+                        tournament.players.remove(self.username)
+                        if not tournament.players:
+                            del self.tournaments[tournament_id]
+                    self.player_to_tournament.pop(self.username, None)
             
             await self.broadcast_player_lists()
 
@@ -710,32 +714,51 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             }
         }
 
-        # Send to all connected players using their channel names
-        for username, channel_name in self.player_channels.items():
-            try:
-                await self.channel_layer.send(
-                    channel_name,
-                    {
-                        "type": "tournament_update",
-                        "message": message
-                    }
-                )
-            except Exception as e:
-                print(f"Error broadcasting to {username}: {e}")
+        # Send to ALL connected players
+        for connection in self.active_connections.values():
+            await connection.send(text_data=json.dumps(message))
 
     async def handle_join_tournament(self, username: str):
         self.username = username
-        self.player_channels[username] = self.channel_name  # Store channel name
+        
+        # Check if player is already in a tournament
+        if username in self.player_to_tournament:
+            await self.send(text_data=json.dumps({
+                "type": "error",
+                "message": "Already in a tournament"
+            }))
+            return
+            
+        # Check if player is already waiting
+        if username in self.waiting_players:
+            await self.send(text_data=json.dumps({
+                "type": "error",
+                "message": "Already in waiting list"
+            }))
+            return
+
+        # Add to connected players and waiting list
         self.connected_players.add(username)
+        self.active_connections[username] = self
         self.waiting_players.append(username)
         
-        # Broadcast updated player lists to everyone
+        # Broadcast updated player lists
         await self.broadcast_player_lists()
         
         # Check if we have enough players to start a tournament
         if len(self.waiting_players) >= self.PLAYERS_PER_TOURNAMENT:
             tournament_players = self.waiting_players[:self.PLAYERS_PER_TOURNAMENT]
             self.waiting_players = self.waiting_players[self.PLAYERS_PER_TOURNAMENT:]
+            
+            # Check if any of these players is already in a tournament
+            if any(player in self.player_to_tournament for player in tournament_players):
+                # Remove players that are already in tournaments
+                tournament_players = [p for p in tournament_players if p not in self.player_to_tournament]
+                # Add remaining players back to waiting list
+                self.waiting_players.extend(tournament_players)
+                await self.broadcast_player_lists()
+                return
+                
             await self.create_tournament(tournament_players)
             await self.broadcast_player_lists()
 
@@ -804,17 +827,22 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             # Create a new game group ID
             game_group_id = f"{match.player1}_{match.player2}"
             
-            # Send match ready notification to both players
+            # Send match ready notification to both players using their specific connections
             for player in [match.player1, match.player2]:
-                message = {
-                    "type": "match_ready",
-                    "opponent": match.player2 if player == match.player1 else match.player1,
-                    "tournament_id": tournament.id,
-                    "match_id": match_id,
-                    "game_group_id": game_group_id,
-                    "consumer": self.channel_name
-                }
-                await self.send(text_data=json.dumps(message))
+                if player in self.active_connections:
+                    connection = self.active_connections[player]
+                    opponent = match.player2 if player == match.player1 else match.player1
+                    message = {
+                        "type": "match_ready",
+                        "opponent": opponent,
+                        "tournament_id": tournament.id,
+                        "match_id": match_id,
+                        "game_group_id": game_group_id,
+                        "consumer": self.channel_name  # Keep track of tournament consumer
+                    }
+                    await connection.send(text_data=json.dumps(message))
+                else:
+                    print(f"Warning: Player {player} not found in active connections")
 
     async def handle_game_complete(self, tournament_id: str, match_id: str, winner: str):
         tournament = self.tournaments.get(tournament_id)
@@ -825,7 +853,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         match.winner = winner
         match.game_completed = True
         
-        # Broadcast updated state after match completion
+        self.cleanup_stale_tournaments()  # Add cleanup call
         await self.broadcast_player_lists()
         
         # Check if all current round matches are complete
@@ -865,25 +893,40 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         finals_match = tournament.matches[next(iter(tournament.current_round_matches))]
         tournament.state = TournamentState.COMPLETED
         
-        # Notify all tournament players about the winner
+        # Remove players from tournament tracking
+        for player in tournament.players:
+            self.player_to_tournament.pop(player, None)
+        
+        # Notify players about tournament end
         for player in tournament.players:
             try:
-                message = {
-                    "type": "tournament_complete",
-                    "tournament_id": tournament.id,
-                    "winner": finals_match.winner
-                }
-                await self.send(text_data=json.dumps(message))
+                if player in self.active_connections:
+                    await self.active_connections[player].send(text_data=json.dumps({
+                        "type": "tournament_complete",
+                        "tournament_id": tournament.id,
+                        "winner": finals_match.winner
+                    }))
             except Exception as e:
                 print(f"Error notifying player {player} about tournament end: {e}")
         
-        # Cleanup tournament data
-        for player in tournament.players:
-            self.player_to_tournament.pop(player, None)
+        # Remove tournament
         self.tournaments.pop(tournament.id, None)
         
         # Broadcast final state update
         await self.broadcast_player_lists()
+
+    def cleanup_stale_tournaments(self):
+        """Remove completed tournaments and update player statuses"""
+        completed_tournaments = [
+            t_id for t_id, tournament in self.tournaments.items()
+            if tournament.state == TournamentState.COMPLETED
+        ]
+        
+        for t_id in completed_tournaments:
+            tournament = self.tournaments[t_id]
+            for player in tournament.players:
+                self.player_to_tournament.pop(player, None)
+            self.tournaments.pop(t_id)
 
     async def tournament_update(self, event):
         await self.send(text_data=json.dumps(event['message']))
