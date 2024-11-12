@@ -1,6 +1,6 @@
 GAME_CONSTANTS = {
     'MIN_DIR': 0.5,
-    'VELOCITY': 600,
+    'VELOCITY': 1000,
     'FACTOR': 1.5,
     'WIN_SCORE': 10,
     'PADDLE_SPEED': 800,
