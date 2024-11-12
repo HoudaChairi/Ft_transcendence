@@ -1191,7 +1191,7 @@ body {
 	flex: 1;
 	position: relative;
 	line-height: 150%;
-	white-space: pre-wrap;
+	overflow-wrap: anywhere;
 }
 
 .recived {
