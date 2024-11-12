@@ -89,6 +89,7 @@ class Game {
 	#chatuser;
 	#gameWebSocket;
 	#tournamentWebSocket;
+	#currentMatch;
 	#onlineSocket;
 	#onlineUsers;
 
@@ -1415,8 +1416,7 @@ class Game {
 
 	#addChatUsers(users) {
 		for (const key in this.#chatWebSocket)
-			if (this.#chatWebSocket[key].sock.readyState === WebSocket.OPEN)
-				this.#chatWebSocket[key].sock.close();
+			this.#chatWebSocket[key].sock.close();
 		this.#css2DObject.chat.element.querySelector(
 			'.element-parent'
 		).innerHTML = '';
@@ -2285,15 +2285,19 @@ class Game {
 
 	#updateGameState(game_data) {
 		if (this.#ball) {
-			this.#ball.rotation.x += game_data.ballDirection.x;
-			this.#ball.rotation.y += game_data.ballDirection.y;
+			// Update ball position
 			this.#ball.position.set(
 				game_data.ballPosition.x,
 				game_data.ballPosition.y,
 				game_data.ballPosition.z
 			);
+
+			// Add rotation for visual effect only
+			this.#ball.rotation.x += game_data.ballDirection.x;
+			this.#ball.rotation.y += game_data.ballDirection.y;
 		}
 
+		// Update paddles
 		game_data.paddlePositions.forEach(paddle => {
 			const paddleMesh =
 				paddle.playerId === 'player1' ? this.#player : this.#player2;
@@ -2306,12 +2310,13 @@ class Game {
 			}
 		});
 
-		this.#hasChanges = true;
-
+		// Update scores
 		if (game_data.scoreL !== undefined && game_data.scoreR !== undefined) {
 			this.#updateScoreL(String(game_data.scoreL));
 			this.#updateScoreR(String(game_data.scoreR));
 		}
+
+		this.#hasChanges = true;
 	}
 
 	#twoPlayer() {
@@ -2345,76 +2350,91 @@ class Game {
 	}
 
 	#startTournamentMatch(matchData) {
+		// Check if we're already in this match
 		if (
-			this.#gameWebSocket &&
-			this.#gameWebSocket.readyState === WebSocket.OPEN
+			this.#currentMatch &&
+			this.#currentMatch.match_id === matchData.match_id
 		) {
-			this.#gameWebSocket.close();
+			console.log('Already in this match, ignoring duplicate message');
+			return;
 		}
 
-		this.#gameWebSocket = new WebSocket(
-			`wss://${window.location.host}/api/ws/game/`
-		);
+		// Store current match
+		this.#currentMatch = matchData;
 
-		const initData = {
-			username: this.#loggedUser,
-			tournament_data: {
-				player1: matchData.opponent, // Use consistent order
-				player2: this.#loggedUser,
-				tournament_id: matchData.tournament_id,
-				match_id: matchData.match_id,
-				consumer: matchData.consumer,
-			},
-		};
+		// Close existing connection if any
+		if (this.#gameWebSocket) {
+			this.#gameWebSocket.close();
+			this.#gameWebSocket = null;
+		}
 
-		this.#gameWebSocket.onopen = () => {
-			console.log('Tournament game connecting...', initData);
-			this.#gameWebSocket.send(JSON.stringify(initData));
-			this.#initializeGame();
-		};
+		// Create new connection
+		try {
+			this.#gameWebSocket = new WebSocket(
+				`wss://${window.location.host}/api/ws/game/`
+			);
 
-		this.#gameWebSocket.onmessage = e => {
-			try {
-				const data = JSON.parse(e.data);
-				console.log('Game message received:', data); // Debug log
+			this.#gameWebSocket.onopen = () => {
+				console.log('Tournament game connecting...');
 
-				if (data.type === 'update') {
-					this.#updateGameState(data);
-				} else if (data.type === 'game_start') {
-					console.log('Tournament game starting:', data);
-					// Maybe reinitialize game here if needed
-				} else if (data.type === 'game_end') {
-					console.log('Tournament game ended:', data);
-					if (this.#gameWebSocket) {
+				this.#gameWebSocket.send(
+					JSON.stringify({
+						username: this.#loggedUser,
+						tournament_data: {
+							player1: matchData.player1,
+							player2: matchData.player2,
+							tournament_id: matchData.tournament_id,
+							match_id: matchData.match_id,
+							consumer: matchData.consumer,
+						},
+					})
+				);
+				this.#initializeGame();
+			};
+
+			this.#gameWebSocket.onmessage = e => {
+				try {
+					const data = JSON.parse(e.data);
+					if (data.type === 'update') {
+						this.#updateGameState(data);
+					} else if (data.type === 'game_end') {
+						console.log('Game ended:', data);
+						this.#currentMatch = null; // Clear current match
 						this.#gameWebSocket.close();
+						this.#gameWebSocket = null;
 					}
-				} else if (data.type === 'error') {
-					console.error('Game error:', data.message);
+				} catch (error) {
+					console.error('Error handling game message:', error);
 				}
-			} catch (error) {
-				console.error('Error processing game message:', error);
-			}
-		};
+			};
 
-		this.#gameWebSocket.onerror = error => {
-			console.error('Tournament game WebSocket error:', error);
-		};
+			this.#gameWebSocket.onerror = error => {
+				console.error('Game WebSocket error:', error);
+			};
 
-		this.#gameWebSocket.onclose = e => {
-			console.log('Tournament game connection closed');
-		};
+			this.#gameWebSocket.onclose = () => {
+				console.log('Game connection closed');
+				this.#gameWebSocket = null;
+			};
+		} catch (error) {
+			console.error('Error creating game connection:', error);
+			this.#gameWebSocket = null;
+			this.#currentMatch = null;
+		}
 	}
 
 	#tournament() {
 		if (this.#tournamentWebSocket) {
 			this.#tournamentWebSocket.close();
+			this.#tournamentWebSocket = null;
 		}
 
 		this.#tournamentWebSocket = new WebSocket(
 			`wss://${window.location.host}/api/ws/tournament/`
 		);
 
-		this.#tournamentWebSocket.onopen = e => {
+		this.#tournamentWebSocket.onopen = () => {
+			console.log('Connected to tournament WebSocket.');
 			this.#tournamentWebSocket.send(
 				JSON.stringify({
 					type: 'join_tournament',
@@ -2424,32 +2444,58 @@ class Game {
 		};
 
 		this.#tournamentWebSocket.onmessage = e => {
-			const data = JSON.parse(e.data);
-			console.log(data);
-			if (data.type === 'match_ready') {
-				this.#startTournamentMatch(data);
-			} else if (data.type === 'tournament_complete') {
-				console.log('Tournament completed:', data);
-				// Show tournament winner
-				if (data.winner === this.#loggedUser) {
-					console.log('You won the tournament!');
-				} else {
-					console.log(`Tournament winner: ${data.winner}`);
+			try {
+				const data = JSON.parse(e.data);
+				console.log('Tournament message received:', data);
+
+				if (data.type === 'match_ready') {
+					// Double check this is our match
+					if (
+						this.#loggedUser === data.player1 ||
+						this.#loggedUser === data.player2
+					) {
+						console.log(
+							`Match notification for ${this.#loggedUser}:`,
+							data
+						);
+						if (
+							!this.#currentMatch ||
+							this.#currentMatch.match_id !== data.match_id
+						) {
+							console.log('Starting new match:', data);
+							this.#startTournamentMatch(data);
+						}
+					}
+				} else if (data.type === 'players_update') {
+					console.log('Players list updated:', data.data);
 				}
-			} else if (data.type === 'players_update') {
-				console.log('Players updated:', data);
-				// Update waiting players display, tournament brackets, etc.
+			} catch (error) {
+				console.error('Error handling tournament message:', error);
 			}
 		};
 
 		this.#tournamentWebSocket.onerror = error => {
-			console.error('WebSocket error:', error);
+			console.error('Tournament WebSocket error:', error);
 		};
 
-		this.#tournamentWebSocket.onclose = e => {
-			// Maybe reconnect if disconnected unexpectedly
+		this.#tournamentWebSocket.onclose = () => {
 			console.log('Tournament connection closed');
+			this.#tournamentWebSocket = null;
+			// Optional: Attempt to reconnect after a delay
+			// setTimeout(() => this.#tournament(), 3000);
 		};
+	}
+
+	cleanup() {
+		if (this.#gameWebSocket) {
+			this.#gameWebSocket.close();
+			this.#gameWebSocket = null;
+		}
+		if (this.#tournamentWebSocket) {
+			this.#tournamentWebSocket.close();
+			this.#tournamentWebSocket = null;
+		}
+		this.#currentMatch = null;
 	}
 
 	#GamePage() {
