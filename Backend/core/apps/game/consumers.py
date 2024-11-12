@@ -190,65 +190,50 @@ class GameConsumer(AsyncWebsocketConsumer):
         C = GAME_CONSTANTS
         game = self.games_data[group_id]
         last_update = time.time()
-
         while group_id in self.games_data and game.is_running:
             current_time = time.time()
             delta_time = current_time - last_update
-            
             if delta_time < C['FRAME_TIME']:
                 await asyncio.sleep(C['FRAME_TIME'] - delta_time)
                 continue
-
             try:
                 # Update paddle positions
                 self.update_paddle_positions(game)
-
                 # Update ball position based on direction and time
                 new_x = game.ball_position.x + (game.ball_direction.x * delta_time)
                 new_y = game.ball_position.y + (game.ball_direction.y * delta_time)
                 new_position = Vector3(new_x, new_y, 0)
-
                 # Wall collisions (top/bottom)
                 if abs(new_position.y) >= C['COURT_HEIGHT']:
                     game.ball_direction.y *= -1
                     new_position.y = math.copysign(C['COURT_HEIGHT'], new_position.y)
-
                 # Paddle collisions
                 for player_id, paddle_box in game.paddle_boxes.items():
                     if (paddle_box["min"].x <= new_position.x <= paddle_box["max"].x and
                         paddle_box["min"].y <= new_position.y <= paddle_box["max"].y):
-                        
-                        game.ball_direction = self.game_manager.handle_collision(
-                            game.paddle_positions[player_id],
-                            new_position
-                        )
-                        
+                        # Reverse ball direction completely
+                        game.ball_direction.x *= -1
                         # Place ball just outside paddle
-                        new_position.x = (paddle_box["max"].x + C['BALL_RADIUS'] 
-                                        if game.ball_direction.x > 0 
+                        new_position.x = (paddle_box["max"].x + C['BALL_RADIUS']
+                                        if game.ball_direction.x > 0
                                         else paddle_box["min"].x - C['BALL_RADIUS'])
                         break
-
                 # Scoring
                 if abs(new_position.x) >= C['COURT_WIDTH']:
                     if new_position.x > 0:
                         game.score_left += 1
                     else:
                         game.score_right += 1
-                    
-                    # Reset ball
+                    # Reset ball to the center
                     game.ball_position = Vector3(0, 0, 0)
                     game.ball_direction = self.game_manager.start_ball_direction()
-                    
                     if await self.check_win_condition(game, group_id):
                         break
                 else:
                     game.ball_position = new_position
-
                 # Send update
                 await self.broadcast_game_state(group_id, game)
                 last_update = current_time
-
             except Exception as e:
                 print(f"Error in game loop: {str(e)}")
                 continue
