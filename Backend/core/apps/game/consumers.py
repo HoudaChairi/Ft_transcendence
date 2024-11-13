@@ -479,6 +479,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         super().__init__(*args, **kwargs)
         self.username: Optional[str] = None
         self.tournament_id: Optional[str] = None
+        self.active_connections: Dict[str, AsyncWebsocketConsumer] = {}  # Add this
 
     async def connect(self):
         await self.accept()
@@ -638,26 +639,45 @@ class TournamentConsumer(AsyncWebsocketConsumer):
 
 
     async def handle_game_complete(self, tournament_id: str, match_id: str, winner: str):
-        if self.tournament_manager.handle_match_complete(tournament_id, match_id, winner):
-            tournament = self.tournament_manager.tournaments[tournament_id]
-            await self.broadcast_player_lists()
+        print(f"Handling game completion - Tournament: {tournament_id}, Match: {match_id}, Winner: {winner}")
+        tournament = self.tournament_manager.tournaments.get(tournament_id)
+        
+        if not tournament or match_id not in tournament.matches:
+            print(f"Tournament or match not found - T_ID: {tournament_id}, M_ID: {match_id}")
+            return
             
-            all_complete = all(
-                match.game_completed 
-                for match in tournament.matches.values() 
-                if match.match_id in tournament.current_round_matches
-            )
-            
-            if all_complete:
-                if tournament.state == TournamentState.SEMIFINALS:
-                    await self.start_finals(tournament)
-                elif tournament.state == TournamentState.FINALS:
-                    await self.end_tournament(tournament)
+        match = tournament.matches[match_id]
+        match.winner = winner
+        match.game_completed = True
+        
+        print(f"Tournament state: {tournament.state}, Match completed: {match_id}")
+        
+        # Check if all current round matches are complete
+        all_complete = all(
+            tournament.matches[mid].game_completed 
+            for mid in tournament.current_round_matches
+        )
+        
+        print(f"All matches complete: {all_complete}")
+        
+        if all_complete:
+            if tournament.state == TournamentState.SEMIFINALS:
+                print("Starting finals")
+                await self.start_finals(tournament)
+            elif tournament.state == TournamentState.FINALS:
+                print("Ending tournament")
+                await self.end_tournament(tournament)
+                
+        # Always broadcast updated state
+        await self.broadcast_player_lists()
 
     async def start_matches(self, tournament: Tournament):
+        print(f"Starting matches for tournament {tournament.id}")
         for match_id in tournament.current_round_matches:
             match = tournament.matches[match_id]
             game_group_id = f"{match.player1}_{match.player2}"
+            
+            print(f"Setting up match {match_id}: {match.player1} vs {match.player2}")
             
             # Send match ready notification to both players
             for player in [match.player1, match.player2]:
@@ -665,23 +685,31 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                     message = {
                         "type": "match_ready",
                         "opponent": match.player2 if player == match.player1 else match.player1,
-                        "player1": match.player1,
-                        "player2": match.player2,
                         "tournament_id": tournament.id,
                         "match_id": match_id,
                         "game_group_id": game_group_id,
-                        "consumer": self.channel_name
+                        "consumer": self.channel_name,
+                        "player1": match.player1,
+                        "player2": match.player2
                     }
-                    await self.send(text_data=json.dumps(message))
+                    if player in self.active_connections:
+                        await self.active_connections[player].send(text_data=json.dumps(message))
+                    else:
+                        print(f"Warning: Player {player} not found in active connections")
                 except Exception as e:
-                    print(f"Error notifying player {player}: {e}")
+                    print(f"Error notifying player {player} about match: {e}")
 
     async def start_finals(self, tournament: Tournament):
+        print("Setting up finals match")
+        # Get winners from semifinals
         semifinal_winners = [
             tournament.matches[match_id].winner
             for match_id in tournament.current_round_matches
         ]
         
+        print(f"Finals between: {semifinal_winners[0]} and {semifinal_winners[1]}")
+        
+        # Create finals match
         finals_match_id = f"{tournament.id}_finals"
         tournament.matches[finals_match_id] = TournamentMatch(
             finals_match_id,
@@ -689,10 +717,12 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             semifinal_winners[1]
         )
         
+        # Update tournament state
         tournament.state = TournamentState.FINALS
         tournament.current_round_matches = {finals_match_id}
         
-        await self.start_tournament_matches(tournament)
+        # Start finals match
+        await self.start_matches(tournament)
 
     async def end_tournament(self, tournament: Tournament):
         finals_match = tournament.matches[next(iter(tournament.current_round_matches))]
@@ -716,3 +746,16 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         del self.tournament_manager.tournaments[tournament.id]
         
         await self.broadcast_player_lists()
+    
+    def handle_match_complete(self, tournament_id: str, match_id: str, winner: str) -> bool:
+        """Handle match completion and return True if successful"""
+        tournament = self.tournaments.get(tournament_id)
+        if not tournament or match_id not in tournament.matches:
+            print(f"Tournament {tournament_id} or match {match_id} not found")
+            return False
+            
+        match = tournament.matches[match_id]
+        match.winner = winner
+        match.game_completed = True
+        print(f"Match {match_id} completed: {winner} won")
+        return True
