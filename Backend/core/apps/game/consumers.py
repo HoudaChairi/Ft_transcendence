@@ -113,38 +113,44 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     async def handle_new_player(self, username: str, tournament_data: Optional[dict] = None) -> None:
         try:
+            print(f"\n=== New Player Joining ===")
+            print(f"Username: {username}")
+            print(f"Tournament data: {tournament_data}")
+            
             self.username = username
             self.connected_players[username] = self.channel_name
 
             if tournament_data:
                 group_id = f"{tournament_data['player1']}_{tournament_data['player2']}"
+                print(f"Game group ID: {group_id}")
                 
-                # Verify this player is part of the game
                 if username not in [tournament_data['player1'], tournament_data['player2']]:
-                    print(f"Player {username} not authorized for game {group_id}")
+                    print(f"ERROR: Player {username} not authorized for game {group_id}")
                     return
 
                 self.player_groups[username] = group_id
                 
-                # Create or join game
                 if group_id not in self.games_data:
-                    # Use game_manager with both players
+                    print(f"Creating new game state for {group_id}")
                     self.games_data[group_id] = self.game_manager.create_initial_state(
                         tournament_data['player1'],
                         tournament_data['player2']
                     )
                     self.games_data[group_id].tournament_data = tournament_data
                 
-                # Add to group
                 await self.channel_layer.group_add(group_id, self.channel_name)
                 
-                # If both players connected, start game
-                connected_players = [p for p in self.connected_players if p in [tournament_data['player1'], tournament_data['player2']]]
+                # Check if both players are connected
+                connected_players = [p for p in self.connected_players 
+                                  if p in [tournament_data['player1'], tournament_data['player2']]]
+                print(f"Connected players for group {group_id}: {connected_players}")
+                
                 if len(connected_players) == 2:
+                    print(f"Starting game for group {group_id}")
                     await self.start_game(group_id)
 
         except Exception as e:
-            print(f"Error in handle_new_player: {str(e)}")
+            print(f"ERROR in handle_new_player: {str(e)}")
             await self.send(text_data=json.dumps({
                 'type': 'error',
                 'message': 'Failed to join game'
@@ -346,12 +352,42 @@ class GameConsumer(AsyncWebsocketConsumer):
 
         if winner:
             game.is_running = False
+            print(f"\n=== Game Win Condition Met ===")
+            print(f"Winner: {winner}")
+            print(f"Tournament data: {game.tournament_data}")
             
             p1 = next(key for key, value in game.player_labels.items() if value == 'player1')
             p2 = next(key for key, value in game.player_labels.items() if value == 'player2')
             await self.create_match_record(p1, p2, winner, game.score_left, game.score_right)
             
-            await self.handle_game_end(winner)
+            if hasattr(game, 'tournament_data') and game.tournament_data:
+                print(f"Processing tournament game completion")
+                try:
+                    message = {
+                        'type': 'game_complete',
+                        'tournament_id': game.tournament_data['tournament_id'],
+                        'match_id': game.tournament_data['match_id'],
+                        'winner': winner
+                    }
+                    print(f"Sending tournament completion message: {message}")
+                    
+                    # Make sure we're using the correct consumer channel name
+                    if 'consumer' in game.tournament_data:
+                        await self.channel_layer.send(
+                            game.tournament_data['consumer'],
+                            {
+                                'type': 'receive',
+                                'text_data': json.dumps(message)
+                            }
+                        )
+                        print(f"Sent tournament completion message to {game.tournament_data['consumer']}")
+                    else:
+                        print("ERROR: No consumer channel in tournament data")
+                except Exception as e:
+                    print(f"Error sending game completion: {str(e)}")
+            else:
+                print("Not a tournament game")
+
             await self.channel_layer.group_send(
                 group_id,
                 {
@@ -503,21 +539,28 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             
             await self.broadcast_player_lists()
 
-    async def receive(self, text_data):
+    async def receive(self, text_data=None):
         try:
+            print(f"\n=== Tournament Message Received ===")
+            print(f"Text data: {text_data}")
+            
             # If it's already a dict (from channel layer), process it directly
             if isinstance(text_data, dict):
-                if text_data.get('type') == 'game_complete':
-                    data = text_data
+                data = text_data.get('text_data')
+                if data:
+                    data = json.loads(data)
                 else:
-                    data = json.loads(text_data.get('text_data', '{}'))
+                    data = text_data
+                print(f"Processed channel layer message: {data}")
             else:
                 # If it's text data from WebSocket, parse it
                 data = json.loads(text_data)
+                print(f"Processed websocket message: {data}")
             
             if data.get('type') == 'join_tournament':
                 await self.handle_join_tournament(data['username'])
             elif data.get('type') == 'game_complete':
+                print(f"Handling game completion: {data}")
                 await self.handle_game_complete(
                     data['tournament_id'],
                     data['match_id'],
@@ -531,7 +574,8 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 'message': 'Invalid JSON format'
             }))
         except Exception as e:
-            print(f"Error in tournament receive: {str(e)}, Data: {text_data}")
+            print(f"Error in tournament receive: {str(e)}")
+            print(f"Text data was: {text_data}")
             await self.send(text_data=json.dumps({
                 'type': 'error',
                 'message': 'Internal server error'
@@ -577,11 +621,16 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             "data": {
                 "waiting_players": self.tournament_manager.waiting_players,
                 "all_connected_players": list(self.connected_players),
-                "tournaments": players_in_tournaments
+                "tournaments": players_in_tournaments,
+                "tournament_states": {
+                    t_id: t.state.value 
+                    for t_id, t in self.tournament_manager.tournaments.items()
+                }
             }
         }
 
-        # Broadcast to group
+        print(f"Broadcasting tournament state: {message}")  # Debug log
+        
         await self.channel_layer.group_send(
             self.TOURNAMENT_GROUP,
             {
@@ -639,37 +688,81 @@ class TournamentConsumer(AsyncWebsocketConsumer):
 
 
     async def handle_game_complete(self, tournament_id: str, match_id: str, winner: str):
-        print(f"Handling game completion - Tournament: {tournament_id}, Match: {match_id}, Winner: {winner}")
-        tournament = self.tournament_manager.tournaments.get(tournament_id)
+        print(f"\n=== Tournament Game Complete ===")
+        print(f"Tournament: {tournament_id}")
+        print(f"Match: {match_id}")
+        print(f"Winner: {winner}")
         
-        if not tournament or match_id not in tournament.matches:
-            print(f"Tournament or match not found - T_ID: {tournament_id}, M_ID: {match_id}")
+        tournament = self.tournament_manager.tournaments.get(tournament_id)
+        if not tournament:
+            print(f"ERROR: Tournament {tournament_id} not found!")
             return
             
-        match = tournament.matches[match_id]
-        match.winner = winner
-        match.game_completed = True
+        print(f"Current tournament state: {tournament.state}")
+        print(f"Current round matches: {tournament.current_round_matches}")
+        print(f"Matches status: {[(mid, m.game_completed) for mid, m in tournament.matches.items()]}")
         
-        print(f"Tournament state: {tournament.state}, Match completed: {match_id}")
+        # Use TournamentManager to handle the match completion
+        success, next_action = self.tournament_manager.handle_match_complete(tournament_id, match_id, winner)
         
-        # Check if all current round matches are complete
-        all_complete = all(
-            tournament.matches[mid].game_completed 
-            for mid in tournament.current_round_matches
-        )
+        print(f"Match completion result - Success: {success}, Next action: {next_action}")
         
-        print(f"All matches complete: {all_complete}")
-        
-        if all_complete:
-            if tournament.state == TournamentState.SEMIFINALS:
-                print("Starting finals")
-                await self.start_finals(tournament)
-            elif tournament.state == TournamentState.FINALS:
-                print("Ending tournament")
-                await self.end_tournament(tournament)
+        if not success:
+            print(f"Failed to handle match completion!")
+            return
+            
+        if next_action == 'finals':
+            print("\n=== Setting Up Finals ===")
+            finals_match = self.tournament_manager.setup_finals(tournament_id)
+            if finals_match:
+                print(f"Finals match created: {finals_match.player1} vs {finals_match.player2}")
                 
-        # Always broadcast updated state
+                # Create the match notification
+                game_group_id = f"{finals_match.player1}_{finals_match.player2}"
+                match_data = {
+                    "type": "match_ready",
+                    "player1": finals_match.player1,
+                    "player2": finals_match.player2,
+                    "tournament_id": tournament_id,
+                    "match_id": finals_match.match_id,
+                    "game_group_id": game_group_id,
+                    "consumer": self.channel_name,
+                    "tournament_data": {
+                        "tournament_id": tournament_id,
+                        "match_id": finals_match.match_id,
+                        "player1": finals_match.player1,
+                        "player2": finals_match.player2
+                    }
+                }
+                
+                print(f"Sending finals match notification: {match_data}")
+                
+                # Send to both players individually
+                for player in [finals_match.player1, finals_match.player2]:
+                    try:
+                        await self.channel_layer.group_send(
+                            self.TOURNAMENT_GROUP,
+                            {
+                                "type": "match_notification",
+                                "match_data": {
+                                    **match_data,
+                                    "opponent": finals_match.player2 if player == finals_match.player1 else finals_match.player1
+                                }
+                            }
+                        )
+                        print(f"Sent finals notification to {player}")
+                    except Exception as e:
+                        print(f"Error sending finals notification to {player}: {str(e)}")
+            else:
+                print("Failed to setup finals match!")
+                
+        elif next_action == 'complete':
+            print("\n=== Tournament Complete ===")
+            await self.end_tournament(tournament)
+        
+        # Broadcast updated state
         await self.broadcast_player_lists()
+        print("=== End of Game Complete Handler ===\n")
 
     async def start_matches(self, tournament: Tournament):
         print(f"Starting matches for tournament {tournament.id}")
@@ -729,16 +822,19 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         tournament.state = TournamentState.COMPLETED
         
         # Notify all tournament players about the winner
-        for player in tournament.players:
-            try:
-                message = {
-                    "type": "tournament_complete",
-                    "tournament_id": tournament.id,
-                    "winner": finals_match.winner
-                }
-                await self.send(text_data=json.dumps(message))
-            except Exception as e:
-                print(f"Error notifying player {player} about tournament end: {e}")
+        message = {
+            "type": "tournament_complete",
+            "tournament_id": tournament.id,
+            "winner": finals_match.winner
+        }
+        
+        await self.channel_layer.group_send(
+            self.TOURNAMENT_GROUP,
+            {
+                "type": "tournament_update",
+                "message": message
+            }
+        )
         
         # Cleanup tournament data
         for player in tournament.players:
@@ -746,16 +842,3 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         del self.tournament_manager.tournaments[tournament.id]
         
         await self.broadcast_player_lists()
-    
-    def handle_match_complete(self, tournament_id: str, match_id: str, winner: str) -> bool:
-        """Handle match completion and return True if successful"""
-        tournament = self.tournaments.get(tournament_id)
-        if not tournament or match_id not in tournament.matches:
-            print(f"Tournament {tournament_id} or match {match_id} not found")
-            return False
-            
-        match = tournament.matches[match_id]
-        match.winner = winner
-        match.game_completed = True
-        print(f"Match {match_id} completed: {winner} won")
-        return True
