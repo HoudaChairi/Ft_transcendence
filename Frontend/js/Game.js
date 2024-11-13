@@ -88,6 +88,8 @@ class Game {
 	#chatWebSocket = {};
 	#chatuser;
 	#gameWebSocket;
+	#tournamentWebSocket;
+	#currentMatch;
 	#onlineSocket;
 	#onlineUsers;
 
@@ -2260,17 +2262,42 @@ class Game {
 		this.#updateScoreR('0');
 	}
 
+	#resetGameState() {
+		// Reset scores
+		this.#updateScoreL('0');
+		this.#updateScoreR('0');
+
+		// Reset ball position if needed
+		if (this.#ball) {
+			this.#ball.position.set(0, 0, 0);
+		}
+
+		// Reset paddle positions if needed
+		if (this.#player) {
+			this.#player.position.set(-1300, 0, 0);
+		}
+		if (this.#player2) {
+			this.#player2.position.set(1300, 0, 0);
+		}
+
+		this.#hasChanges = true;
+	}
+
 	#updateGameState(game_data) {
 		if (this.#ball) {
-			this.#ball.rotation.x += game_data.ballDirection.x;
-			this.#ball.rotation.y += game_data.ballDirection.y;
+			// Update ball position
 			this.#ball.position.set(
 				game_data.ballPosition.x,
 				game_data.ballPosition.y,
 				game_data.ballPosition.z
 			);
+
+			// Add rotation for visual effect only
+			this.#ball.rotation.x += game_data.ballDirection.x;
+			this.#ball.rotation.y += game_data.ballDirection.y;
 		}
 
+		// Update paddles
 		game_data.paddlePositions.forEach(paddle => {
 			const paddleMesh =
 				paddle.playerId === 'player1' ? this.#player : this.#player2;
@@ -2283,22 +2310,22 @@ class Game {
 			}
 		});
 
-		this.#hasChanges = true;
-
+		// Update scores
 		if (game_data.scoreL !== undefined && game_data.scoreR !== undefined) {
 			this.#updateScoreL(String(game_data.scoreL));
 			this.#updateScoreR(String(game_data.scoreR));
 		}
+
+		this.#hasChanges = true;
 	}
 
-	#GamePage() {
+	#twoPlayer() {
 		this.#gameWebSocket = new WebSocket(
 			`wss://${window.location.host}/api/ws/game/`
 		);
 
 		this.#gameWebSocket.onopen = e => {
 			const initData = {
-				type: 'init',
 				username: this.#loggedUser,
 			};
 			this.#gameWebSocket.send(JSON.stringify(initData));
@@ -2307,7 +2334,6 @@ class Game {
 
 		this.#gameWebSocket.onmessage = e => {
 			const data = JSON.parse(e.data);
-
 			if (data.type === 'update') {
 				this.#updateGameState(data);
 			}
@@ -2321,6 +2347,160 @@ class Game {
 		};
 
 		this.#gameWebSocket.onclose = e => {};
+	}
+
+	#startTournamentMatch(matchData) {
+		// Check if we're already in this match
+		if (
+			this.#currentMatch &&
+			this.#currentMatch.match_id === matchData.match_id
+		) {
+			console.log('Already in this match, ignoring duplicate message');
+			return;
+		}
+
+		// Store current match
+		this.#currentMatch = matchData;
+
+		// Close existing connection if any
+		if (this.#gameWebSocket) {
+			this.#gameWebSocket.close();
+			this.#gameWebSocket = null;
+		}
+
+		// Create new connection
+		try {
+			this.#gameWebSocket = new WebSocket(
+				`wss://${window.location.host}/api/ws/game/`
+			);
+
+			this.#gameWebSocket.onopen = () => {
+				console.log('Tournament game connecting...');
+
+				this.#gameWebSocket.send(
+					JSON.stringify({
+						username: this.#loggedUser,
+						tournament_data: {
+							player1: matchData.player1,
+							player2: matchData.player2,
+							tournament_id: matchData.tournament_id,
+							match_id: matchData.match_id,
+							consumer: matchData.consumer,
+						},
+					})
+				);
+				this.#initializeGame();
+			};
+
+			this.#gameWebSocket.onmessage = e => {
+				try {
+					const data = JSON.parse(e.data);
+					if (data.type === 'update') {
+						this.#updateGameState(data);
+					} else if (data.type === 'game_end') {
+						console.log('Game ended:', data);
+						this.#currentMatch = null; // Clear current match
+						this.#gameWebSocket.close();
+						this.#gameWebSocket = null;
+					}
+				} catch (error) {
+					console.error('Error handling game message:', error);
+				}
+			};
+
+			this.#gameWebSocket.onerror = error => {
+				console.error('Game WebSocket error:', error);
+			};
+
+			this.#gameWebSocket.onclose = () => {
+				console.log('Game connection closed');
+				this.#gameWebSocket = null;
+			};
+		} catch (error) {
+			console.error('Error creating game connection:', error);
+			this.#gameWebSocket = null;
+			this.#currentMatch = null;
+		}
+	}
+
+	#tournament() {
+		if (this.#tournamentWebSocket) {
+			this.#tournamentWebSocket.close();
+			this.#tournamentWebSocket = null;
+		}
+
+		this.#tournamentWebSocket = new WebSocket(
+			`wss://${window.location.host}/api/ws/tournament/`
+		);
+
+		this.#tournamentWebSocket.onopen = () => {
+			console.log('Connected to tournament WebSocket.');
+			this.#tournamentWebSocket.send(
+				JSON.stringify({
+					type: 'join_tournament',
+					username: this.#loggedUser,
+				})
+			);
+		};
+
+		this.#tournamentWebSocket.onmessage = e => {
+			try {
+				const data = JSON.parse(e.data);
+				console.log('Tournament message received:', data);
+
+				if (data.type === 'match_ready') {
+					// Double check this is our match
+					if (
+						this.#loggedUser === data.player1 ||
+						this.#loggedUser === data.player2
+					) {
+						console.log(
+							`Match notification for ${this.#loggedUser}:`,
+							data
+						);
+						if (
+							!this.#currentMatch ||
+							this.#currentMatch.match_id !== data.match_id
+						) {
+							console.log('Starting new match:', data);
+							this.#startTournamentMatch(data);
+						}
+					}
+				} else if (data.type === 'players_update') {
+					console.log('Players list updated:', data.data);
+				}
+			} catch (error) {
+				console.error('Error handling tournament message:', error);
+			}
+		};
+
+		this.#tournamentWebSocket.onerror = error => {
+			console.error('Tournament WebSocket error:', error);
+		};
+
+		this.#tournamentWebSocket.onclose = () => {
+			console.log('Tournament connection closed');
+			this.#tournamentWebSocket = null;
+			// Optional: Attempt to reconnect after a delay
+			// setTimeout(() => this.#tournament(), 3000);
+		};
+	}
+
+	cleanup() {
+		if (this.#gameWebSocket) {
+			this.#gameWebSocket.close();
+			this.#gameWebSocket = null;
+		}
+		if (this.#tournamentWebSocket) {
+			this.#tournamentWebSocket.close();
+			this.#tournamentWebSocket = null;
+		}
+		this.#currentMatch = null;
+	}
+
+	#GamePage() {
+		// this.#twoPlayer();
+		this.#tournament();
 	}
 
 	#switchHome(home) {
@@ -2383,35 +2563,6 @@ class Game {
 
 		history.replaceState(null, null, `/${home}`);
 		this.#scene.add(this.#css2DObject[home]);
-	}
-
-	async test() {
-		try {
-			const response = await fetch(`api/add-match/`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${localStorage.getItem(
-						'accessToken'
-					)}`,
-				},
-				body: JSON.stringify({
-					player1: 'hchairi',
-					player2: 'agimi',
-					score_player1: 10,
-					score_player2: 5,
-					winner: 'hchairi',
-					loser: 'agimi',
-				}),
-			});
-			const data = await response.json();
-			if (response.ok) {
-			} else {
-				alert(data.message);
-			}
-		} catch (error) {
-			alert(error);
-		}
 	}
 
 	sendMovement(direction) {

@@ -150,58 +150,6 @@ class UpdateAvatarView(APIView):
             }, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# ------------------------------------- Match HISTORY ------------------------------------- #
-class MatchCreateView(APIView):
-    def post(self, request, *args, **kwargs):
-        player1_username = request.data.get('player1')
-        player2_username = request.data.get('player2')
-        score_player1 = request.data.get('score_player1')
-        score_player2 = request.data.get('score_player2')
-        winner_username = request.data.get('winner')
-        loser_username = request.data.get('loser')
-
-        try:
-            player1 = Player.objects.get(username=player1_username)
-            player2 = Player.objects.get(username=player2_username)
-
-            # Determine the winner and loser based on the provided usernames
-            winner = player1 if winner_username == player1_username else player2
-            loser = player1 if loser_username == player1_username else player2
-            
-        except Player.DoesNotExist:
-            return Response({"error": "One or more players not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        winner.wins += 1
-        loser.losses += 1
-        winner.t_points += 3
-        loser.t_points -= 1
-        
-        player1.t_games += 1
-        player1.goals_f += int(score_player1)
-        player1.goals_a += int(score_player2)
-        
-        player2.t_games += 1
-        player2.goals_f += int(score_player2)
-        player2.goals_a += int(score_player1)
-        
-        player1.save()
-        player2.save()
-
-        match_data = {
-            'player1': player1.id,
-            'player2': player2.id,
-            'score_player1': score_player1,
-            'score_player2': score_player2,
-            'loser': loser.id,
-            'winner': winner.id
-        }
-        
-        serializer = MatchSerializer(data=match_data)
-        if serializer.is_valid():
-            match = serializer.save()
-            return Response(MatchSerializer(match).data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 #  ------------------------------------- 2FA AUTHENTICATION ------------------------------------- #
 
 # View for Enabling 2FA
