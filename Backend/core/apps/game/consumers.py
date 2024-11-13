@@ -3,9 +3,11 @@ from channels.db import database_sync_to_async
 from .game_models import *
 from .managers import GameManager, TournamentManager
 from .config import GAME_CONSTANTS, TOURNAMENT_CONFIG
+from core.apps.authentication.models import Player, Match
 import json
 import asyncio
 from dataclasses import asdict
+from django.db import transaction
 
 class GameConsumer(AsyncWebsocketConsumer):
     game_manager = GameManager()
@@ -40,6 +42,32 @@ class GameConsumer(AsyncWebsocketConsumer):
                 self.player_groups.pop(self.username, None)
         except Exception as e:
             print(f"Error in game disconnect: {e}")
+
+    async def remove_player_from_game(self, group_id: str, player_id: str):
+        if group_id in self.games_data:
+            game = self.games_data[group_id]
+            if player_id in game.players:
+                # Remove the player from the game's list of players
+                game.players.remove(player_id)
+                
+                # Remove the player's paddle from the game
+                if player_id in game.paddle_positions:
+                    del game.paddle_positions[player_id]
+                
+                # Remove the player's paddle box from the game
+                if player_id in game.paddle_boxes:
+                    del game.paddle_boxes[player_id]
+                
+                # If the game has no remaining players, remove the game
+                if len(game.players) == 0:
+                    del self.games_data[group_id]
+                else:
+                    # If the game still has players, reset the ball to the center
+                    game.ball_position = Vector3(0, 0, 0)
+                    game.ball_direction = self.game_manager.start_ball_direction()
+                    
+                    # Broadcast the updated game state to the remaining players
+                    await self.broadcast_game_state(group_id, game)
 
     async def receive(self, text_data=None):
         try:
@@ -319,6 +347,46 @@ class GameConsumer(AsyncWebsocketConsumer):
             )
             return True
         return False
+    
+    @transaction.atomic
+    def create_match_record(self, player1_username: str, player2_username: str, winner: str, score_player1: int, score_player2: int):
+        try:
+            player1 = Player.objects.get(username=player1_username)
+            player2 = Player.objects.get(username=player2_username)
+            
+            winning_player = player1 if winner == player1.username else player2
+            losing_player = player2 if winner == player1.username else player1
+            
+            Match.objects.create(
+                player1=player1,
+                player2=player2,
+                winner=winning_player,
+                loser=losing_player,
+                score_player1=score_player1,
+                score_player2=score_player2
+            )
+            
+            if winner == player1.username:
+                player1.wins += 1
+                player2.losses += 1
+            else:
+                player1.losses += 1
+                player2.wins += 1
+            
+            player1.t_games += 1
+            player1.goals_f += score_player1
+            player1.goals_a += score_player2
+            player1.t_points += 3 if winner == player1.username else -1
+            player1.save()
+            
+            player2.t_games += 1
+            player2.goals_f += score_player2
+            player2.goals_a += score_player1
+            player2.t_points += 3 if winner == player2.username else -1
+            player2.save()
+        
+        except Player.DoesNotExist:
+            raise ValueError(f"One or both players do not exist: {player1_username}, {player2_username}")
 
     async def handle_game_end(self, winner: str) -> None:
         group_id = self.player_groups.get(self.username)
