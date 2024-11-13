@@ -420,19 +420,26 @@ class GameConsumer(AsyncWebsocketConsumer):
         if group_id:
             game = self.games_data[group_id]
             tournament_data = getattr(game, 'tournament_data', None)
+            
             if tournament_data:
-                await self.channel_layer.send(
-                    tournament_data['consumer'],
-                    {
-                        'type': 'receive',
-                        'text_data': json.dumps({
-                            'type': 'game_complete',
-                            'tournament_id': tournament_data['tournament_id'],
-                            'match_id': tournament_data['match_id'],
-                            'winner': winner
-                        })
+                try:
+                    message = {
+                        'type': 'game_complete',
+                        'tournament_id': tournament_data['tournament_id'],
+                        'match_id': tournament_data['match_id'],
+                        'winner': winner
                     }
-                )
+                    
+                    # Send through channel layer
+                    await self.channel_layer.send(
+                        tournament_data['consumer'],
+                        {
+                            'type': 'receive',
+                            'data': message  # Send as data instead of text_data
+                        }
+                    )
+                except Exception as e:
+                    print(f"Error sending game completion: {str(e)}")
 
     def update_paddle_positions(self, game: GameState) -> None:
         C = GAME_CONSTANTS
@@ -497,7 +504,15 @@ class TournamentConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         try:
-            data = json.loads(text_data)
+            # If it's already a dict (from channel layer), process it directly
+            if isinstance(text_data, dict):
+                if text_data.get('type') == 'game_complete':
+                    data = text_data
+                else:
+                    data = json.loads(text_data.get('text_data', '{}'))
+            else:
+                # If it's text data from WebSocket, parse it
+                data = json.loads(text_data)
             
             if data.get('type') == 'join_tournament':
                 await self.handle_join_tournament(data['username'])
@@ -507,8 +522,15 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                     data['match_id'],
                     data['winner']
                 )
+            
+        except json.JSONDecodeError:
+            print(f"Error decoding JSON: {text_data}")
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': 'Invalid JSON format'
+            }))
         except Exception as e:
-            print(f"Error in tournament receive: {str(e)}")
+            print(f"Error in tournament receive: {str(e)}, Data: {text_data}")
             await self.send(text_data=json.dumps({
                 'type': 'error',
                 'message': 'Internal server error'
