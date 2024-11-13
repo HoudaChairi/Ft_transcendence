@@ -42,32 +42,41 @@ class GameConsumer(AsyncWebsocketConsumer):
                 self.player_groups.pop(self.username, None)
         except Exception as e:
             print(f"Error in game disconnect: {e}")
-
-    async def remove_player_from_game(self, group_id: str, player_id: str):
+    
+    async def handle_disconnect_win(self, group_id: str) -> None:
         if group_id in self.games_data:
             game = self.games_data[group_id]
-            if player_id in game.players:
-                # Remove the player from the game's list of players
-                game.players.remove(player_id)
+            winner = next((player for player in game.connected_players if player != self.username), None)
+            
+            if winner:
+                p1 = next(key for key, value in game.player_labels.items() if value == 'player1')
+                p2 = next(key for key, value in game.player_labels.items() if value == 'player2')
+                await self.create_match_record(p1, p2, winner, game.score_left, game.score_right)
                 
-                # Remove the player's paddle from the game
-                if player_id in game.paddle_positions:
-                    del game.paddle_positions[player_id]
-                
-                # Remove the player's paddle box from the game
-                if player_id in game.paddle_boxes:
-                    del game.paddle_boxes[player_id]
-                
-                # If the game has no remaining players, remove the game
-                if len(game.players) == 0:
-                    del self.games_data[group_id]
-                else:
-                    # If the game still has players, reset the ball to the center
-                    game.ball_position = Vector3(0, 0, 0)
-                    game.ball_direction = self.game_manager.start_ball_direction()
-                    
-                    # Broadcast the updated game state to the remaining players
-                    await self.broadcast_game_state(group_id, game)
+                # Handle tournament game end
+                await self.handle_game_end(winner)
+                await self.channel_layer.group_send(
+                    group_id,
+                    {
+                        'type': 'game_update',
+                        'data': {
+                            "type": "game_end",
+                            "winner": winner,
+                            "reason": "disconnect"
+                        }
+                    }
+                )
+            game.is_running = False
+
+
+    async def remove_player_from_game(self, group_id: str) -> None:
+        if group_id in self.games_data:
+            game = self.games_data[group_id]
+            if self.username in game.connected_players:
+                game.connected_players.pop(self.username, None)
+            if not game.connected_players:
+                del self.games_data[group_id]
+            print(f"Removed player {self.username} from game {group_id}")
 
     async def receive(self, text_data=None):
         try:
@@ -218,23 +227,29 @@ class GameConsumer(AsyncWebsocketConsumer):
         C = GAME_CONSTANTS
         game = self.games_data[group_id]
         last_update = time.time()
+
         while group_id in self.games_data and game.is_running:
             current_time = time.time()
             delta_time = current_time - last_update
+            
             if delta_time < C['FRAME_TIME']:
                 await asyncio.sleep(C['FRAME_TIME'] - delta_time)
                 continue
+
             try:
                 # Update paddle positions
                 self.update_paddle_positions(game)
+
                 # Update ball position based on direction and time
                 new_x = game.ball_position.x + (game.ball_direction.x * delta_time)
                 new_y = game.ball_position.y + (game.ball_direction.y * delta_time)
                 new_position = Vector3(new_x, new_y, 0)
+
                 # Wall collisions (top/bottom)
                 if abs(new_position.y) >= C['COURT_HEIGHT']:
                     game.ball_direction.y *= -1
                     new_position.y = math.copysign(C['COURT_HEIGHT'], new_position.y)
+
                 # Paddle collisions
                 for player_id, paddle_box in game.paddle_boxes.items():
                     if (paddle_box["min"].x <= new_position.x <= paddle_box["max"].x and
@@ -246,6 +261,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                                         if game.ball_direction.x > 0
                                         else paddle_box["min"].x - C['BALL_RADIUS'])
                         break
+
                 # Scoring
                 if abs(new_position.x) >= C['COURT_WIDTH']:
                     if new_position.x > 0:
@@ -259,9 +275,11 @@ class GameConsumer(AsyncWebsocketConsumer):
                         break
                 else:
                     game.ball_position = new_position
+
                 # Send update
                 await self.broadcast_game_state(group_id, game)
                 last_update = current_time
+
             except Exception as e:
                 print(f"Error in game loop: {str(e)}")
                 continue
@@ -331,13 +349,13 @@ class GameConsumer(AsyncWebsocketConsumer):
             
             p1 = next(key for key, value in game.player_labels.items() if value == 'player1')
             p2 = next(key for key, value in game.player_labels.items() if value == 'player2')
-            await database_sync_to_async(self.create_match_record)(p1, p2, winner, game.score_left, game.score_right)
+            await self.create_match_record(p1, p2, winner, game.score_left, game.score_right)
             
             await self.handle_game_end(winner)
             await self.channel_layer.group_send(
                 group_id,
                 {
-                    'type': 'game_end',
+                    'type': 'game_update',
                     'data': {
                         "type": "game_end",
                         "winner": winner,
@@ -348,15 +366,15 @@ class GameConsumer(AsyncWebsocketConsumer):
             return True
         return False
     
-    @transaction.atomic
+    @database_sync_to_async
     def create_match_record(self, player1_username: str, player2_username: str, winner: str, score_player1: int, score_player2: int):
         try:
             player1 = Player.objects.get(username=player1_username)
             player2 = Player.objects.get(username=player2_username)
-            
+
             winning_player = player1 if winner == player1.username else player2
             losing_player = player2 if winner == player1.username else player1
-            
+
             Match.objects.create(
                 player1=player1,
                 player2=player2,
@@ -365,28 +383,37 @@ class GameConsumer(AsyncWebsocketConsumer):
                 score_player1=score_player1,
                 score_player2=score_player2
             )
-            
+
+            # Update player stats
             if winner == player1.username:
                 player1.wins += 1
                 player2.losses += 1
             else:
                 player1.losses += 1
                 player2.wins += 1
-            
+
             player1.t_games += 1
             player1.goals_f += score_player1
             player1.goals_a += score_player2
-            player1.t_points += 3 if winner == player1.username else -1
-            player1.save()
-            
+
             player2.t_games += 1
             player2.goals_f += score_player2
             player2.goals_a += score_player1
+
+            player1.t_points += 3 if winner == player1.username else -1
             player2.t_points += 3 if winner == player2.username else -1
+
+            player1.save()
             player2.save()
-        
-        except Player.DoesNotExist:
-            raise ValueError(f"One or both players do not exist: {player1_username}, {player2_username}")
+
+            print(f"Created match record: {player1} vs {player2}, winner: {winner}")
+
+        except Player.DoesNotExist as e:
+            print(f"Error creating match record: {str(e)}")
+            pass
+        except Exception as e:
+            print(f"Unexpected error creating match record: {str(e)}")
+            pass
 
     async def handle_game_end(self, winner: str) -> None:
         group_id = self.player_groups.get(self.username)

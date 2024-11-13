@@ -1,9 +1,9 @@
 GAME_CONSTANTS = {
     'MIN_DIR': 0.5,
     'VELOCITY': 1000,
-    'FACTOR': 1.5,
+    'FACTOR': 1.2,
     'WIN_SCORE': 10,
-    'PADDLE_SPEED': 800,
+    'PADDLE_SPEED': 1200,
     'PADDLE_HEIGHT': 280,
     'BALL_RADIUS': 60,
     'COURT_HEIGHT': 785,
