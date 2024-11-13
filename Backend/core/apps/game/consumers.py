@@ -359,12 +359,8 @@ class GameConsumer(AsyncWebsocketConsumer):
                                 'text_data': json.dumps(message)
                             }
                         )
-                    else:
-                        print("ERROR: No consumer channel in tournament data")
                 except Exception as e:
                     print(f"Error sending game completion: {str(e)}")
-            else:
-                print("Not a tournament game")
 
             await self.channel_layer.group_send(
                 group_id,
@@ -698,8 +694,6 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                         )
                     except Exception as e:
                         print(f"Error sending finals notification to {player}: {str(e)}")
-            else:
-                print("Failed to setup finals match!")
                 
         elif next_action == 'complete':
             await self.end_tournament(tournament)
