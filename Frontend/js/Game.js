@@ -32,6 +32,7 @@ import {
 	REMOTE,
 	TWOFA,
 } from './Sbook';
+import { CHOICES, OFFLINE } from './Start';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -156,6 +157,7 @@ class Game {
 		this.#addSignUpCss2D();
 		this.#addHomeCss2D();
 		this.#addGameCss2D();
+		this.#addOfflineCss2D();
 		this.#addPanerCss2D();
 		this.#addSettingsCss2D();
 		this.#addSbookSettingsCss2D();
@@ -1127,7 +1129,23 @@ class Game {
 		this.#css2DObject.home.renderOrder = 1;
 	}
 
-	#addGameCss2D(){}
+	#addGameCss2D() {
+		const homeContainer = document.createElement('div');
+		homeContainer.className = 'container';
+		homeContainer.innerHTML = CHOICES;
+
+		this.#css2DObject.game = new CSS2DObject(homeContainer);
+		this.#css2DObject.game.name = 'game';
+	}
+
+	#addOfflineCss2D() {
+		const homeContainer = document.createElement('div');
+		homeContainer.className = 'container';
+		homeContainer.innerHTML = OFFLINE;
+
+		this.#css2DObject.offline = new CSS2DObject(homeContainer);
+		this.#css2DObject.offline.name = 'offline';
+	}
 
 	#addLegendCss2d() {
 		const legendContainer = document.createElement('div');
@@ -2323,33 +2341,72 @@ class Game {
 	}
 
 	#twoPlayer() {
-		this.#gameWebSocket = new WebSocket(
-			`wss://${window.location.host}/api/ws/game/`
-		);
+		// Remove current game menu
+		this.#scene.remove(this.#css2DObject.game);
 
-		this.#gameWebSocket.onopen = e => {
-			const initData = {
-				username: this.#loggedUser,
+		// Close any existing connection
+		if (this.#gameWebSocket) {
+			this.#gameWebSocket.close();
+			this.#gameWebSocket = null;
+		}
+
+		// Reset game state
+		this.#resetGameState();
+
+		try {
+			this.#gameWebSocket = new WebSocket(
+				`wss://${window.location.host}/api/ws/game/`
+			);
+
+			this.#gameWebSocket.onopen = () => {
+				const initData = {
+					username: this.#loggedUser,
+				};
+				this.#gameWebSocket.send(JSON.stringify(initData));
+				this.#initializeGame();
 			};
-			this.#gameWebSocket.send(JSON.stringify(initData));
-			this.#initializeGame();
-		};
 
-		this.#gameWebSocket.onmessage = e => {
-			const data = JSON.parse(e.data);
-			if (data.type === 'update') {
-				this.#updateGameState(data);
-			}
-			if (data.type === 'game_end') {
-				console.log(data);
-			}
-		};
+			this.#gameWebSocket.onmessage = e => {
+				try {
+					const data = JSON.parse(e.data);
 
-		this.#gameWebSocket.onerror = error => {
-			console.error('WebSocket error:', error);
-		};
+					if (data.type === 'update') {
+						this.#updateGameState(data);
+					} else if (data.type === 'game_end') {
+						// Handle game end
+						this.#resetGameState();
+						this.#gameWebSocket.close();
+						this.#gameWebSocket = null;
+						this.#scene.add(this.#css2DObject.game); // Return to menu
+					} else if (data.type === 'error') {
+						console.error('Game error:', data.message);
+						this.#gameWebSocket.close();
+						this.#gameWebSocket = null;
+						this.#scene.add(this.#css2DObject.game); // Return to menu
+					}
+				} catch (error) {
+					console.error('Error processing game message:', error);
+				}
+			};
 
-		this.#gameWebSocket.onclose = e => {};
+			this.#gameWebSocket.onerror = error => {
+				console.error('WebSocket error:', error);
+				this.#gameWebSocket = null;
+				this.#scene.add(this.#css2DObject.game); // Return to menu
+			};
+
+			this.#gameWebSocket.onclose = () => {
+				if (this.#gameWebSocket) {
+					this.#gameWebSocket = null;
+					this.#resetGameState();
+					this.#scene.add(this.#css2DObject.game); // Return to menu
+				}
+			};
+		} catch (error) {
+			console.error('Failed to create WebSocket connection:', error);
+			this.#gameWebSocket = null;
+			this.#scene.add(this.#css2DObject.game); // Return to menu
+		}
 	}
 
 	#startTournamentMatch(matchData) {
@@ -2501,9 +2558,39 @@ class Game {
 		this.#currentMatch = null;
 	}
 
+	#offline() {
+		this.#scene.remove(this.#css2DObject.game);
+		this.#scene.add(this.#css2DObject.offline);
+		this.#css2DObject.offline.element
+			.querySelector('.card-container')
+			.addEventListener('click', e => {
+				const btn = e.target.closest('.card').id;
+				if (btn) {
+				}
+			});
+	}
+
+	#online() {
+		this.#scene.remove(this.#css2DObject.game);
+		this.#twoPlayer();
+	}
+
+	#tournamentl() {}
+
 	#GamePage() {
-		// this.#twoPlayer();
-		// this.#tournament();
+		this.#css2DObject.game.element
+			.querySelector('.card-container')
+			.addEventListener('click', e => {
+				const btn = e.target.closest('.card').id;
+				if (btn) {
+					const choices = {
+						offline: this.#offline.bind(this),
+						online: this.#online.bind(this),
+						tournament: this.#tournamentl.bind(this),
+					};
+					choices[btn]();
+				}
+			});
 	}
 
 	#switchHome(home) {
@@ -2515,7 +2602,7 @@ class Game {
 			leaderboard: LEGEND_LEADERBOARD,
 		};
 
-		['game', 'chat', 'leaderboard'].forEach(ele => {
+		['game', 'chat', 'leaderboard', 'offline'].forEach(ele => {
 			this.#scene.remove(this.#css2DObject[ele]);
 		});
 

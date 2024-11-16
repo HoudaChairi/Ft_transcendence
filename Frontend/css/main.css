@@ -2332,3 +2332,85 @@ body {
 	gap: 1.25rem;
 	color: #6b3783;
 }
+
+.container {
+	top: calc(0%);
+	width: 100%;
+	height: 100%;
+	display: inline-flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.card-container {
+	flex: 1 1 0;
+	align-self: stretch;
+	display: inline-flex;
+	justify-content: center;
+	align-items: center;
+	gap: 141px;
+}
+
+.card-wrapper {
+	width: 452px;
+	height: 400px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.card {
+	width: 452px;
+	height: 400px;
+	padding: 32px;
+	box-sizing: border-box;
+	background-image: url('/textures/svg/game.svg');
+	background-size: 100% 100%;
+	background-repeat: no-repeat;
+	display: inline-flex;
+	flex-direction: column;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.card-content {
+	width: 388px;
+	height: 240px;
+	position: relative;
+}
+
+.card-title {
+	color: #d0c3a9;
+	font-size: 50px;
+	font-family: Gabriela;
+	font-weight: 400;
+	line-height: 75px;
+	word-wrap: break-word;
+}
+
+.title-offline {
+	color: #d0c3a9;
+	font-size: 50px;
+	font-family: Gabriela;
+	font-weight: 400;
+	line-height: 75px;
+	word-wrap: break-word;
+}
+
+.title-online {
+	color: #d0c3a9;
+	font-size: 50px;
+	font-family: Gabriela;
+	font-weight: 400;
+	line-height: 75px;
+	word-wrap: break-word;
+}
+
+.title-tournament {
+	color: #d0c3a9;
+	font-size: 50px;
+	font-family: Gabriela;
+	font-weight: 400;
+	line-height: 75px;
+	word-wrap: break-word;
+}
