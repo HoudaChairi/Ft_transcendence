@@ -155,6 +155,7 @@ class Game {
 		this.#addSignInCss2D();
 		this.#addSignUpCss2D();
 		this.#addHomeCss2D();
+		this.#addGameCss2D();
 		this.#addPanerCss2D();
 		this.#addSettingsCss2D();
 		this.#addSbookSettingsCss2D();
@@ -1125,6 +1126,8 @@ class Game {
 		this.#css2DObject.home.name = 'home';
 		this.#css2DObject.home.renderOrder = 1;
 	}
+
+	#addGameCss2D(){}
 
 	#addLegendCss2d() {
 		const legendContainer = document.createElement('div');
@@ -2500,7 +2503,7 @@ class Game {
 
 	#GamePage() {
 		// this.#twoPlayer();
-		this.#tournament();
+		// this.#tournament();
 	}
 
 	#switchHome(home) {
