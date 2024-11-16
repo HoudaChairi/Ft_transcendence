@@ -107,7 +107,6 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     async def handle_new_player(self, username: str, tournament_data: Optional[dict] = None) -> None:
         try:
-            
             self.username = username
             self.connected_players[username] = self.channel_name
 
@@ -128,12 +127,14 @@ class GameConsumer(AsyncWebsocketConsumer):
                 
                 await self.channel_layer.group_add(group_id, self.channel_name)
                 
-                # Check if both players are connected
                 connected_players = [p for p in self.connected_players 
-                                  if p in [tournament_data['player1'], tournament_data['player2']]]
+                                if p in [tournament_data['player1'], tournament_data['player2']]]
                 
                 if len(connected_players) == 2:
                     await self.start_game(group_id)
+            else:
+                if len(self.connected_players) >= 2:
+                    await self.create_game()
 
         except Exception as e:
             await self.send(text_data=json.dumps({
