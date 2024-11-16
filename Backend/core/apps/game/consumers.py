@@ -135,6 +135,11 @@ class GameConsumer(AsyncWebsocketConsumer):
             else:
                 if len(self.connected_players) >= 2:
                     await self.create_game()
+                else:
+                    await self.send(text_data=json.dumps({
+                        'type': 'waiting',
+                        'message': 'Waiting for second player...'
+                    }))
 
         except Exception as e:
             await self.send(text_data=json.dumps({
