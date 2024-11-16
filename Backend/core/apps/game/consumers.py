@@ -182,7 +182,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                                 }
                             }
                         )
-                        
+                    
                         asyncio.create_task(self.delayed_game_start(group_id))
                 else:
                     await self.send(text_data=json.dumps({
@@ -637,6 +637,20 @@ class TournamentConsumer(AsyncWebsocketConsumer):
     async def broadcast_player_lists(self):
         players_in_tournaments = {}
         for tournament_id, tournament in self.tournament_manager.tournaments.items():
+            # Get semifinal matches and winners
+            semifinal_matches = {
+                match_id: match 
+                for match_id, match in tournament.matches.items() 
+                if 'semi' in match_id
+            }
+            
+            semifinal_winners = {
+                "winner1": next((match.winner for match_id, match in semifinal_matches.items() 
+                                    if 'semi1' in match_id), None),
+                "winner2": next((match.winner for match_id, match in semifinal_matches.items() 
+                                    if 'semi2' in match_id), None)
+            }
+
             players_in_tournaments[tournament_id] = {
                 'players': tournament.players,
                 'state': tournament.state.value,
@@ -645,32 +659,34 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                         'player1': match.player1,
                         'player2': match.player2,
                         'winner': match.winner,
-                        'completed': match.game_completed
+                        'completed': match.game_completed,
+                        'match_type': 'semi1' if 'semi1' in match_id else 'semi2' if 'semi2' in match_id else 'finals'
                     }
                     for match_id, match in tournament.matches.items()
-                }
+                },
+                'semifinal_winners': semifinal_winners
             }
 
-        message = {
-            "type": "players_update",
-            "data": {
-                "waiting_players": self.tournament_manager.waiting_players,
-                "all_connected_players": list(self.connected_players),
-                "tournaments": players_in_tournaments,
-                "tournament_states": {
-                    t_id: t.state.value 
-                    for t_id, t in self.tournament_manager.tournaments.items()
+            message = {
+                "type": "players_update",
+                "data": {
+                    "waiting_players": self.tournament_manager.waiting_players,
+                    "all_connected_players": list(self.connected_players),
+                    "tournaments": players_in_tournaments,
+                    "tournament_states": {
+                        t_id: t.state.value 
+                        for t_id, t in self.tournament_manager.tournaments.items()
+                    }
                 }
             }
-        }
-        
-        await self.channel_layer.group_send(
-            self.TOURNAMENT_GROUP,
-            {
-                "type": "tournament_update",
-                "message": message
-            }
-        )
+            
+            await self.channel_layer.group_send(
+                self.TOURNAMENT_GROUP,
+                {
+                    "type": "tournament_update",
+                    "message": message
+                }
+            )
 
     async def tournament_update(self, event):
         """Handle updates from channel layer"""

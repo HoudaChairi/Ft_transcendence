@@ -32,7 +32,7 @@ import {
 	REMOTE,
 	TWOFA,
 } from './Sbook';
-import { CHOICES, MATCHMAKING, OFFLINE } from './Start';
+import { CHOICES, MATCHMAKING, OFFLINE, TOURNAMENT } from './Start';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -99,6 +99,8 @@ class Game {
 	#isRemote = false;
 	#selectedTab = 1;
 
+	#started = false;
+
 	constructor() {
 		this.#home = {
 			home: HOME,
@@ -159,6 +161,7 @@ class Game {
 		this.#addGameCss2D();
 		this.#addOfflineCss2D();
 		this.#addMatchmakingCss2D();
+		this.#addTournamentCss2D();
 		this.#addPanerCss2D();
 		this.#addSettingsCss2D();
 		this.#addSbookSettingsCss2D();
@@ -1155,6 +1158,15 @@ class Game {
 
 		this.#css2DObject.match = new CSS2DObject(homeContainer);
 		this.#css2DObject.match.name = 'match';
+	}
+
+	#addTournamentCss2D() {
+		const homeContainer = document.createElement('div');
+		homeContainer.className = 'tournament-container';
+		homeContainer.innerHTML = TOURNAMENT;
+
+		this.#css2DObject.tournament = new CSS2DObject(homeContainer);
+		this.#css2DObject.tournament.name = 'tournament';
 	}
 
 	#addLegendCss2d() {
@@ -2366,7 +2378,6 @@ class Game {
 	}
 
 	#twoPlayer() {
-		// Remove current game menu
 		this.#scene.remove(this.#css2DObject.game);
 		this.#scene.add(this.#css2DObject.match);
 
@@ -2375,13 +2386,15 @@ class Game {
 		this.#css2DObject.match.element.querySelector('#player1-avatar').src =
 			document.querySelector('#profilePicImage').src;
 
-		// Close any existing connection
 		if (this.#gameWebSocket) {
-			this.#gameWebSocket.close();
+			try {
+				this.#gameWebSocket.close();
+			} catch (e) {
+				console.error('Error closing existing WebSocket:', e);
+			}
 			this.#gameWebSocket = null;
 		}
 
-		// Reset game state
 		this.#resetGameState();
 
 		try {
@@ -2389,62 +2402,108 @@ class Game {
 				`wss://${window.location.host}/api/ws/game/`
 			);
 
+			if (!this.#gameWebSocket) {
+				throw new Error('Failed to create WebSocket');
+			}
+
 			this.#gameWebSocket.onopen = () => {
-				const initData = {
-					username: this.#loggedUser,
-				};
-				this.#gameWebSocket.send(JSON.stringify(initData));
-				this.#initializeGame();
+				try {
+					const initData = {
+						username: this.#loggedUser,
+					};
+					if (
+						this.#gameWebSocket &&
+						this.#gameWebSocket.readyState === WebSocket.OPEN
+					) {
+						this.#gameWebSocket.send(JSON.stringify(initData));
+						this.#initializeGame();
+					}
+				} catch (e) {
+					console.error('Error in WebSocket onopen:', e);
+					this.#handleWebSocketError();
+				}
 			};
 
 			this.#gameWebSocket.onmessage = e => {
 				try {
-					const data = JSON.parse(e.data);
+					if (!this.#gameWebSocket) return;
 
-					if (data.type === 'game_start') {
-						this.#matchmaking(data.players);
-					}
-					if (data.type === 'update') {
-						this.#updateGameState(data);
-					} else if (data.type === 'game_end') {
-						// Handle game end
-						this.#resetGameState();
-						this.#gameWebSocket.close();
-						this.#gameWebSocket = null;
-						this.#scene.add(this.#css2DObject.game); // Return to menu
-					} else if (data.type === 'error') {
-						console.error('Game error:', data.message);
-						this.#gameWebSocket.close();
-						this.#gameWebSocket = null;
-						this.#scene.add(this.#css2DObject.game); // Return to menu
+					const data = JSON.parse(e.data);
+					switch (data.type) {
+						case 'game_start':
+							this.#matchmaking(data.players);
+							break;
+						case 'update':
+							this.#updateGameState(data);
+							break;
+						case 'game_end':
+							this.#handleGameEnd();
+							break;
+						case 'error':
+							console.error('Game error:', data.message);
+							this.#handleWebSocketError();
+							break;
 					}
 				} catch (error) {
 					console.error('Error processing game message:', error);
+					this.#handleWebSocketError();
 				}
 			};
 
 			this.#gameWebSocket.onerror = error => {
 				console.error('WebSocket error:', error);
-				this.#gameWebSocket = null;
-				this.#scene.add(this.#css2DObject.game); // Return to menu
+				this.#handleWebSocketError();
 			};
 
 			this.#gameWebSocket.onclose = () => {
-				if (this.#gameWebSocket) {
-					this.#gameWebSocket = null;
-					this.#resetGameState();
-					this.#scene.add(this.#css2DObject.game); // Return to menu
-				}
+				this.#handleWebSocketClose();
 			};
 		} catch (error) {
 			console.error('Failed to create WebSocket connection:', error);
-			this.#gameWebSocket = null;
-			this.#scene.add(this.#css2DObject.game); // Return to menu
+			this.#handleWebSocketError();
 		}
 	}
 
+	#handleWebSocketError() {
+		if (this.#gameWebSocket) {
+			try {
+				this.#gameWebSocket.close();
+			} catch (e) {
+				console.error('Error closing WebSocket:', e);
+			}
+			this.#gameWebSocket = null;
+		}
+		this.#switchHome('home');
+	}
+
+	#handleWebSocketClose() {
+		if (this.#gameWebSocket) {
+			this.#gameWebSocket = null;
+			this.#resetGameState();
+			this.#switchHome('home');
+		}
+	}
+
+	#handleGameEnd() {
+		this.#resetGameState();
+
+		if (this.#gameWebSocket) {
+			try {
+				this.#gameWebSocket.close();
+			} catch (e) {
+				console.error('Error closing WebSocket:', e);
+			}
+			this.#gameWebSocket = null;
+		}
+
+		this.#scene.remove(this.#css2DObject.match);
+		this.#css2DObject.match.element.innerHTML = MATCHMAKING;
+
+		this.#scene.add(this.#css2DObject.game);
+	}
+
 	#startTournamentMatch(matchData) {
-		// Check if we're already in this match
+		this.#scene.remove(this.#css2DObject.tournament);
 		if (
 			this.#currentMatch &&
 			this.#currentMatch.match_id === matchData.match_id
@@ -2517,7 +2576,58 @@ class Game {
 		}
 	}
 
-	#tournament() {
+	#updateTournamentUI(data) {
+		try {
+			if (!this.#started) {
+				this.#css2DObject.tournament.element.innerHTML = TOURNAMENT;
+				data.forEach(async (player, i) => {
+					const response = await fetch(`api/user/${player}`, {
+						method: 'GET',
+						headers: {
+							Authorization: `Bearer ${localStorage.getItem(
+								'accessToken'
+							)}`,
+						},
+					});
+					const data = await response.json();
+					if (response.ok) {
+						this.#css2DObject.tournament.element.querySelector(
+							`#player${i + 1}-avatar`
+						).src = data.avatar;
+						this.#css2DObject.tournament.element.querySelector(
+							`#player${i + 1}`
+						).textContent = player;
+					}
+				});
+			}
+		} catch (error) {}
+	}
+
+	async #updateFinale(winner) {
+		try {
+			this.#scene.add(this.#css2DObject.tournament);
+			const response = await fetch(`api/user/${winner}`, {
+				method: 'GET',
+				headers: {
+					Authorization: `Bearer ${localStorage.getItem(
+						'accessToken'
+					)}`,
+				},
+			});
+			const data = await response.json();
+			if (response.ok) {
+				this.#css2DObject.tournament.element.querySelector(
+					`#final-avatar`
+				).src = data.avatar;
+				this.#css2DObject.tournament.element.querySelector(
+					`#final`
+				).textContent = winner;
+				this.#started = false;
+			}
+		} catch (error) {}
+	}
+
+	#tournamentStart() {
 		if (this.#tournamentWebSocket) {
 			this.#tournamentWebSocket.close();
 			this.#tournamentWebSocket = null;
@@ -2543,6 +2653,7 @@ class Game {
 				console.log('Tournament message received:', data);
 
 				if (data.type === 'match_ready') {
+					this.#started = true;
 					// Double check this is our match
 					if (
 						this.#loggedUser === data.player1 ||
@@ -2561,7 +2672,9 @@ class Game {
 						}
 					}
 				} else if (data.type === 'players_update') {
-					console.log('Players list updated:', data.data);
+					this.#updateTournamentUI(data.data.waiting_players);
+				} else if (data.type === 'tournament_complete') {
+					this.#updateFinale(data.winner);
 				}
 			} catch (error) {
 				console.error('Error handling tournament message:', error);
@@ -2575,8 +2688,7 @@ class Game {
 		this.#tournamentWebSocket.onclose = () => {
 			console.log('Tournament connection closed');
 			this.#tournamentWebSocket = null;
-			// Optional: Attempt to reconnect after a delay
-			// setTimeout(() => this.#tournament(), 3000);
+			setTimeout(() => this.#tournament(), 3000);
 		};
 	}
 
@@ -2609,7 +2721,11 @@ class Game {
 		this.#twoPlayer();
 	}
 
-	#tournamentl() {}
+	#tournament() {
+		this.#scene.remove(this.#css2DObject.game);
+		this.#scene.add(this.#css2DObject.tournament);
+		this.#tournamentStart();
+	}
 
 	#GamePage() {
 		this.#css2DObject.game.element
@@ -2620,7 +2736,7 @@ class Game {
 					const choices = {
 						offline: this.#offline.bind(this),
 						online: this.#online.bind(this),
-						tournament: this.#tournamentl.bind(this),
+						tournament: this.#tournament.bind(this),
 					};
 					choices[btn]();
 				}
@@ -2628,29 +2744,91 @@ class Game {
 	}
 
 	#switchHome(home) {
-		if (this.#gameWebSocket) this.#gameWebSocket.close();
-		if (home !== 'chat') this.#onlineSocket?.close();
+		this.#cleanupWebSockets(home);
 
+		[
+			'game',
+			'chat',
+			'leaderboard',
+			'offline',
+			'match',
+			'tournament',
+		].forEach(ele => {
+			this.#scene.remove(this.#css2DObject[ele]);
+		});
+
+		this.#css2DObject.home.element.innerHTML = this.#home[home];
+		this.#updateUIElements(home);
+
+		if (home === 'chat') {
+			this.#setupChat();
+		} else if (home === 'game') {
+			this.#GamePage();
+		}
+
+		history.replaceState(null, null, `/${home}`);
+		this.#scene.add(this.#css2DObject[home]);
+	}
+
+	#cleanupWebSockets(newPage) {
+		if (this.#gameWebSocket) {
+			try {
+				this.#gameWebSocket.close();
+			} catch (e) {
+				console.error('Error closing game WebSocket:', e);
+			}
+			this.#gameWebSocket = null;
+		}
+
+		if (this.#tournamentWebSocket) {
+			try {
+				this.#tournamentWebSocket.close();
+			} catch (e) {
+				console.error('Error closing game WebSocket:', e);
+			}
+			this.#tournamentWebSocket = null;
+		}
+
+		if (newPage !== 'chat' && this.#onlineSocket) {
+			try {
+				this.#onlineSocket.close();
+			} catch (e) {
+				console.error('Error closing online socket:', e);
+			}
+			this.#onlineSocket = null;
+		}
+	}
+
+	#resetForNewGame() {
+		this.#resetGameState();
+
+		if (this.#gameWebSocket) {
+			try {
+				this.#gameWebSocket.close();
+			} catch (e) {
+				console.error('Error closing WebSocket:', e);
+			}
+			this.#gameWebSocket = null;
+		}
+
+		this.#css2DObject.match.element.innerHTML = MATCHMAKING;
+	}
+
+	#updateUIElements(page) {
 		const legendText = {
 			chat: LEGEND_CHAT,
 			leaderboard: LEGEND_LEADERBOARD,
 		};
 
-		['game', 'chat', 'leaderboard', 'offline'].forEach(ele => {
-			this.#scene.remove(this.#css2DObject[ele]);
-		});
-
-		this.#css2DObject.home.element.innerHTML = this.#home[home];
-
-		if (home !== 'home' && home !== 'game') {
+		if (page !== 'home' && page !== 'game') {
 			this.#css2DObject.profilepic.element.classList.add(
 				'profile-pic-tran'
 			);
 
-			if (legendText[home]) {
+			if (legendText[page]) {
 				this.#css2DObject.legend.element.querySelector(
 					'.dont-bother-me'
-				).textContent = legendText[home];
+				).textContent = legendText[page];
 				this.#scene.add(this.#css2DObject.legend);
 			}
 		} else {
@@ -2659,34 +2837,34 @@ class Game {
 			);
 			this.#scene.remove(this.#css2DObject.legend);
 		}
-		if (home === 'chat') {
-			this.#switchChatTab(1);
-			this.#onlineSocket = new WebSocket(
-				`wss://${window.location.host}/api/ws/online_status/${
-					this.#loggedUser
-				}/`
-			);
+	}
 
-			this.#onlineSocket.onopen = e => {};
+	#setupChat() {
+		this.#switchChatTab(1);
 
-			this.#onlineSocket.onmessage = e => {
+		this.#onlineSocket = new WebSocket(
+			`wss://${window.location.host}/api/ws/online_status/${
+				this.#loggedUser
+			}/`
+		);
+
+		this.#onlineSocket.onopen = () => {};
+
+		this.#onlineSocket.onmessage = e => {
+			try {
 				const data = JSON.parse(e.data);
 				this.#onlineUsers = data.online_users;
 				this.#switchChatTab(this.#selectedTab);
-			};
+			} catch (error) {
+				console.error('Error processing online status message:', error);
+			}
+		};
 
-			this.#onlineSocket.onerror = error => {
-				console.error('WebSocket error:', error);
-			};
+		this.#onlineSocket.onerror = error => {
+			console.error('Online status WebSocket error:', error);
+		};
 
-			this.#onlineSocket.onclose = e => {};
-		}
-		if (home === 'game') {
-			this.#GamePage();
-		}
-
-		history.replaceState(null, null, `/${home}`);
-		this.#scene.add(this.#css2DObject[home]);
+		this.#onlineSocket.onclose = () => {};
 	}
 
 	sendMovement(direction) {

@@ -49,3 +49,64 @@ export const MATCHMAKING = `<div class="comparison-wrapper">
 		<img class="user-image" alt="" id="player2-avatar" />
 	</div>
 </div>`;
+
+export const TOURNAMENT = `<div class="bracket-section right-bracket">
+	<div class="player-container top">
+		<img
+			class="player-image"
+			src="textures/png/avatar.png"
+			id="player3-avatar"
+		/>
+		<div class="player-name" id="player3">Player 3</div>
+	</div>
+	<div class="player-container bottom">
+		<div class="player-name text-right" id="player4">Player 4</div>
+		<img
+			class="player-image"
+			src="textures/png/avatar.png"
+			id="player4-avatar"
+		/>
+	</div>
+	<div class="winner-container">
+		<img
+			class="winner-image"
+			src="textures/png/avatar.png"
+			id="winner2-avatar"
+		/>
+		<div class="player-name" id="winner2">Winner 2</div>
+	</div>
+</div>
+<div class="bracket-section left-bracket">
+	<div class="player-container bottom">
+		<img
+			class="player-image"
+			src="textures/png/avatar.png"
+			id="player2-avatar"
+		/>
+		<div class="player-name" id="player2">Player 2</div>
+	</div>
+	<div class="player-container top">
+		<div class="player-name text-right" id="player1">Player 1</div>
+		<img
+			class="player-image"
+			src="textures/png/avatar.png"
+			id="player1-avatar"
+		/>
+	</div>
+	<div class="winner-container">
+		<div class="player-name text-right" id="winner1">Winner 1</div>
+		<img
+			class="winner-image"
+			src="textures/png/avatar.png"
+			id="winner1-avatar"
+		/>
+	</div>
+</div>
+<div class="final-winner-container">
+	<img
+		class="final-winner-image"
+		src="textures/png/avatar.png"
+		id="final-avatar"
+	/>
+	<div class="final-winner-name" id="final">Winner</div>
+</div>`;

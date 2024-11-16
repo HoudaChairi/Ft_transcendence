@@ -2486,3 +2486,146 @@ body {
 	left: 0;
 	top: 0;
 }
+
+.tournament-container {
+	top: 0%;
+	width: 1920px;
+	height: 1080px;
+	position: relative;
+}
+
+.bracket-section {
+	width: 960px;
+	height: 1080px;
+	position: absolute;
+	top: 0;
+}
+
+.right-bracket {
+	left: 960px;
+}
+
+.left-bracket {
+	left: 0;
+}
+
+.player-container {
+	position: absolute;
+	display: inline-flex;
+	align-items: center;
+	gap: 40px;
+}
+
+.player-container.top {
+	top: 95px;
+}
+
+.right-bracket .player-container.top {
+	left: 150px;
+	justify-content: flex-start;
+}
+
+.right-bracket .player-container.bottom {
+	left: 339px;
+	top: 785px;
+	justify-content: flex-end;
+	width: 471px;
+}
+
+.left-bracket .player-container.bottom {
+	left: 150px;
+	top: 785px;
+	justify-content: flex-start;
+}
+
+.left-bracket .player-container.top {
+	left: 381px;
+	top: 95px;
+	justify-content: flex-end;
+}
+
+.winner-container {
+	position: absolute;
+	display: inline-flex;
+	align-items: center;
+	gap: 40px;
+}
+
+.right-bracket .winner-container {
+	left: 429px;
+	top: 415px;
+	justify-content: flex-start;
+}
+
+.left-bracket .winner-container {
+	left: 23px;
+	top: 415px;
+	justify-content: flex-end;
+}
+
+.final-winner-container {
+	height: 430px;
+	left: 810px;
+	top: 390px;
+	position: absolute;
+	display: inline-flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	gap: 40px;
+}
+
+/* Base styles for all images */
+.player-image,
+.winner-image,
+.final-winner-image {
+	position: relative;
+	visibility: hidden;
+}
+
+/* Show images when src is not empty */
+.player-image[src]:not([src='']),
+.winner-image[src]:not([src='']),
+.final-winner-image[src]:not([src='']) {
+	visibility: visible;
+}
+
+/* Specific dimensions for each image type */
+.player-image {
+	width: 200px;
+	height: 200px;
+}
+
+.winner-image {
+	width: 250px;
+	height: 250px;
+}
+
+.final-winner-image {
+	width: 300px;
+	height: 300px;
+}
+
+.player-name {
+	color: #d0c3a9;
+	font-size: 50px;
+	font-family: Gabriela;
+	font-weight: 400;
+	line-height: 75px;
+	word-wrap: break-word;
+}
+
+.text-right {
+	text-align: right;
+}
+
+.final-winner-name {
+	align-self: stretch;
+	text-align: center;
+	color: #d0c3a9;
+	font-size: 60px;
+	font-family: Gabriela;
+	font-weight: 400;
+	line-height: 90px;
+	word-wrap: break-word;
+}
