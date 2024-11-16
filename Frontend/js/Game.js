@@ -32,7 +32,7 @@ import {
 	REMOTE,
 	TWOFA,
 } from './Sbook';
-import { CHOICES, OFFLINE } from './Start';
+import { CHOICES, MATCHMAKING, OFFLINE } from './Start';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -158,6 +158,7 @@ class Game {
 		this.#addHomeCss2D();
 		this.#addGameCss2D();
 		this.#addOfflineCss2D();
+		this.#addMatchmakingCss2D();
 		this.#addPanerCss2D();
 		this.#addSettingsCss2D();
 		this.#addSbookSettingsCss2D();
@@ -1145,6 +1146,15 @@ class Game {
 
 		this.#css2DObject.offline = new CSS2DObject(homeContainer);
 		this.#css2DObject.offline.name = 'offline';
+	}
+
+	#addMatchmakingCss2D() {
+		const homeContainer = document.createElement('div');
+		homeContainer.className = 'container-match';
+		homeContainer.innerHTML = MATCHMAKING;
+
+		this.#css2DObject.match = new CSS2DObject(homeContainer);
+		this.#css2DObject.match.name = 'match';
 	}
 
 	#addLegendCss2d() {
@@ -2340,9 +2350,30 @@ class Game {
 		this.#hasChanges = true;
 	}
 
+	#matchmaking(data) {
+		['player1', 'player2'].forEach(player => {
+			this.#css2DObject.match.element.querySelector(
+				`#${player}`
+			).textContent = data[player].usr;
+			this.#css2DObject.match.element.querySelector(
+				`#${player}-avatar`
+			).src = data[player].avatar;
+		});
+		setTimeout(() => {
+			this.#scene.remove(this.#css2DObject.match);
+			this.#css2DObject.match.element.innerHTML = MATCHMAKING;
+		}, 4000);
+	}
+
 	#twoPlayer() {
 		// Remove current game menu
 		this.#scene.remove(this.#css2DObject.game);
+		this.#scene.add(this.#css2DObject.match);
+
+		this.#css2DObject.match.element.querySelector('#player1').textContent =
+			this.#loggedUser;
+		this.#css2DObject.match.element.querySelector('#player1-avatar').src =
+			document.querySelector('#profilePicImage').src;
 
 		// Close any existing connection
 		if (this.#gameWebSocket) {
@@ -2370,6 +2401,9 @@ class Game {
 				try {
 					const data = JSON.parse(e.data);
 
+					if (data.type === 'game_start') {
+						this.#matchmaking(data.players);
+					}
 					if (data.type === 'update') {
 						this.#updateGameState(data);
 					} else if (data.type === 'game_end') {

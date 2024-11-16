@@ -33,3 +33,19 @@ export const OFFLINE = `<div class="card-container">
 		</div>
 	</div>
 </div>`;
+
+export const MATCHMAKING = `<div class="comparison-wrapper">
+	<div class="user-container">
+		<img class="user-image" src="" alt="" id="player1-avatar" />
+		<div class="username-match" id="player1">Username 1</div>
+	</div>
+	<div class="center-icon-container">
+		<div class="center-icon-wrapper">
+			<img class="center-icon" src="/textures/svg/VS 1.svg" alt="" />
+		</div>
+	</div>
+	<div class="user-container">
+		<div class="username-match" id="player2">Matchmaking ...</div>
+		<img class="user-image" alt="" id="player2-avatar" />
+	</div>
+</div>`;

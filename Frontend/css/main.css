@@ -2414,3 +2414,75 @@ body {
 	line-height: 75px;
 	word-wrap: break-word;
 }
+
+.container-match {
+	top: calc(0%);
+	width: 100%;
+	height: 100%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.comparison-wrapper {
+	flex: 1;
+	align-self: stretch;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 150px;
+}
+
+.user-container {
+	width: 400px;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	align-items: center;
+	gap: 100px;
+}
+
+.user-image[src] {
+	display: block;
+}
+
+.user-image {
+	width: 300px;
+	height: 300px;
+	position: relative;
+	display: none;
+}
+
+.username-match {
+	width: 100%;
+	text-align: center;
+	color: #d0c3a9;
+	font-size: 50px;
+	font-family: 'Gabriela', serif;
+	font-weight: 400;
+	line-height: 75px;
+	word-wrap: break-word;
+}
+
+.center-icon-container {
+	width: 181px;
+	height: 181px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.center-icon-wrapper {
+	width: 181px;
+	height: 181px;
+	position: relative;
+}
+
+.center-icon {
+	width: 181px;
+	height: 181px;
+	position: absolute;
+	background-color: transparent;
+	left: 0;
+	top: 0;
+}

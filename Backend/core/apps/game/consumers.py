@@ -105,10 +105,20 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'message': 'Internal server error'
             }))
 
+    @database_sync_to_async
+    def get_player_avatar(self, username: str) -> str:
+        try:
+            player = Player.objects.get(username=username)
+            return player.get_avatar_url()
+        except Player.DoesNotExist:
+            pass
+
     async def handle_new_player(self, username: str, tournament_data: Optional[dict] = None) -> None:
         try:
             self.username = username
-            self.connected_players[username] = self.channel_name
+            
+            if username not in self.connected_players:
+                self.connected_players[username] = self.channel_name
 
             if tournament_data:
                 group_id = f"{tournament_data['player1']}_{tournament_data['player2']}"
@@ -134,7 +144,46 @@ class GameConsumer(AsyncWebsocketConsumer):
                     await self.start_game(group_id)
             else:
                 if len(self.connected_players) >= 2:
-                    await self.create_game()
+                    player_list = list(self.connected_players.keys())
+                    player1, player2 = player_list[-2:]
+                    group_id = f"{player1}_{player2}"
+
+                    player1_avatar = await self.get_player_avatar(player1)
+                    player2_avatar = await self.get_player_avatar(player2)
+                    
+                    for player in (player1, player2):
+                        self.player_groups[player] = group_id
+                        await self.channel_layer.group_add(
+                            group_id,
+                            self.connected_players[player]
+                        )
+
+                    if username == player2:
+                        self.games_data[group_id] = self.game_manager.create_initial_state(player1, player2)
+                        
+                        # Send start message from here
+                        await self.channel_layer.group_send(
+                            group_id,
+                            {
+                                'type': 'game_update',
+                                'data': {
+                                    "type": "game_start",
+                                    "players": {
+                                        "player1": {
+                                            "usr": player1,
+                                            "avatar": player1_avatar
+                                        },
+                                        "player2": {
+                                            "usr": player2,
+                                            "avatar": player2_avatar
+                                        }
+                                    },
+                                    "tournament": False
+                                }
+                            }
+                        )
+                        
+                        asyncio.create_task(self.delayed_game_start(group_id))
                 else:
                     await self.send(text_data=json.dumps({
                         'type': 'waiting',
@@ -146,6 +195,14 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'type': 'error',
                 'message': 'Failed to join game'
             }))
+
+    async def delayed_game_start(self, group_id: str):
+        """Start game after delay"""
+        await asyncio.sleep(5)
+        game = self.games_data[group_id]
+        game.ball_direction = self.game_manager.start_ball_direction()
+        game.is_running = True
+        asyncio.create_task(self.run_game_loop(group_id))
 
     async def create_game(self) -> None:
         player_list = list(self.connected_players.keys())
@@ -161,6 +218,12 @@ class GameConsumer(AsyncWebsocketConsumer):
                 self.connected_players[player]
             )
 
+        await self.start_game(group_id)
+
+    async def start_game(self, group_id: str):
+        """Start a new game"""
+        game = self.games_data[group_id]
+        
         await self.channel_layer.group_send(
             group_id,
             {
@@ -168,37 +231,21 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'data': {
                     "type": "game_start",
                     "players": {
-                        "player1": player1,
-                        "player2": player2
+                        "player1": {
+                            "usr": next(p for p, l in game.player_labels.items() if l == 'player1'),
+                            "avatar": "textures/svg/M.svg"
+                        },
+                        "player2": {
+                            "usr": next(p for p, l in game.player_labels.items() if l == 'player2'),
+                            "avatar": "textures/svg/M.svg"
+                        }
                     },
                     "tournament": False
                 }
             }
         )
 
-        await self.start_game(group_id)
-
-    async def start_game(self, group_id: str):
-        """Start a new game"""
-        await asyncio.sleep(3)
-        
-        game = self.games_data[group_id]
-        await self.channel_layer.group_send(
-            group_id,
-            {
-                'type': 'game_update',
-                'data': {
-                    "type": "game_start",
-                    "players": {
-                        "player1": next(p for p, l in game.player_labels.items() if l == 'player1'),
-                        "player2": next(p for p, l in game.player_labels.items() if l == 'player2')
-                    },
-                    "tournament": bool(game.tournament_data)
-                }
-            }
-        )
-        
-        # Start the game loop immediately
+        await asyncio.sleep(5)
         game.ball_direction = self.game_manager.start_ball_direction()
         game.is_running = True
         asyncio.create_task(self.run_game_loop(group_id))
@@ -224,8 +271,14 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'data': {
                     "type": "game_start",
                     "players": {
-                        "player1": player1,
-                        "player2": player2
+                        "player1": {
+                            "usr": player1,
+                            "avatar": "textures/svg/M.svg"
+                        },
+                        "player2": {
+                            "usr": player2,
+                            "avatar": "textures/svg/M.svg"
+                        }
                     },
                     "tournament": True
                 }
