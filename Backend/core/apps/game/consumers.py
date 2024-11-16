@@ -152,7 +152,6 @@ class GameConsumer(AsyncWebsocketConsumer):
         player1, player2 = player_list[-2:]
         group_id = f"{player1}_{player2}"
 
-        # Use game_manager here too
         self.games_data[group_id] = self.game_manager.create_initial_state(player1, player2)
 
         for player in (player1, player2):
@@ -161,6 +160,21 @@ class GameConsumer(AsyncWebsocketConsumer):
                 group_id,
                 self.connected_players[player]
             )
+
+        await self.channel_layer.group_send(
+            group_id,
+            {
+                'type': 'game_update',
+                'data': {
+                    "type": "game_start",
+                    "players": {
+                        "player1": player1,
+                        "player2": player2
+                    },
+                    "tournament": False
+                }
+            }
+        )
 
         await self.start_game(group_id)
 
