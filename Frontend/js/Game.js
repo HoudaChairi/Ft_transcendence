@@ -32,7 +32,7 @@ import {
 	REMOTE,
 	TWOFA,
 } from './Sbook';
-import { CHOICES, MATCHMAKING, OFFLINE, TOURNAMENT } from './Start';
+import { CHOICES, MATCHMAKING, OFFLINE, START, TOURNAMENT } from './Start';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -161,6 +161,7 @@ class Game {
 		this.#addGameCss2D();
 		this.#addOfflineCss2D();
 		this.#addMatchmakingCss2D();
+		this.#addStartCss2D();
 		this.#addTournamentCss2D();
 		this.#addPanerCss2D();
 		this.#addSettingsCss2D();
@@ -1158,6 +1159,15 @@ class Game {
 
 		this.#css2DObject.match = new CSS2DObject(homeContainer);
 		this.#css2DObject.match.name = 'match';
+	}
+
+	#addStartCss2D() {
+		const homeContainer = document.createElement('div');
+		homeContainer.className = 'container-match';
+		homeContainer.innerHTML = START;
+
+		this.#css2DObject.start = new CSS2DObject(homeContainer);
+		this.#css2DObject.start.name = 'start';
 	}
 
 	#addTournamentCss2D() {
@@ -2503,127 +2513,136 @@ class Game {
 	}
 
 	#startTournamentMatch(matchData) {
+		const start = this.#css2DObject.start.element;
+
 		this.#scene.remove(this.#css2DObject.tournament);
 		if (
 			this.#currentMatch &&
 			this.#currentMatch.match_id === matchData.match_id
 		) {
-			console.log('Already in this match, ignoring duplicate message');
 			return;
 		}
 
-		// Store current match
 		this.#currentMatch = matchData;
 
-		// Close existing connection if any
 		if (this.#gameWebSocket) {
 			this.#gameWebSocket.close();
 			this.#gameWebSocket = null;
 		}
 
-		// Create new connection
-		try {
-			this.#gameWebSocket = new WebSocket(
-				`wss://${window.location.host}/api/ws/game/`
-			);
+		[matchData.player1, matchData.player2].forEach((player, i) => {
+			start.querySelector(`#player${i + 1}`).textContent = player;
+			start.querySelector(
+				`#player${i + 1}-avatar`
+			).src = `textures/svg/M.svg`;
+		});
 
-			this.#gameWebSocket.onopen = () => {
-				console.log('Tournament game connecting...');
-
-				this.#gameWebSocket.send(
-					JSON.stringify({
-						username: this.#loggedUser,
-						tournament_data: {
-							player1: matchData.player1,
-							player2: matchData.player2,
-							tournament_id: matchData.tournament_id,
-							match_id: matchData.match_id,
-							consumer: matchData.consumer,
-						},
-					})
+		this.#scene.add(this.#css2DObject.start);
+		start.querySelector('.start-button').addEventListener('click', e => {
+			try {
+				this.#scene.remove(this.#css2DObject.start);
+				this.#gameWebSocket = new WebSocket(
+					`wss://${window.location.host}/api/ws/game/`
 				);
-				this.#initializeGame();
-			};
 
-			this.#gameWebSocket.onmessage = e => {
-				try {
-					const data = JSON.parse(e.data);
-					if (data.type === 'update') {
-						this.#updateGameState(data);
-					} else if (data.type === 'game_end') {
-						console.log('Game ended:', data);
-						this.#currentMatch = null; // Clear current match
-						this.#gameWebSocket.close();
-						this.#gameWebSocket = null;
+				this.#gameWebSocket.onopen = () => {
+					this.#gameWebSocket.send(
+						JSON.stringify({
+							username: this.#loggedUser,
+							tournament_data: {
+								player1: matchData.player1,
+								player2: matchData.player2,
+								tournament_id: matchData.tournament_id,
+								match_id: matchData.match_id,
+								consumer: matchData.consumer,
+							},
+						})
+					);
+					this.#initializeGame();
+				};
+
+				this.#gameWebSocket.onmessage = e => {
+					try {
+						const data = JSON.parse(e.data);
+						if (data.type === 'update') {
+							this.#updateGameState(data);
+						} else if (data.type === 'game_end') {
+							this.#scene.add(this.#css2DObject.tournament);
+							this.#currentMatch = null;
+							this.#gameWebSocket.close();
+							this.#gameWebSocket = null;
+						}
+					} catch (error) {
+						console.error('Error handling game message:', error);
 					}
-				} catch (error) {
-					console.error('Error handling game message:', error);
-				}
-			};
+				};
 
-			this.#gameWebSocket.onerror = error => {
-				console.error('Game WebSocket error:', error);
-			};
+				this.#gameWebSocket.onerror = error => {
+					console.error('Game WebSocket error:', error);
+				};
 
-			this.#gameWebSocket.onclose = () => {
-				console.log('Game connection closed');
+				this.#gameWebSocket.onclose = () => {
+					this.#gameWebSocket = null;
+				};
+			} catch (error) {
+				console.error('Error creating game connection:', error);
 				this.#gameWebSocket = null;
-			};
-		} catch (error) {
-			console.error('Error creating game connection:', error);
-			this.#gameWebSocket = null;
-			this.#currentMatch = null;
-		}
+				this.#currentMatch = null;
+			}
+		});
 	}
 
 	#updateTournamentUI(data) {
 		try {
 			if (!this.#started) {
+				// Update waiting players UI
 				this.#css2DObject.tournament.element.innerHTML = TOURNAMENT;
-				data.forEach(async (player, i) => {
-					const response = await fetch(`api/user/${player}`, {
-						method: 'GET',
-						headers: {
-							Authorization: `Bearer ${localStorage.getItem(
-								'accessToken'
-							)}`,
-						},
-					});
-					const data = await response.json();
-					if (response.ok) {
+				data.waiting_players.forEach(async (player, i) => {
+					this.#css2DObject.tournament.element.querySelector(
+						`#player${i + 1}-avatar`
+					).src = player.avatar;
+					this.#css2DObject.tournament.element.querySelector(
+						`#player${i + 1}`
+					).textContent = player.username;
+				});
+			} else {
+				Object.values(data.tournaments).forEach(tournament => {
+					const semi1Winner = tournament.semifinal_winners?.semi1;
+					const semi2Winner = tournament.semifinal_winners?.semi2;
+
+					if (semi1Winner) {
 						this.#css2DObject.tournament.element.querySelector(
-							`#player${i + 1}-avatar`
-						).src = data.avatar;
+							'#winner1-avatar'
+						).src = semi1Winner.avatar;
 						this.#css2DObject.tournament.element.querySelector(
-							`#player${i + 1}`
-						).textContent = player;
+							'#winner1'
+						).textContent = semi1Winner.username;
+					}
+
+					if (semi2Winner) {
+						this.#css2DObject.tournament.element.querySelector(
+							'#winner2-avatar'
+						).src = semi2Winner.avatar;
+						this.#css2DObject.tournament.element.querySelector(
+							'#winner2'
+						).textContent = semi2Winner.username;
 					}
 				});
 			}
-		} catch (error) {}
+		} catch (error) {
+			console.error('Error updating tournament UI:', error);
+		}
 	}
 
-	async #updateFinale(winner) {
+	async #updateFinale(data) {
 		try {
 			this.#scene.add(this.#css2DObject.tournament);
-			const response = await fetch(`api/user/${winner}`, {
-				method: 'GET',
-				headers: {
-					Authorization: `Bearer ${localStorage.getItem(
-						'accessToken'
-					)}`,
-				},
-			});
-			const data = await response.json();
-			if (response.ok) {
-				this.#css2DObject.tournament.element.querySelector(
-					`#final-avatar`
-				).src = data.avatar;
-				this.#css2DObject.tournament.element.querySelector(
-					`#final`
-				).textContent = winner;
-				this.#started = false;
-			}
+			this.#css2DObject.tournament.element.querySelector(
+				`#final-avatar`
+			).src = data.winner.avatar;
+			this.#css2DObject.tournament.element.querySelector(
+				`#final`
+			).textContent = data.winner.username;
 		} catch (error) {}
 	}
 
@@ -2638,7 +2657,6 @@ class Game {
 		);
 
 		this.#tournamentWebSocket.onopen = () => {
-			console.log('Connected to tournament WebSocket.');
 			this.#tournamentWebSocket.send(
 				JSON.stringify({
 					type: 'join_tournament',
@@ -2650,31 +2668,27 @@ class Game {
 		this.#tournamentWebSocket.onmessage = e => {
 			try {
 				const data = JSON.parse(e.data);
-				console.log('Tournament message received:', data);
 
 				if (data.type === 'match_ready') {
 					this.#started = true;
-					// Double check this is our match
 					if (
 						this.#loggedUser === data.player1 ||
 						this.#loggedUser === data.player2
 					) {
-						console.log(
-							`Match notification for ${this.#loggedUser}:`,
-							data
-						);
 						if (
 							!this.#currentMatch ||
 							this.#currentMatch.match_id !== data.match_id
 						) {
-							console.log('Starting new match:', data);
-							this.#startTournamentMatch(data);
+							setTimeout(
+								() => this.#startTournamentMatch(data),
+								3000
+							);
 						}
 					}
 				} else if (data.type === 'players_update') {
-					this.#updateTournamentUI(data.data.waiting_players);
+					this.#updateTournamentUI(data.data);
 				} else if (data.type === 'tournament_complete') {
-					this.#updateFinale(data.winner);
+					this.#updateFinale(data);
 				}
 			} catch (error) {
 				console.error('Error handling tournament message:', error);
@@ -2686,9 +2700,9 @@ class Game {
 		};
 
 		this.#tournamentWebSocket.onclose = () => {
-			console.log('Tournament connection closed');
+			this.#started = false;
 			this.#tournamentWebSocket = null;
-			setTimeout(() => this.#tournament(), 3000);
+			// setTimeout(() => this.#tournament(), 3000);
 		};
 	}
 
@@ -2753,6 +2767,7 @@ class Game {
 			'offline',
 			'match',
 			'tournament',
+			'star',
 		].forEach(ele => {
 			this.#scene.remove(this.#css2DObject[ele]);
 		});

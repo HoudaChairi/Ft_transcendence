@@ -633,6 +633,16 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             tournament = self.tournament_manager.create_tournament(tournament_players)
             await self.start_tournament_matches(tournament)
 
+    @database_sync_to_async
+    def get_player_details(self, username: str) -> dict:
+        try:
+            player = Player.objects.get(username=username)
+            return {
+                "username": player.username,
+                "avatar": player.get_avatar_url()
+            }
+        except Player.DoesNotExist:
+            pass
 
     async def broadcast_player_lists(self):
         players_in_tournaments = {}
@@ -644,34 +654,45 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 if 'semi' in match_id
             }
             
-            semifinal_winners = {
-                "winner1": next((match.winner for match_id, match in semifinal_matches.items() 
-                                    if 'semi1' in match_id), None),
-                "winner2": next((match.winner for match_id, match in semifinal_matches.items() 
-                                    if 'semi2' in match_id), None)
-            }
+            # Get winners with their details
+            semi1_winner = next((match.winner for match_id, match in semifinal_matches.items() 
+                            if 'semi1' in match_id), None)
+            semi2_winner = next((match.winner for match_id, match in semifinal_matches.items() 
+                            if 'semi2' in match_id), None)
+            
+            # Get player details for winners
+            semi1_winner_details = await self.get_player_details(semi1_winner) if semi1_winner else None
+            semi2_winner_details = await self.get_player_details(semi2_winner) if semi2_winner else None
 
             players_in_tournaments[tournament_id] = {
-                'players': tournament.players,
-                'state': tournament.state.value,
                 'matches': {
                     match_id: {
-                        'player1': match.player1,
-                        'player2': match.player2,
-                        'winner': match.winner,
+                        'player1': await self.get_player_details(match.player1),
+                        'player2': await self.get_player_details(match.player2),
+                        'winner': await self.get_player_details(match.winner) if match.winner else None,
                         'completed': match.game_completed,
                         'match_type': 'semi1' if 'semi1' in match_id else 'semi2' if 'semi2' in match_id else 'finals'
                     }
                     for match_id, match in tournament.matches.items()
                 },
-                'semifinal_winners': semifinal_winners
+                'semifinal_winners': {
+                    'semi1': semi1_winner_details,
+                    'semi2': semi2_winner_details
+                },
+                'state': tournament.state.value
             }
 
             message = {
                 "type": "players_update",
                 "data": {
-                    "waiting_players": self.tournament_manager.waiting_players,
-                    "all_connected_players": list(self.connected_players),
+                    "waiting_players": [
+                        await self.get_player_details(player) 
+                        for player in self.tournament_manager.waiting_players
+                    ],
+                    "all_connected_players": [
+                        await self.get_player_details(player) 
+                        for player in self.connected_players
+                    ],
                     "tournaments": players_in_tournaments,
                     "tournament_states": {
                         t_id: t.state.value 
@@ -839,11 +860,12 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         finals_match = tournament.matches[next(iter(tournament.current_round_matches))]
         tournament.state = TournamentState.COMPLETED
         
+        winner = await self.get_player_details(finals_match.winner)
         # Notify all tournament players about the winner
         message = {
             "type": "tournament_complete",
             "tournament_id": tournament.id,
-            "winner": finals_match.winner
+            "winner": winner
         }
         
         await self.channel_layer.group_send(
