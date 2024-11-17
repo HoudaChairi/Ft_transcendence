@@ -2513,119 +2513,180 @@ class Game {
 	}
 
 	#startTournamentMatch(matchData) {
-		const start = this.#css2DObject.start.element;
+		if (this.#isCurrentMatch(matchData)) return;
 
-		this.#scene.remove(this.#css2DObject.tournament);
-		if (
+		this.#prepareForNewMatch(matchData);
+		this.#updateStartScreen(matchData);
+		this.#setupStartButton(matchData);
+	}
+
+	#isCurrentMatch(matchData) {
+		return (
 			this.#currentMatch &&
 			this.#currentMatch.match_id === matchData.match_id
-		) {
-			return;
-		}
+		);
+	}
 
+	#prepareForNewMatch(matchData) {
+		this.#scene.remove(this.#css2DObject.tournament);
 		this.#currentMatch = matchData;
+		this.#cleanupGameWebSocket();
+	}
 
-		if (this.#gameWebSocket) {
-			this.#gameWebSocket.close();
-			this.#gameWebSocket = null;
-		}
+	#updateStartScreen(matchData) {
+		const start = this.#css2DObject.start.element;
 
 		[matchData.player1, matchData.player2].forEach((player, i) => {
-			start.querySelector(`#player${i + 1}`).textContent = player;
-			start.querySelector(
-				`#player${i + 1}-avatar`
-			).src = `textures/svg/M.svg`;
+			const playerElem = start.querySelector(`#player${i + 1}`);
+			const avatarElem = start.querySelector(`#player${i + 1}-avatar`);
+			if (playerElem && avatarElem) {
+				playerElem.textContent = player;
+				avatarElem.src = player.avatar || 'textures/svg/M.svg';
+			}
 		});
 
 		this.#scene.add(this.#css2DObject.start);
-		start.querySelector('.start-button').addEventListener('click', e => {
-			try {
-				this.#scene.remove(this.#css2DObject.start);
-				this.#gameWebSocket = new WebSocket(
-					`wss://${window.location.host}/api/ws/game/`
-				);
+	}
 
-				this.#gameWebSocket.onopen = () => {
-					this.#gameWebSocket.send(
-						JSON.stringify({
-							username: this.#loggedUser,
-							tournament_data: {
-								player1: matchData.player1,
-								player2: matchData.player2,
-								tournament_id: matchData.tournament_id,
-								match_id: matchData.match_id,
-								consumer: matchData.consumer,
-							},
-						})
-					);
-					this.#initializeGame();
-				};
+	#setupStartButton(matchData) {
+		const startButton =
+			this.#css2DObject.start.element.querySelector('.start-button');
+		if (!startButton) return;
 
-				this.#gameWebSocket.onmessage = e => {
-					try {
-						const data = JSON.parse(e.data);
-						if (data.type === 'update') {
-							this.#updateGameState(data);
-						} else if (data.type === 'game_end') {
-							this.#scene.add(this.#css2DObject.tournament);
-							this.#currentMatch = null;
-							this.#gameWebSocket.close();
-							this.#gameWebSocket = null;
-						}
-					} catch (error) {
-						console.error('Error handling game message:', error);
-					}
-				};
-
-				this.#gameWebSocket.onerror = error => {
-					console.error('Game WebSocket error:', error);
-				};
-
-				this.#gameWebSocket.onclose = () => {
-					this.#gameWebSocket = null;
-				};
-			} catch (error) {
-				console.error('Error creating game connection:', error);
-				this.#gameWebSocket = null;
-				this.#currentMatch = null;
-			}
+		startButton.addEventListener('click', () => {
+			this.#scene.remove(this.#css2DObject.start);
+			this.#initiateTournamentGame(matchData);
 		});
+	}
+
+	#initiateTournamentGame(matchData) {
+		try {
+			this.#gameWebSocket = new WebSocket(
+				`wss://${window.location.host}/api/ws/game/`
+			);
+
+			this.#gameWebSocket.onopen = () => {
+				this.#sendTournamentGameInit(matchData);
+				this.#initializeGame();
+			};
+
+			this.#setupTournamentGameHandlers();
+		} catch (error) {
+			console.error('Error creating tournament game connection:', error);
+			this.#cleanupGameState();
+		}
+	}
+
+	#sendTournamentGameInit(matchData) {
+		this.#gameWebSocket?.send(
+			JSON.stringify({
+				username: this.#loggedUser,
+				tournament_data: {
+					player1: matchData.player1,
+					player2: matchData.player2,
+					tournament_id: matchData.tournament_id,
+					match_id: matchData.match_id,
+					consumer: matchData.consumer,
+				},
+			})
+		);
+	}
+
+	#setupTournamentGameHandlers() {
+		if (!this.#gameWebSocket) return;
+
+		this.#gameWebSocket.onmessage = e => {
+			try {
+				const data = JSON.parse(e.data);
+				this.#handleTournamentGameMessage(data);
+			} catch (error) {
+				console.error('Error handling game message:', error);
+			}
+		};
+
+		this.#gameWebSocket.onerror = error => {
+			console.error('Tournament game WebSocket error:', error);
+			this.#cleanupGameState();
+		};
+
+		this.#gameWebSocket.onclose = () => {
+			this.#gameWebSocket = null;
+		};
+	}
+
+	#handleTournamentGameMessage(data) {
+		switch (data.type) {
+			case 'update':
+				this.#updateGameState(data);
+				break;
+			case 'game_end':
+				this.#handleTournamentGameEnd();
+				break;
+		}
+	}
+
+	#handleTournamentGameEnd() {
+		this.#scene.add(this.#css2DObject.tournament);
+		this.#cleanupGameState();
+	}
+
+	#cleanupGameState() {
+		this.#currentMatch = null;
+		this.#cleanupGameWebSocket();
+	}
+
+	#cleanupGameWebSocket() {
+		if (this.#gameWebSocket) {
+			try {
+				this.#gameWebSocket.close();
+			} catch (e) {
+				console.error('Error closing game WebSocket:', e);
+			}
+			this.#gameWebSocket = null;
+		}
 	}
 
 	#updateTournamentUI(data) {
 		try {
+			const tournamentElem = this.#css2DObject.tournament.element;
+
 			if (!this.#started) {
-				// Update waiting players UI
-				this.#css2DObject.tournament.element.innerHTML = TOURNAMENT;
-				data.waiting_players.forEach(async (player, i) => {
-					this.#css2DObject.tournament.element.querySelector(
-						`#player${i + 1}-avatar`
-					).src = player.avatar;
-					this.#css2DObject.tournament.element.querySelector(
-						`#player${i + 1}`
-					).textContent = player.username;
+				// Initial state - showing waiting players
+				tournamentElem.innerHTML = TOURNAMENT;
+				data.waiting_players.forEach((player, i) => {
+					if (i < 4) {
+						// Only handle first 4 players
+						const playerAvatar = tournamentElem.querySelector(
+							`#player${i + 1}-avatar`
+						);
+						const playerName = tournamentElem.querySelector(
+							`#player${i + 1}`
+						);
+						if (playerAvatar && playerName) {
+							playerAvatar.src = player.avatar;
+							playerName.textContent = player.username;
+						}
+					}
 				});
 			} else {
-				Object.values(data.tournaments).forEach(tournament => {
-					const semi1Winner = tournament.semifinal_winners?.semi1;
-					const semi2Winner = tournament.semifinal_winners?.semi2;
+				const tournament = Object.values(data.tournaments)[0];
+				if (!tournament) return;
 
-					if (semi1Winner) {
-						this.#css2DObject.tournament.element.querySelector(
-							'#winner1-avatar'
-						).src = semi1Winner.avatar;
-						this.#css2DObject.tournament.element.querySelector(
-							'#winner1'
-						).textContent = semi1Winner.username;
-					}
+				const { semifinal_winners } = tournament;
 
-					if (semi2Winner) {
-						this.#css2DObject.tournament.element.querySelector(
-							'#winner2-avatar'
-						).src = semi2Winner.avatar;
-						this.#css2DObject.tournament.element.querySelector(
-							'#winner2'
-						).textContent = semi2Winner.username;
+				['semi1', 'semi2'].forEach((semi, index) => {
+					const winner = semifinal_winners[semi];
+					if (winner) {
+						const winnerAvatar = tournamentElem.querySelector(
+							`#winner${index + 1}-avatar`
+						);
+						const winnerName = tournamentElem.querySelector(
+							`#winner${index + 1}`
+						);
+						if (winnerAvatar && winnerName) {
+							winnerAvatar.src = winner.avatar;
+							winnerName.textContent = winner.username;
+						}
 					}
 				});
 			}
@@ -2634,30 +2695,45 @@ class Game {
 		}
 	}
 
-	async #updateFinale(data) {
+	#updateFinale(data) {
 		try {
 			this.#scene.add(this.#css2DObject.tournament);
-			this.#css2DObject.tournament.element.querySelector(
-				`#final-avatar`
-			).src = data.winner.avatar;
-			this.#css2DObject.tournament.element.querySelector(
-				`#final`
-			).textContent = data.winner.username;
-		} catch (error) {}
+			const tournamentElem = this.#css2DObject.tournament.element;
+
+			if (data.winner) {
+				const winnerAvatar =
+					tournamentElem.querySelector('#final-avatar');
+				const winnerName = tournamentElem.querySelector('#final');
+				if (winnerAvatar && winnerName) {
+					winnerAvatar.src = data.winner.avatar;
+					winnerName.textContent = data.winner.username;
+				}
+			}
+		} catch (error) {
+			console.error('Error updating finale:', error);
+		}
 	}
 
 	#tournamentStart() {
-		if (this.#tournamentWebSocket) {
-			this.#tournamentWebSocket.close();
-			this.#tournamentWebSocket = null;
-		}
+		this.#cleanupTournamentWebSocket();
 
-		this.#tournamentWebSocket = new WebSocket(
-			`wss://${window.location.host}/api/ws/tournament/`
-		);
+		try {
+			this.#tournamentWebSocket = new WebSocket(
+				`wss://${window.location.host}/api/ws/tournament/`
+			);
+
+			this.#setupTournamentWebSocketHandlers();
+		} catch (error) {
+			console.error('Error starting tournament:', error);
+			this.#switchHome('game');
+		}
+	}
+
+	#setupTournamentWebSocketHandlers() {
+		if (!this.#tournamentWebSocket) return;
 
 		this.#tournamentWebSocket.onopen = () => {
-			this.#tournamentWebSocket.send(
+			this.#tournamentWebSocket?.send(
 				JSON.stringify({
 					type: 'join_tournament',
 					username: this.#loggedUser,
@@ -2668,28 +2744,7 @@ class Game {
 		this.#tournamentWebSocket.onmessage = e => {
 			try {
 				const data = JSON.parse(e.data);
-
-				if (data.type === 'match_ready') {
-					this.#started = true;
-					if (
-						this.#loggedUser === data.player1 ||
-						this.#loggedUser === data.player2
-					) {
-						if (
-							!this.#currentMatch ||
-							this.#currentMatch.match_id !== data.match_id
-						) {
-							setTimeout(
-								() => this.#startTournamentMatch(data),
-								3000
-							);
-						}
-					}
-				} else if (data.type === 'players_update') {
-					this.#updateTournamentUI(data.data);
-				} else if (data.type === 'tournament_complete') {
-					this.#updateFinale(data);
-				}
+				this.#handleTournamentMessage(data);
 			} catch (error) {
 				console.error('Error handling tournament message:', error);
 			}
@@ -2697,13 +2752,59 @@ class Game {
 
 		this.#tournamentWebSocket.onerror = error => {
 			console.error('Tournament WebSocket error:', error);
+			this.#cleanupTournamentWebSocket();
 		};
 
 		this.#tournamentWebSocket.onclose = () => {
 			this.#started = false;
 			this.#tournamentWebSocket = null;
-			// setTimeout(() => this.#tournament(), 3000);
 		};
+	}
+
+	#handleTournamentMessage(data) {
+		switch (data.type) {
+			case 'match_ready':
+				this.#handleMatchReady(data);
+				break;
+			case 'players_update':
+				this.#updateTournamentUI(data.data);
+				break;
+			case 'tournament_complete':
+				this.#updateFinale(data);
+				break;
+			default:
+				console.warn('Unknown tournament message type:', data.type);
+		}
+	}
+
+	#handleMatchReady(data) {
+		if (!this.#isPlayerInMatch(data)) return;
+
+		this.#started = true;
+		if (
+			!this.#currentMatch ||
+			this.#currentMatch.match_id !== data.match_id
+		) {
+			setTimeout(() => this.#startTournamentMatch(data), 3000);
+		}
+	}
+
+	#isPlayerInMatch(matchData) {
+		return (
+			this.#loggedUser === matchData.player1 ||
+			this.#loggedUser === matchData.player2
+		);
+	}
+
+	#cleanupTournamentWebSocket() {
+		if (this.#tournamentWebSocket) {
+			try {
+				this.#tournamentWebSocket.close();
+			} catch (e) {
+				console.error('Error closing tournament WebSocket:', e);
+			}
+			this.#tournamentWebSocket = null;
+		}
 	}
 
 	cleanup() {

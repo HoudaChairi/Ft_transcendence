@@ -624,6 +624,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         if username not in self.tournament_manager.waiting_players:
             self.tournament_manager.waiting_players.append(username)
             
+        # Always broadcast after adding a new player
         await self.broadcast_player_lists()
         
         # Check if we have enough players
@@ -632,6 +633,8 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             self.tournament_manager.waiting_players = self.tournament_manager.waiting_players[TOURNAMENT_CONFIG['PLAYERS_PER_TOURNAMENT']:]
             tournament = self.tournament_manager.create_tournament(tournament_players)
             await self.start_tournament_matches(tournament)
+            # Broadcast again after creating tournament
+            await self.broadcast_player_lists()
 
     @database_sync_to_async
     def get_player_details(self, username: str) -> dict:
@@ -645,42 +648,43 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             pass
 
     async def broadcast_player_lists(self):
-        players_in_tournaments = {}
-        for tournament_id, tournament in self.tournament_manager.tournaments.items():
-            # Get semifinal matches and winners
-            semifinal_matches = {
-                match_id: match 
-                for match_id, match in tournament.matches.items() 
-                if 'semi' in match_id
-            }
-            
-            # Get winners with their details
-            semi1_winner = next((match.winner for match_id, match in semifinal_matches.items() 
-                            if 'semi1' in match_id), None)
-            semi2_winner = next((match.winner for match_id, match in semifinal_matches.items() 
-                            if 'semi2' in match_id), None)
-            
-            # Get player details for winners
-            semi1_winner_details = await self.get_player_details(semi1_winner) if semi1_winner else None
-            semi2_winner_details = await self.get_player_details(semi2_winner) if semi2_winner else None
+        try:
+            players_in_tournaments = {}
+            for tournament_id, tournament in self.tournament_manager.tournaments.items():
+                # Get semifinal matches and winners
+                semifinal_matches = {
+                    match_id: match 
+                    for match_id, match in tournament.matches.items() 
+                    if 'semi' in match_id
+                }
+                
+                # Get winners with their details
+                semi1_winner = next((match.winner for match_id, match in semifinal_matches.items() 
+                                if 'semi1' in match_id), None)
+                semi2_winner = next((match.winner for match_id, match in semifinal_matches.items() 
+                                if 'semi2' in match_id), None)
+                
+                # Get player details for winners
+                semi1_winner_details = await self.get_player_details(semi1_winner) if semi1_winner else None
+                semi2_winner_details = await self.get_player_details(semi2_winner) if semi2_winner else None
 
-            players_in_tournaments[tournament_id] = {
-                'matches': {
-                    match_id: {
-                        'player1': await self.get_player_details(match.player1),
-                        'player2': await self.get_player_details(match.player2),
-                        'winner': await self.get_player_details(match.winner) if match.winner else None,
-                        'completed': match.game_completed,
-                        'match_type': 'semi1' if 'semi1' in match_id else 'semi2' if 'semi2' in match_id else 'finals'
-                    }
-                    for match_id, match in tournament.matches.items()
-                },
-                'semifinal_winners': {
-                    'semi1': semi1_winner_details,
-                    'semi2': semi2_winner_details
-                },
-                'state': tournament.state.value
-            }
+                players_in_tournaments[tournament_id] = {
+                    'matches': {
+                        match_id: {
+                            'player1': await self.get_player_details(match.player1),
+                            'player2': await self.get_player_details(match.player2),
+                            'winner': await self.get_player_details(match.winner) if match.winner else None,
+                            'completed': match.game_completed,
+                            'match_type': 'semi1' if 'semi1' in match_id else 'semi2' if 'semi2' in match_id else 'finals'
+                        }
+                        for match_id, match in tournament.matches.items()
+                    },
+                    'semifinal_winners': {
+                        'semi1': semi1_winner_details,
+                        'semi2': semi2_winner_details
+                    },
+                    'state': tournament.state.value
+                }
 
             message = {
                 "type": "players_update",
@@ -701,6 +705,8 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 }
             }
             
+            print(f"Broadcasting tournament update: {message}")  # Debug log
+            
             await self.channel_layer.group_send(
                 self.TOURNAMENT_GROUP,
                 {
@@ -708,6 +714,9 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                     "message": message
                 }
             )
+        except Exception as e:
+            print(f"Error in broadcast_player_lists: {str(e)}")  # Debug log
+            raise
 
     async def tournament_update(self, event):
         """Handle updates from channel layer"""
