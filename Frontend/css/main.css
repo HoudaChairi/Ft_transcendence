@@ -1,13 +1,13 @@
 @font-face {
 	font-family: 'Frijole';
-	src: url('../fonts/Frijole-Regular.ttf') format('truetype');
+	src: url('/fonts/Frijole-Regular.ttf') format('truetype');
 	font-weight: normal;
 	font-style: normal;
 }
 
 @font-face {
 	font-family: 'Gabriela';
-	src: url('../fonts/Gabriela-Regular.ttf') format('truetype');
+	src: url('/fonts/Gabriela-Regular.ttf') format('truetype');
 	font-weight: normal;
 	font-style: normal;
 }
@@ -2575,7 +2575,6 @@ body {
 	gap: 40px;
 }
 
-/* Base styles for all images */
 .player-image,
 .winner-image,
 .final-winner-image {
@@ -2583,14 +2582,12 @@ body {
 	visibility: hidden;
 }
 
-/* Show images when src is not empty */
 .player-image[src]:not([src='']),
 .winner-image[src]:not([src='']),
 .final-winner-image[src]:not([src='']) {
 	visibility: visible;
 }
 
-/* Specific dimensions for each image type */
 .player-image {
 	width: 200px;
 	height: 200px;
