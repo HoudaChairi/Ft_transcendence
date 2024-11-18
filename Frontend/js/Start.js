@@ -108,7 +108,7 @@ export const TOURNAMENT = `<div class="bracket-section right-bracket">
 		src=""
 		id="final-avatar"
 	/>
-	<div class="final-winner-name" id="final">Winner</div>
+	<div class="final-winner-name" id="final"></div>
 </div>`;
 
 export const START = `<div class="comparison-wrapper">
