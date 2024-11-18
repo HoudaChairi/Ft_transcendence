@@ -1785,7 +1785,6 @@ class Game {
 			this.#ball.position.add(this.#ballDirection);
 			this.#ball.rotation.x += this.#ballDirection.x;
 			this.#ball.rotation.y += this.#ballDirection.y;
-			this.#ballBox.setFromObject(this.#ball);
 
 			if (this.#isOffline) {
 				this.#checkCollisions();
@@ -1907,12 +1906,13 @@ class Game {
 			this.#handleBallWallCollision();
 		}
 
-		if (this.#ballBox.intersectsBox(this.#goalRBox)) {
-			this.#handleBallGoalCollision('goalR');
-		}
-		if (this.#ballBox.intersectsBox(this.#goalLBox)) {
-			this.#handleBallGoalCollision('goalL');
-		}
+		this.#ballBox.setFromObject(this.#ball);
+		this.#playerBox.setFromObject(this.#player.getObjectByName('Racket'));
+		this.#player2Box.setFromObject(
+			this.#player2.getObjectByName('Racket001')
+		);
+		this.#goalRBox.setFromObject(this.#goalR);
+		this.#goalLBox.setFromObject(this.#goalL);
 
 		if (this.#ballBox.intersectsBox(this.#playerBox)) {
 			this.#handlePlayerCollision(this.#player);
@@ -1920,27 +1920,24 @@ class Game {
 		if (this.#ballBox.intersectsBox(this.#player2Box)) {
 			this.#handlePlayerCollision(this.#player2);
 		}
+
+		if (this.#ballBox.intersectsBox(this.#goalRBox)) {
+			this.#handleBallGoalCollision('goalR');
+		}
+		if (this.#ballBox.intersectsBox(this.#goalLBox)) {
+			this.#handleBallGoalCollision('goalL');
+		}
 	}
 
 	#handlePlayerCollision(player) {
 		const relativeY =
 			(this.#ball.position.y - player.position.y) /
 			GAME_CONSTANTS.PADDLE_HEIGHT;
-		const angle = relativeY * (Math.PI * 0.42);
-		const direction = player.position.x < 0 ? -1 : 1;
-
-		let x = Math.cos(angle) * direction;
-		let y = Math.sin(angle);
-
-		x = Math.sign(x) * Math.max(Math.abs(x), this.#minDir);
-		y = Math.sign(y) * Math.max(Math.abs(y), this.#minDir);
-
-		const vector = new Vector3(x, y, 0).normalize();
-		this.#ballDirection = new THREE.Vector3(
-			vector.x * this.#velocity * this.#factor,
-			vector.y * this.#velocity * this.#factor,
-			0
-		);
+		const direction = player.position.x < 0 ? 1 : -1;
+		this.#ballDirection.x = direction * this.#velocity * this.#factor;
+		this.#ballDirection.y = relativeY * this.#velocity * this.#factor;
+		const offset = 60 + GAME_CONSTANTS.BALL_RADIUS;
+		this.#ball.position.x = player.position.x + direction * offset;
 	}
 
 	#handleBallWallCollision() {
@@ -1956,7 +1953,27 @@ class Game {
 		this.#ball.position.set(0, 0, 0);
 		this.#updateScoreL(String(this.#scoreL));
 		this.#updateScoreR(String(this.#scoreR));
-		this.#startBall();
+
+		if (!this.#checkWinCondition()) {
+			this.#startBall();
+		}
+	}
+
+	#endGame(winner) {
+		this.#resetGameState();
+		this.#ballDirection = new Vector3(0, 0, 0);
+	}
+
+	#checkWinCondition() {
+		if (this.#scoreL >= GAME_CONSTANTS.WIN_SCORE) {
+			this.#endGame('Player 1');
+			return true;
+		}
+		if (this.#scoreR >= GAME_CONSTANTS.WIN_SCORE) {
+			this.#endGame('Player 2');
+			return true;
+		}
+		return false;
 	}
 
 	#setObjects(model) {
