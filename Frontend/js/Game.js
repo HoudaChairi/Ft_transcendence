@@ -34,7 +34,7 @@ import {
 } from './Sbook';
 import { CHOICES, MATCHMAKING, OFFLINE, START, TOURNAMENT } from './Start';
 
-import { Vector3 } from './Game-managers';
+import { GAME_CONSTANTS, Vector3 } from './Game-managers';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -1929,8 +1929,11 @@ class Game {
 		const angle = relativeY * (Math.PI * 0.42);
 		const direction = player.position.x < 0 ? -1 : 1;
 
-		const x = Math.cos(angle) * direction;
-		const y = Math.sin(angle);
+		let x = Math.cos(angle) * direction;
+		let y = Math.sin(angle);
+
+		x = Math.sign(x) * Math.max(Math.abs(x), this.#minDir);
+		y = Math.sign(y) * Math.max(Math.abs(y), this.#minDir);
 
 		const vector = new Vector3(x, y, 0).normalize();
 		this.#ballDirection = new THREE.Vector3(
@@ -2025,8 +2028,11 @@ class Game {
 		const angle = (Math.random() * Math.PI) / 2 - Math.PI / 4;
 		const direction = Math.random() < 0.5 ? -1 : 1;
 
-		const x = Math.cos(angle) * direction;
-		const y = Math.sin(angle);
+		let x = Math.cos(angle) * direction;
+		let y = Math.sin(angle);
+
+		x = Math.sign(x) * Math.max(Math.abs(x), this.#minDir);
+		y = Math.sign(y) * Math.max(Math.abs(y), this.#minDir);
 
 		const vector = new Vector3(x, y, 0).normalize();
 		this.#ballDirection = new THREE.Vector3(
