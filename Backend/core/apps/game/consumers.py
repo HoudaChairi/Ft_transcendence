@@ -641,7 +641,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         try:
             player = Player.objects.get(username=username)
             return {
-                "username": player.username,
+                "username": player.tournament_username,
                 "avatar": player.get_avatar_url()
             }
         except Player.DoesNotExist:
