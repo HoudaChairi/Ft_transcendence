@@ -34,6 +34,8 @@ import {
 } from './Sbook';
 import { CHOICES, MATCHMAKING, OFFLINE, START, TOURNAMENT } from './Start';
 
+import { Vector3 } from './Game-managers';
+
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
@@ -68,10 +70,10 @@ class Game {
 	#scoreL = 0;
 	#scoreR = 0;
 
-	#velocity = 5;
-	#factor = 1;
+	#velocity = GAME_CONSTANTS.VELOCITY;
+	#factor = GAME_CONSTANTS.FACTOR;
 	#ballDirection = new THREE.Vector3();
-	#minDir = 0.69;
+	#minDir = GAME_CONSTANTS.MIN_DIR;
 	#playerDirection = 0;
 	#player2Direction = 0;
 	#hasChanges = false;
@@ -100,6 +102,7 @@ class Game {
 	#selectedTab = 1;
 
 	#started = false;
+	#isOffline = false;
 
 	constructor() {
 		this.#home = {
@@ -1777,14 +1780,20 @@ class Game {
 
 	#update() {
 		this.#hasChanges = false;
+
 		if (this.#ball) {
 			this.#ball.position.add(this.#ballDirection);
 			this.#ball.rotation.x += this.#ballDirection.x;
 			this.#ball.rotation.y += this.#ballDirection.y;
 			this.#ballBox.setFromObject(this.#ball);
-			// this.#checkCollisions();
+
+			if (this.#isOffline) {
+				this.#checkCollisions();
+			}
+
 			this.#hasChanges = true;
 		}
+
 		if (this.#player) {
 			this.#handelePlayerMovement(
 				this.#player,
@@ -1793,6 +1802,7 @@ class Game {
 				'Racket'
 			);
 		}
+
 		if (this.#player2) {
 			this.#handelePlayerMovement(
 				this.#player2,
@@ -1861,18 +1871,17 @@ class Game {
 	}
 
 	#handelePlayerMovement(player, playerBox, playerDirection, name) {
-		const wallBox =
-			playerDirection === 1 ? this.#wallsBoxes[0] : this.#wallsBoxes[1];
-
 		playerBox.setFromObject(player.getObjectByName(name));
-		const target = player.position.y + this.#velocity * playerDirection;
-		for (
-			;
-			player.position.y !== target;
-			player.position.y += playerDirection
-		) {
-			if (playerBox.intersectsBox(wallBox)) break;
+
+		if (playerDirection !== 0) {
+			const newY =
+				player.position.y +
+				GAME_CONSTANTS.PADDLE_SPEED * playerDirection;
+			if (this.#checkPlayerBounds(newY)) {
+				player.position.y = newY;
+			}
 		}
+
 		this.#hasChanges = true;
 	}
 
@@ -1894,11 +1903,9 @@ class Game {
 	}
 
 	#checkCollisions() {
-		this.#wallsBoxes.forEach((wallBox, i) => {
-			if (this.#ballBox.intersectsBox(wallBox)) {
-				this.#handleBallWallCollision(i);
-			}
-		});
+		if (Math.abs(this.#ball.position.y) >= GAME_CONSTANTS.COURT_HEIGHT) {
+			this.#handleBallWallCollision();
+		}
 
 		if (this.#ballBox.intersectsBox(this.#goalRBox)) {
 			this.#handleBallGoalCollision('goalR');
@@ -1910,32 +1917,34 @@ class Game {
 		if (this.#ballBox.intersectsBox(this.#playerBox)) {
 			this.#handlePlayerCollision(this.#player);
 		}
-
 		if (this.#ballBox.intersectsBox(this.#player2Box)) {
 			this.#handlePlayerCollision(this.#player2);
 		}
 	}
 
 	#handlePlayerCollision(player) {
-		const direction = this.#ball.position
-			.clone()
-			.sub(player.position)
-			.normalize();
-		direction.x =
-			Math.sign(direction.x) *
-			Math.max(Math.abs(direction.x), this.#minDir);
-		direction.y =
-			Math.sign(direction.y) *
-			Math.max(Math.abs(direction.y), this.#minDir);
-		direction.z =
-			Math.sign(direction.z) *
-			Math.max(Math.abs(direction.z), this.#minDir);
-		this.#ballDirection = direction.multiplyScalar(
-			this.#velocity * this.#factor
+		const relativeY =
+			(this.#ball.position.y - player.position.y) /
+			GAME_CONSTANTS.PADDLE_HEIGHT;
+		const angle = relativeY * (Math.PI * 0.42);
+		const direction = player.position.x < 0 ? -1 : 1;
+
+		const x = Math.cos(angle) * direction;
+		const y = Math.sin(angle);
+
+		const vector = new Vector3(x, y, 0).normalize();
+		this.#ballDirection = new THREE.Vector3(
+			vector.x * this.#velocity * this.#factor,
+			vector.y * this.#velocity * this.#factor,
+			0
 		);
 	}
 
 	#handleBallWallCollision() {
+		if (Math.abs(this.#ball.position.y) > GAME_CONSTANTS.COURT_HEIGHT) {
+			this.#ball.position.y =
+				Math.sign(this.#ball.position.y) * GAME_CONSTANTS.COURT_HEIGHT;
+		}
 		this.#ballDirection.y = -this.#ballDirection.y;
 	}
 
@@ -1944,7 +1953,7 @@ class Game {
 		this.#ball.position.set(0, 0, 0);
 		this.#updateScoreL(String(this.#scoreL));
 		this.#updateScoreR(String(this.#scoreR));
-		this.startBall();
+		this.#startBall();
 	}
 
 	#setObjects(model) {
@@ -1965,74 +1974,84 @@ class Game {
 		this.#resetScore();
 	}
 
-	// moveUp() {
-	// 	if (this.#checkPlayerCollisions(this.#player, -1, 'Racket')) {
-	// 		this.#playerDirection = -1;
-	// 		this.#hasChanges = true;
-	// 	} else {
-	// 		this.#playerDirection = 0;
-	// 		this.#hasChanges = true;
-	// 	}
-	// }
+	#moveUp() {
+		const newY = this.#player.position.y - GAME_CONSTANTS.PADDLE_SPEED;
+		if (this.#checkPlayerBounds(newY)) {
+			this.#playerDirection = -1;
+			this.#hasChanges = true;
+		} else {
+			this.#playerDirection = 0;
+		}
+	}
 
-	// moveDown() {
-	// 	if (this.#checkPlayerCollisions(this.#player, 1, 'Racket')) {
-	// 		this.#playerDirection = 1;
-	// 		this.#hasChanges = true;
-	// 	} else {
-	// 		this.#playerDirection = 0;
-	// 		this.#hasChanges = true;
-	// 	}
-	// }
+	#moveDown() {
+		const newY = this.#player.position.y + GAME_CONSTANTS.PADDLE_SPEED;
+		if (this.#checkPlayerBounds(newY)) {
+			this.#playerDirection = 1;
+			this.#hasChanges = true;
+		} else {
+			this.#playerDirection = 0;
+		}
+	}
 
-	// moveUp2() {
-	// 	if (this.#checkPlayerCollisions(this.#player2, -1, 'Racket001')) {
-	// 		this.#player2Direction = -1;
-	// 		this.#hasChanges = true;
-	// 	} else {
-	// 		this.#player2Direction = 0;
-	// 		this.#hasChanges = true;
-	// 	}
-	// }
+	#moveUp2() {
+		const newY = this.#player2.position.y - GAME_CONSTANTS.PADDLE_SPEED;
+		if (this.#checkPlayerBounds(newY)) {
+			this.#player2Direction = -1;
+			this.#hasChanges = true;
+		} else {
+			this.#player2Direction = 0;
+		}
+	}
 
-	// moveDown2() {
-	// 	if (this.#checkPlayerCollisions(this.#player2, 1, 'Racket001')) {
-	// 		this.#player2Direction = 1;
-	// 		this.#hasChanges = true;
-	// 	} else {
-	// 		this.#player2Direction = 0;
-	// 		this.#hasChanges = true;
-	// 	}
-	// }
+	#moveDown2() {
+		const newY = this.#player2.position.y + GAME_CONSTANTS.PADDLE_SPEED;
+		if (this.#checkPlayerBounds(newY)) {
+			this.#player2Direction = 1;
+			this.#hasChanges = true;
+		} else {
+			this.#player2Direction = 0;
+		}
+	}
 
-	// startBall() {
-	// 	let x = this.#random(-1.0, 1.0);
-	// 	let y = this.#random(-1.0, 1.0);
+	#checkPlayerBounds(newY) {
+		return (
+			Math.abs(newY) <=
+			GAME_CONSTANTS.COURT_HEIGHT - GAME_CONSTANTS.PADDLE_HEIGHT
+		);
+	}
 
-	// 	if (Math.abs(x) < this.#minDir) x = Math.sign(x) * this.#minDir;
-	// 	if (Math.abs(y) < this.#minDir) y = Math.sign(y) * this.#minDir;
+	#startBall() {
+		const angle = (Math.random() * Math.PI) / 2 - Math.PI / 4;
+		const direction = Math.random() < 0.5 ? -1 : 1;
 
-	// 	this.#ballDirection = new THREE.Vector3(x, y).multiplyScalar(
-	// 		this.#velocity * this.#factor
-	// 	);
-	// 	this.#hasChanges = true;
-	// }
+		const x = Math.cos(angle) * direction;
+		const y = Math.sin(angle);
 
-	// stopPlayerMovement() {
-	// 	this.#playerDirection = 0;
-	// 	this.#hasChanges = true;
-	// }
+		const vector = new Vector3(x, y, 0).normalize();
+		this.#ballDirection = new THREE.Vector3(
+			vector.x * this.#velocity * this.#factor,
+			vector.y * this.#velocity * this.#factor,
+			0
+		);
+		this.#hasChanges = true;
+	}
 
-	// stopPlayer2Movement() {
-	// 	this.#player2Direction = 0;
-	// 	this.#hasChanges = true;
-	// }
+	#stopPlayerMovement() {
+		this.#playerDirection = 0;
+		this.#hasChanges = true;
+	}
+
+	#stopPlayer2Movement() {
+		this.#player2Direction = 0;
+		this.#hasChanges = true;
+	}
 
 	#random(min, max) {
 		return Math.random() * (max - min) + min;
 	}
 
-	dispose() {
+	#dispose() {
 		if (this.#ball) this.#ball.geometry.dispose();
 		if (this.#ball.material) this.#ball.material.dispose();
 		if (this.#renderer) {
@@ -2316,16 +2335,13 @@ class Game {
 	}
 
 	#resetGameState() {
-		// Reset scores
 		this.#updateScoreL('0');
 		this.#updateScoreR('0');
 
-		// Reset ball position if needed
 		if (this.#ball) {
 			this.#ball.position.set(0, 0, 0);
 		}
 
-		// Reset paddle positions if needed
 		if (this.#player) {
 			this.#player.position.set(-1300, 0, 0);
 		}
@@ -2338,19 +2354,16 @@ class Game {
 
 	#updateGameState(game_data) {
 		if (this.#ball) {
-			// Update ball position
 			this.#ball.position.set(
 				game_data.ballPosition.x,
 				game_data.ballPosition.y,
 				game_data.ballPosition.z
 			);
 
-			// Add rotation for visual effect only
 			this.#ball.rotation.x += game_data.ballDirection.x;
 			this.#ball.rotation.y += game_data.ballDirection.y;
 		}
 
-		// Update paddles
 		game_data.paddlePositions.forEach(paddle => {
 			const paddleMesh =
 				paddle.playerId === 'player1' ? this.#player : this.#player2;
@@ -2363,7 +2376,6 @@ class Game {
 			}
 		});
 
-		// Update scores
 		if (game_data.scoreL !== undefined && game_data.scoreR !== undefined) {
 			this.#updateScoreL(String(game_data.scoreL));
 			this.#updateScoreR(String(game_data.scoreR));
@@ -2389,12 +2401,12 @@ class Game {
 
 	#twoPlayer() {
 		this.#scene.remove(this.#css2DObject.game);
-		this.#scene.add(this.#css2DObject.match);
 
 		this.#css2DObject.match.element.querySelector('#player1').textContent =
 			this.#loggedUser;
 		this.#css2DObject.match.element.querySelector('#player1-avatar').src =
 			document.querySelector('#profilePicImage').src;
+		this.#scene.add(this.#css2DObject.match);
 
 		if (this.#gameWebSocket) {
 			try {
@@ -2651,11 +2663,9 @@ class Game {
 			const tournamentElem = this.#css2DObject.tournament.element;
 
 			if (!this.#started) {
-				// Initial state - showing waiting players
 				tournamentElem.innerHTML = TOURNAMENT;
 				data.waiting_players.forEach((player, i) => {
 					if (i < 4) {
-						// Only handle first 4 players
 						const playerAvatar = tournamentElem.querySelector(
 							`#player${i + 1}-avatar`
 						);
@@ -2807,7 +2817,7 @@ class Game {
 		}
 	}
 
-	cleanup() {
+	#cleanup() {
 		if (this.#gameWebSocket) {
 			this.#gameWebSocket.close();
 			this.#gameWebSocket = null;
@@ -2822,27 +2832,44 @@ class Game {
 	#offline() {
 		this.#scene.remove(this.#css2DObject.game);
 		this.#scene.add(this.#css2DObject.offline);
+		this.#isOffline = true;
 		this.#css2DObject.offline.element
 			.querySelector('.card-container')
 			.addEventListener('click', e => {
 				const btn = e.target.closest('.card').id;
 				if (btn) {
+					const choices = {
+						singleplayer: this.#singleplayer.bind(this),
+						multiplayer: this.#multiplayer.bind(this),
+					};
+					choices[btn]();
 				}
 			});
 	}
 
+	#singleplayer() {}
+
+	#multiplayer() {
+		this.#scene.remove(this.#css2DObject.offline);
+		this.#bindKeys('offline');
+		setTimeout(() => this.#startBall(), 4000);
+	}
+
 	#online() {
 		this.#scene.remove(this.#css2DObject.game);
+		this.#bindKeys('online');
 		this.#twoPlayer();
 	}
 
 	#tournament() {
 		this.#scene.remove(this.#css2DObject.game);
 		this.#scene.add(this.#css2DObject.tournament);
+		this.#bindKeys('online');
 		this.#tournamentStart();
 	}
 
 	#GamePage() {
+		this.#isOffline = false;
 		this.#css2DObject.game.element
 			.querySelector('.card-container')
 			.addEventListener('click', e => {
@@ -2859,8 +2886,8 @@ class Game {
 	}
 
 	#switchHome(home) {
+		this.#isOffline = false;
 		this.#cleanupWebSockets(home);
-
 		[
 			'game',
 			'chat',
@@ -2913,21 +2940,6 @@ class Game {
 			}
 			this.#onlineSocket = null;
 		}
-	}
-
-	#resetForNewGame() {
-		this.#resetGameState();
-
-		if (this.#gameWebSocket) {
-			try {
-				this.#gameWebSocket.close();
-			} catch (e) {
-				console.error('Error closing WebSocket:', e);
-			}
-			this.#gameWebSocket = null;
-		}
-
-		this.#css2DObject.match.element.innerHTML = MATCHMAKING;
 	}
 
 	#updateUIElements(page) {
@@ -2983,7 +2995,7 @@ class Game {
 		this.#onlineSocket.onclose = () => {};
 	}
 
-	sendMovement(direction) {
+	#sendMovement(direction) {
 		this.#gameWebSocket?.send(
 			JSON.stringify({
 				action: 'move',
@@ -2992,12 +3004,67 @@ class Game {
 		);
 	}
 
-	stopMovement() {
+	#stopMovement() {
 		this.#gameWebSocket?.send(
 			JSON.stringify({
 				action: 'stop_move',
 			})
 		);
+	}
+
+	#bindKeys(mode) {
+		const keyState = new Set();
+
+		window.addEventListener('keydown', e => {
+			keyState.add(e.key);
+			this.#bindDownMode(e, mode, keyState);
+		});
+
+		window.addEventListener('keyup', e => {
+			keyState.delete(e.key);
+			this.#bindUpMode(e, mode, keyState);
+		});
+	}
+
+	#bindDownMode(e, mode, keyState) {
+		const KEY_W = 'w';
+		const KEY_S = 's';
+		const KEY_UP = 'ArrowUp';
+		const KEY_DOWN = 'ArrowDown';
+
+		if (mode === 'online') {
+			if (keyState.has(KEY_W)) this.#sendMovement('moveUp');
+			if (keyState.has(KEY_S)) this.#sendMovement('moveDown');
+			if (keyState.has(KEY_UP)) this.#sendMovement('moveUp');
+			if (keyState.has(KEY_DOWN)) this.#sendMovement('moveDown');
+		} else if (mode === 'offline') {
+			if (keyState.has(KEY_W)) this.#moveUp();
+			if (keyState.has(KEY_S)) this.#moveDown();
+			if (keyState.has(KEY_UP)) this.#moveUp2();
+			if (keyState.has(KEY_DOWN)) this.#moveDown2();
+		} else if (mode === 'AI') {
+			if (keyState.has(KEY_W)) this.#moveUp();
+			if (keyState.has(KEY_S)) this.#moveDown();
+		}
+	}
+
+	#bindUpMode(e, mode, keyState) {
+		const KEY_W = 'w';
+		const KEY_S = 's';
+		const KEY_UP = 'ArrowUp';
+		const KEY_DOWN = 'ArrowDown';
+
+		if (mode === 'online') {
+			this.#stopMovement();
+		} else if (mode === 'offline') {
+			if (!keyState.has(KEY_W) && !keyState.has(KEY_S))
+				this.#stopPlayerMovement();
+			if (!keyState.has(KEY_UP) && !keyState.has(KEY_DOWN))
+				this.#stopPlayer2Movement();
+		} else if (mode === 'AI') {
+			if (!keyState.has(KEY_W) && !keyState.has(KEY_S))
+				this.#stopPlayerMovement();
+		}
 	}
 }
 
