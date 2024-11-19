@@ -2722,7 +2722,7 @@ body {
 }
 
 .left-player .avatar {
-	width: 368px;
+	width: 369px;
 	height: 408px;
 	position: absolute;
 	left: 50%;
@@ -2731,8 +2731,8 @@ body {
 }
 
 .right-player .avatar {
-	width: 274px;
-	height: 304px;
+	width: 275px;
+	height: 305px;
 	position: absolute;
 	left: 50%;
 	top: 50%;
@@ -2789,4 +2789,32 @@ body {
 	width: 110px;
 	height: 0;
 	border: 10px #d0c3a9 solid;
+}
+
+.player-info {
+	display: flex;
+	align-items: center;
+	gap: 20px;
+}
+
+.username {
+	color: #d0c3a9;
+	font-size: 50px;
+	font-family: Gabriela;
+	font-weight: 400;
+	position: absolute;
+	writing-mode: vertical-rl;
+	text-orientation: mixed;
+}
+
+.left-player .username {
+	left: -60px;
+	top: 50%;
+	transform: translateY(-50%) rotate(180deg);
+}
+
+.right-player .username {
+	right: -60px;
+	top: 50%;
+	transform: translateY(-50%);
 }

@@ -2882,6 +2882,8 @@ class Game {
 
 	#singleplayer() {
 		this.#scene.remove(this.#css2DObject.offline);
+		this.#css2DObject.win.element.querySelector('#win-avatar').src =
+			this.#css2DObject.profilepic.element.src;
 		this.#scene.add(this.#css2DObject.win);
 	}
 
