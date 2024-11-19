@@ -2662,12 +2662,12 @@ body {
 
 .win {
 	top: 0%;
-	width: 100%;
-	height: 100%;
+	width: 1920px;
+	height: 1080px;
 	position: relative;
 }
 
-.player-left {
+.left-player {
 	height: 550px;
 	left: 325px;
 	top: 195px;
@@ -2679,42 +2679,7 @@ body {
 	display: inline-flex;
 }
 
-.player-left .avatar-container {
-	width: 400px;
-	height: 440px;
-	position: relative;
-}
-
-.player-left .frame-win {
-	width: 400px;
-	height: 440px;
-	left: 0;
-	top: 0;
-	position: absolute;
-}
-
-.player-left .avatar {
-	width: 369px;
-	height: 409px;
-	left: 16px;
-	top: 16px;
-	position: absolute;
-}
-
-.player-left .name-container {
-	width: 250px;
-	height: 70px;
-	justify-content: center;
-	align-items: center;
-	display: inline-flex;
-}
-
-.player-left .name-plate {
-	width: 250px;
-	height: 70px;
-}
-
-.player-right {
+.right-player {
 	height: 418px;
 	left: 1195px;
 	top: 261px;
@@ -2726,37 +2691,76 @@ body {
 	display: inline-flex;
 }
 
-.player-right .avatar-container {
-	width: 300px;
-	height: 330px;
+.frame-container {
 	position: relative;
 }
 
-.player-right .frame-win {
+.left-player .frame-container {
+	width: 400px;
+	height: 440px;
+}
+
+.right-player .frame-container {
 	width: 300px;
 	height: 330px;
+}
+
+.frame-win {
+	position: absolute;
 	left: 0;
 	top: 0;
-	position: absolute;
 }
 
-.player-right .avatar {
-	width: 276px;
-	height: 307px;
-	left: 13px;
-	top: 11px;
-	position: absolute;
+.left-player .frame-win {
+	width: 400px;
+	height: 440px;
 }
 
-.player-right .name-container {
-	width: 180px;
-	height: 48px;
+.right-player .frame-win {
+	width: 300px;
+	height: 330px;
+}
+
+.left-player .avatar {
+	width: 368px;
+	height: 408px;
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+}
+
+.right-player .avatar {
+	width: 274px;
+	height: 304px;
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+}
+
+.plate-container {
 	justify-content: center;
 	align-items: center;
 	display: inline-flex;
 }
 
-.player-right .name-plate {
+.left-player .plate-container {
+	width: 250px;
+	height: 70px;
+}
+
+.right-player .plate-container {
+	width: 180px;
+	height: 48px;
+}
+
+.left-player .nameplate {
+	width: 250px;
+	height: 70px;
+}
+
+.right-player .nameplate {
 	width: 180px;
 	height: 48px;
 }
