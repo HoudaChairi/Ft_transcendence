@@ -32,7 +32,7 @@ import {
 	REMOTE,
 	TWOFA,
 } from './Sbook';
-import { CHOICES, MATCHMAKING, OFFLINE, START, TOURNAMENT } from './Start';
+import { CHOICES, MATCHMAKING, OFFLINE, START, TOURNAMENT, WIN } from './Start';
 
 import { GAME_CONSTANTS, Vector3 } from './Game-managers';
 
@@ -166,6 +166,7 @@ class Game {
 		this.#addMatchmakingCss2D();
 		this.#addStartCss2D();
 		this.#addTournamentCss2D();
+		this.#addWinCss2D();
 		this.#addPanerCss2D();
 		this.#addSettingsCss2D();
 		this.#addSbookSettingsCss2D();
@@ -1180,6 +1181,15 @@ class Game {
 
 		this.#css2DObject.tournament = new CSS2DObject(homeContainer);
 		this.#css2DObject.tournament.name = 'tournament';
+	}
+
+	#addWinCss2D() {
+		const homeContainer = document.createElement('div');
+		homeContainer.className = 'win';
+		homeContainer.innerHTML = WIN;
+
+		this.#css2DObject.win = new CSS2DObject(homeContainer);
+		this.#css2DObject.win.name = 'win';
 	}
 
 	#addLegendCss2d() {
@@ -2870,7 +2880,10 @@ class Game {
 			});
 	}
 
-	#singleplayer() {}
+	#singleplayer() {
+		this.#scene.remove(this.#css2DObject.offline);
+		this.#scene.add(this.#css2DObject.win);
+	}
 
 	#multiplayer() {
 		this.#scene.remove(this.#css2DObject.offline);

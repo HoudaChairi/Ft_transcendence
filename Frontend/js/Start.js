@@ -130,3 +130,45 @@ export const START = `<div class="comparison-wrapper">
 	<img class="button-background" src="/textures/svg/Start.svg" alt="" />
 	<div class="start-text">Start</div>
 </div>`;
+
+export const WIN = `<div class="player-left">
+	<div class="avatar-container">
+		<img
+			class="frame-win"
+			src="https://via.placeholder.com/400x440"
+			alt=""
+		/>
+		<img class="avatar" src="https://via.placeholder.com/369x409" alt="" />
+	</div>
+	<div class="name-container">
+		<img
+			class="name-plate"
+			src="https://via.placeholder.com/250x70"
+			alt=""
+		/>
+	</div>
+</div>
+
+<div class="player-right">
+	<div class="avatar-container">
+		<img
+			class="frame-win"
+			src="https://via.placeholder.com/300x330"
+			alt=""
+		/>
+		<img class="avatar" src="https://via.placeholder.com/276x307" alt="" />
+	</div>
+	<div class="name-container">
+		<img
+			class="name-plate"
+			src="https://via.placeholder.com/180x48"
+			alt=""
+		/>
+	</div>
+</div>
+
+<div class="score-container">
+	<div class="score">0</div>
+	<div class="separator"></div>
+	<div class="score">0</div>
+</div>`;

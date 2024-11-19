@@ -2659,3 +2659,130 @@ body {
 	position: relative;
 	z-index: 1;
 }
+
+.win {
+	top: 0%;
+	width: 100%;
+	height: 100%;
+	position: relative;
+}
+
+.player-left {
+	height: 550px;
+	left: 325px;
+	top: 195px;
+	position: absolute;
+	flex-direction: column;
+	justify-content: flex-start;
+	align-items: center;
+	gap: 40px;
+	display: inline-flex;
+}
+
+.player-left .avatar-container {
+	width: 400px;
+	height: 440px;
+	position: relative;
+}
+
+.player-left .frame-win {
+	width: 400px;
+	height: 440px;
+	left: 0;
+	top: 0;
+	position: absolute;
+}
+
+.player-left .avatar {
+	width: 369px;
+	height: 409px;
+	left: 16px;
+	top: 16px;
+	position: absolute;
+}
+
+.player-left .name-container {
+	width: 250px;
+	height: 70px;
+	justify-content: center;
+	align-items: center;
+	display: inline-flex;
+}
+
+.player-left .name-plate {
+	width: 250px;
+	height: 70px;
+}
+
+.player-right {
+	height: 418px;
+	left: 1195px;
+	top: 261px;
+	position: absolute;
+	flex-direction: column;
+	justify-content: flex-start;
+	align-items: center;
+	gap: 40px;
+	display: inline-flex;
+}
+
+.player-right .avatar-container {
+	width: 300px;
+	height: 330px;
+	position: relative;
+}
+
+.player-right .frame-win {
+	width: 300px;
+	height: 330px;
+	left: 0;
+	top: 0;
+	position: absolute;
+}
+
+.player-right .avatar {
+	width: 276px;
+	height: 307px;
+	left: 13px;
+	top: 11px;
+	position: absolute;
+}
+
+.player-right .name-container {
+	width: 180px;
+	height: 48px;
+	justify-content: center;
+	align-items: center;
+	display: inline-flex;
+}
+
+.player-right .name-plate {
+	width: 180px;
+	height: 48px;
+}
+
+.score-container {
+	width: 470px;
+	left: 725px;
+	top: 800px;
+	position: absolute;
+	justify-content: space-between;
+	align-items: center;
+	display: inline-flex;
+}
+
+.score {
+	text-align: center;
+	color: #d0c3a9;
+	font-size: 100px;
+	font-family: Gabriela;
+	font-weight: 400;
+	line-height: 150px;
+	word-wrap: break-word;
+}
+
+.separator {
+	width: 110px;
+	height: 0;
+	border: 10px #d0c3a9 solid;
+}
