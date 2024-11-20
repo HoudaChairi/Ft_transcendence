@@ -189,18 +189,6 @@ class UpdatePasswordSerializer(serializers.Serializer):
         user.save()
         return user
     
-
-# class DisplayNameSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Player
-#         fields = ['display_name']
-    
-#     def validate_display_name(self, value):
-#         if Player.objects.filter(display_name=value).exists():
-#             raise serializers.ValidationError("This display name is already taken.")
-#         return value
-
-
 class AvatarSerializer(serializers.ModelSerializer):
     class Meta:
         model = Player
