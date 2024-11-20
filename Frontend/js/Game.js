@@ -2374,8 +2374,7 @@ class Game {
 	}
 
 	#resetGameState() {
-		this.#updateScoreL('0');
-		this.#updateScoreR('0');
+		this.#resetScore();
 
 		if (this.#ball) {
 			this.#ball.position.set(0, 0, 0);
@@ -2887,6 +2886,8 @@ class Game {
 	}
 
 	#displayWin(players) {
+		this.#css2DObject.win.innerHTML = WIN;
+
 		this.#css2DObject.win.element.querySelector('#win-avatar').src =
 			players['winner'].avatar;
 		this.#css2DObject.win.element.querySelector(
@@ -2956,6 +2957,7 @@ class Game {
 			'match',
 			'tournament',
 			'star',
+			'win',
 		].forEach(ele => {
 			this.#scene.remove(this.#css2DObject[ele]);
 		});
