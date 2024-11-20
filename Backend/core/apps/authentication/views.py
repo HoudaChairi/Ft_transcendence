@@ -122,19 +122,7 @@ class UpdatePasswordView(APIView):
                 'message': 'Password updated successfully.'
             }, status=status.HTTP_200_OK)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-
-# class UpdateDisplayNameView(APIView):
-#     permission_classes = [IsAuthenticated]
-
-#     def post(self, request):
-#         user = request.user
-#         serializer = DisplayNameSerializer(user, data=request.data, partial=True)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response({"message": "Display name updated successfully"}, status=status.HTTP_200_OK)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)   
 
 # ------------------------------------- Avatar UPDATE ------------------------------------- #
 class UpdateAvatarView(APIView):
