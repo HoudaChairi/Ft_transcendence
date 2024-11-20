@@ -2446,15 +2446,6 @@ class Game {
 			document.querySelector('#profilePicImage').src;
 		this.#scene.add(this.#css2DObject.match);
 
-		if (this.#gameWebSocket) {
-			try {
-				this.#gameWebSocket.close();
-			} catch (e) {
-				console.error('Error closing existing WebSocket:', e);
-			}
-			this.#gameWebSocket = null;
-		}
-
 		this.#resetGameState();
 
 		try {
@@ -2497,7 +2488,7 @@ class Game {
 							this.#updateGameState(data);
 							break;
 						case 'game_end':
-							this.#handleGameEnd();
+							this.#handleGameEnd(data);
 							break;
 						case 'error':
 							console.error('Game error:', data.message);
@@ -2525,14 +2516,7 @@ class Game {
 	}
 
 	#handleWebSocketError() {
-		if (this.#gameWebSocket) {
-			try {
-				this.#gameWebSocket.close();
-			} catch (e) {
-				console.error('Error closing WebSocket:', e);
-			}
-			this.#gameWebSocket = null;
-		}
+		this.#gameWebSocket.close();
 		this.#switchHome('home');
 	}
 
@@ -2540,26 +2524,26 @@ class Game {
 		if (this.#gameWebSocket) {
 			this.#gameWebSocket = null;
 			this.#resetGameState();
-			this.#switchHome('home');
 		}
 	}
 
-	#handleGameEnd() {
+	#handleGameEnd(data) {
+		const players = {
+			winner:
+				data.winner === data.score.player1.us
+					? data.score.player1
+					: data.score.player2,
+			loser:
+				data.winner === data.score.player1.us
+					? data.score.player2
+					: data.score.player1,
+		};
+
+		this.#displayWin(players);
+
 		this.#resetGameState();
 
-		if (this.#gameWebSocket) {
-			try {
-				this.#gameWebSocket.close();
-			} catch (e) {
-				console.error('Error closing WebSocket:', e);
-			}
-			this.#gameWebSocket = null;
-		}
-
-		this.#scene.remove(this.#css2DObject.match);
-		this.#css2DObject.match.element.innerHTML = MATCHMAKING;
-
-		this.#scene.add(this.#css2DObject.game);
+		this.#gameWebSocket.close();
 	}
 
 	#startTournamentMatch(matchData) {
@@ -2686,14 +2670,7 @@ class Game {
 	}
 
 	#cleanupGameWebSocket() {
-		if (this.#gameWebSocket) {
-			try {
-				this.#gameWebSocket.close();
-			} catch (e) {
-				console.error('Error closing game WebSocket:', e);
-			}
-			this.#gameWebSocket = null;
-		}
+		this.#gameWebSocket.close();
 	}
 
 	#updateTournamentUI(data) {
@@ -2853,18 +2830,6 @@ class Game {
 			}
 			this.#tournamentWebSocket = null;
 		}
-	}
-
-	#cleanup() {
-		if (this.#gameWebSocket) {
-			this.#gameWebSocket.close();
-			this.#gameWebSocket = null;
-		}
-		if (this.#tournamentWebSocket) {
-			this.#tournamentWebSocket.close();
-			this.#tournamentWebSocket = null;
-		}
-		this.#currentMatch = null;
 	}
 
 	#offline() {

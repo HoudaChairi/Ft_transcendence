@@ -51,7 +51,6 @@ class GameConsumer(AsyncWebsocketConsumer):
                 p2 = next(key for key, value in game.player_labels.items() if value == 'player2')
                 await self.create_match_record(p1, p2, winner, game.score_left, game.score_right)
                 
-                # Handle tournament game end
                 await self.handle_game_end(winner)
                 await self.channel_layer.group_send(
                     group_id,
@@ -60,11 +59,23 @@ class GameConsumer(AsyncWebsocketConsumer):
                         'data': {
                             "type": "game_end",
                             "winner": winner,
+                            "score": {
+                                "player1": {
+                                    "usr": p1,
+                                    "avatar": await self.get_player_avatar(p1),
+                                    "score": game.score_left
+                                },
+                                "player2": {
+                                    "usr": p2,
+                                    "avatar": await self.get_player_avatar(p2),
+                                    "score": game.score_right
+                                }
+                            },
                             "reason": "disconnect"
                         }
                     }
                 )
-            game.is_running = False
+                game.is_running = False
 
 
     async def remove_player_from_game(self, group_id: str) -> None:
@@ -423,7 +434,6 @@ class GameConsumer(AsyncWebsocketConsumer):
                         'winner': winner
                     }
                     
-                    # Make sure we're using the correct consumer channel name
                     if 'consumer' in game.tournament_data:
                         await self.channel_layer.send(
                             game.tournament_data['consumer'],
@@ -442,6 +452,18 @@ class GameConsumer(AsyncWebsocketConsumer):
                     'data': {
                         "type": "game_end",
                         "winner": winner,
+                        "score": {
+                            "player1": {
+                                "usr": p1,
+                                "avatar": await self.get_player_avatar(p1),
+                                "score": game.score_left
+                            },
+                            "player2": {
+                                "usr": p2,
+                                "avatar": await self.get_player_avatar(p2),
+                                "score": game.score_right
+                            }
+                        },
                         "reason": "score"
                     }
                 }
