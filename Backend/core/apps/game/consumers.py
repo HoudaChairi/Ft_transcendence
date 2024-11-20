@@ -105,11 +105,20 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'message': 'Internal server error'
             }))
 
+    @database_sync_to_async
+    def get_player_avatar(self, username: str) -> str:
+        try:
+            player = Player.objects.get(username=username)
+            return player.get_avatar_url()
+        except Player.DoesNotExist:
+            pass
+
     async def handle_new_player(self, username: str, tournament_data: Optional[dict] = None) -> None:
         try:
-            
             self.username = username
-            self.connected_players[username] = self.channel_name
+            
+            if username not in self.connected_players:
+                self.connected_players[username] = self.channel_name
 
             if tournament_data:
                 group_id = f"{tournament_data['player1']}_{tournament_data['player2']}"
@@ -128,12 +137,58 @@ class GameConsumer(AsyncWebsocketConsumer):
                 
                 await self.channel_layer.group_add(group_id, self.channel_name)
                 
-                # Check if both players are connected
                 connected_players = [p for p in self.connected_players 
-                                  if p in [tournament_data['player1'], tournament_data['player2']]]
+                                if p in [tournament_data['player1'], tournament_data['player2']]]
                 
                 if len(connected_players) == 2:
                     await self.start_game(group_id)
+            else:
+                if len(self.connected_players) >= 2:
+                    player_list = list(self.connected_players.keys())
+                    player1, player2 = player_list[-2:]
+                    group_id = f"{player1}_{player2}"
+
+                    player1_avatar = await self.get_player_avatar(player1)
+                    player2_avatar = await self.get_player_avatar(player2)
+                    
+                    for player in (player1, player2):
+                        self.player_groups[player] = group_id
+                        await self.channel_layer.group_add(
+                            group_id,
+                            self.connected_players[player]
+                        )
+
+                    if username == player2:
+                        self.games_data[group_id] = self.game_manager.create_initial_state(player1, player2)
+                        
+                        # Send start message from here
+                        await self.channel_layer.group_send(
+                            group_id,
+                            {
+                                'type': 'game_update',
+                                'data': {
+                                    "type": "game_start",
+                                    "players": {
+                                        "player1": {
+                                            "usr": player1,
+                                            "avatar": player1_avatar
+                                        },
+                                        "player2": {
+                                            "usr": player2,
+                                            "avatar": player2_avatar
+                                        }
+                                    },
+                                    "tournament": False
+                                }
+                            }
+                        )
+                    
+                        asyncio.create_task(self.delayed_game_start(group_id))
+                else:
+                    await self.send(text_data=json.dumps({
+                        'type': 'waiting',
+                        'message': 'Waiting for second player...'
+                    }))
 
         except Exception as e:
             await self.send(text_data=json.dumps({
@@ -141,12 +196,19 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'message': 'Failed to join game'
             }))
 
+    async def delayed_game_start(self, group_id: str):
+        """Start game after delay"""
+        await asyncio.sleep(5)
+        game = self.games_data[group_id]
+        game.ball_direction = self.game_manager.start_ball_direction()
+        game.is_running = True
+        asyncio.create_task(self.run_game_loop(group_id))
+
     async def create_game(self) -> None:
         player_list = list(self.connected_players.keys())
         player1, player2 = player_list[-2:]
         group_id = f"{player1}_{player2}"
 
-        # Use game_manager here too
         self.games_data[group_id] = self.game_manager.create_initial_state(player1, player2)
 
         for player in (player1, player2):
@@ -160,9 +222,8 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     async def start_game(self, group_id: str):
         """Start a new game"""
-        await asyncio.sleep(3)
-        
         game = self.games_data[group_id]
+        
         await self.channel_layer.group_send(
             group_id,
             {
@@ -170,15 +231,21 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'data': {
                     "type": "game_start",
                     "players": {
-                        "player1": next(p for p, l in game.player_labels.items() if l == 'player1'),
-                        "player2": next(p for p, l in game.player_labels.items() if l == 'player2')
+                        "player1": {
+                            "usr": next(p for p, l in game.player_labels.items() if l == 'player1'),
+                            "avatar": "textures/svg/M.svg"
+                        },
+                        "player2": {
+                            "usr": next(p for p, l in game.player_labels.items() if l == 'player2'),
+                            "avatar": "textures/svg/M.svg"
+                        }
                     },
-                    "tournament": bool(game.tournament_data)
+                    "tournament": False
                 }
             }
         )
-        
-        # Start the game loop immediately
+
+        await asyncio.sleep(5)
         game.ball_direction = self.game_manager.start_ball_direction()
         game.is_running = True
         asyncio.create_task(self.run_game_loop(group_id))
@@ -204,8 +271,14 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'data': {
                     "type": "game_start",
                     "players": {
-                        "player1": player1,
-                        "player2": player2
+                        "player1": {
+                            "usr": player1,
+                            "avatar": "textures/svg/M.svg"
+                        },
+                        "player2": {
+                            "usr": player2,
+                            "avatar": "textures/svg/M.svg"
+                        }
                     },
                     "tournament": True
                 }
@@ -551,6 +624,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         if username not in self.tournament_manager.waiting_players:
             self.tournament_manager.waiting_players.append(username)
             
+        # Always broadcast after adding a new player
         await self.broadcast_player_lists()
         
         # Check if we have enough players
@@ -559,45 +633,90 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             self.tournament_manager.waiting_players = self.tournament_manager.waiting_players[TOURNAMENT_CONFIG['PLAYERS_PER_TOURNAMENT']:]
             tournament = self.tournament_manager.create_tournament(tournament_players)
             await self.start_tournament_matches(tournament)
+            # Broadcast again after creating tournament
+            await self.broadcast_player_lists()
 
+    @database_sync_to_async
+    def get_player_details(self, username: str) -> dict:
+        try:
+            player = Player.objects.get(username=username)
+            return {
+                "username": player.tournament_username,
+                "avatar": player.get_avatar_url()
+            }
+        except Player.DoesNotExist:
+            pass
 
     async def broadcast_player_lists(self):
-        players_in_tournaments = {}
-        for tournament_id, tournament in self.tournament_manager.tournaments.items():
-            players_in_tournaments[tournament_id] = {
-                'players': tournament.players,
-                'state': tournament.state.value,
-                'matches': {
-                    match_id: {
-                        'player1': match.player1,
-                        'player2': match.player2,
-                        'winner': match.winner,
-                        'completed': match.game_completed
-                    }
-                    for match_id, match in tournament.matches.items()
+        try:
+            players_in_tournaments = {}
+            for tournament_id, tournament in self.tournament_manager.tournaments.items():
+                # Get semifinal matches and winners
+                semifinal_matches = {
+                    match_id: match 
+                    for match_id, match in tournament.matches.items() 
+                    if 'semi' in match_id
                 }
-            }
+                
+                # Get winners with their details
+                semi1_winner = next((match.winner for match_id, match in semifinal_matches.items() 
+                                if 'semi1' in match_id), None)
+                semi2_winner = next((match.winner for match_id, match in semifinal_matches.items() 
+                                if 'semi2' in match_id), None)
+                
+                # Get player details for winners
+                semi1_winner_details = await self.get_player_details(semi1_winner) if semi1_winner else None
+                semi2_winner_details = await self.get_player_details(semi2_winner) if semi2_winner else None
 
-        message = {
-            "type": "players_update",
-            "data": {
-                "waiting_players": self.tournament_manager.waiting_players,
-                "all_connected_players": list(self.connected_players),
-                "tournaments": players_in_tournaments,
-                "tournament_states": {
-                    t_id: t.state.value 
-                    for t_id, t in self.tournament_manager.tournaments.items()
+                players_in_tournaments[tournament_id] = {
+                    'matches': {
+                        match_id: {
+                            'player1': await self.get_player_details(match.player1),
+                            'player2': await self.get_player_details(match.player2),
+                            'winner': await self.get_player_details(match.winner) if match.winner else None,
+                            'completed': match.game_completed,
+                            'match_type': 'semi1' if 'semi1' in match_id else 'semi2' if 'semi2' in match_id else 'finals'
+                        }
+                        for match_id, match in tournament.matches.items()
+                    },
+                    'semifinal_winners': {
+                        'semi1': semi1_winner_details,
+                        'semi2': semi2_winner_details
+                    },
+                    'state': tournament.state.value
+                }
+
+            message = {
+                "type": "players_update",
+                "data": {
+                    "waiting_players": [
+                        await self.get_player_details(player) 
+                        for player in self.tournament_manager.waiting_players
+                    ],
+                    "all_connected_players": [
+                        await self.get_player_details(player) 
+                        for player in self.connected_players
+                    ],
+                    "tournaments": players_in_tournaments,
+                    "tournament_states": {
+                        t_id: t.state.value 
+                        for t_id, t in self.tournament_manager.tournaments.items()
+                    }
                 }
             }
-        }
-        
-        await self.channel_layer.group_send(
-            self.TOURNAMENT_GROUP,
-            {
-                "type": "tournament_update",
-                "message": message
-            }
-        )
+            
+            print(f"Broadcasting tournament update: {message}")  # Debug log
+            
+            await self.channel_layer.group_send(
+                self.TOURNAMENT_GROUP,
+                {
+                    "type": "tournament_update",
+                    "message": message
+                }
+            )
+        except Exception as e:
+            print(f"Error in broadcast_player_lists: {str(e)}")  # Debug log
+            raise
 
     async def tournament_update(self, event):
         """Handle updates from channel layer"""
@@ -750,11 +869,12 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         finals_match = tournament.matches[next(iter(tournament.current_round_matches))]
         tournament.state = TournamentState.COMPLETED
         
+        winner = await self.get_player_details(finals_match.winner)
         # Notify all tournament players about the winner
         message = {
             "type": "tournament_complete",
             "tournament_id": tournament.id,
-            "winner": finals_match.winner
+            "winner": winner
         }
         
         await self.channel_layer.group_send(

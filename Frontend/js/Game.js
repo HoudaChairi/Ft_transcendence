@@ -32,6 +32,9 @@ import {
 	REMOTE,
 	TWOFA,
 } from './Sbook';
+import { CHOICES, MATCHMAKING, OFFLINE, START, TOURNAMENT, WIN } from './Start';
+
+import { GAME_CONSTANTS, Vector3 } from './Game-managers';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -67,10 +70,10 @@ class Game {
 	#scoreL = 0;
 	#scoreR = 0;
 
-	#velocity = 5;
-	#factor = 1;
+	#velocity = GAME_CONSTANTS.VELOCITY;
+	#factor = GAME_CONSTANTS.FACTOR;
 	#ballDirection = new THREE.Vector3();
-	#minDir = 0.69;
+	#minDir = GAME_CONSTANTS.MIN_DIR;
 	#playerDirection = 0;
 	#player2Direction = 0;
 	#hasChanges = false;
@@ -97,6 +100,9 @@ class Game {
 	#enabled2fa = false;
 	#isRemote = false;
 	#selectedTab = 1;
+
+	#started = false;
+	#isOffline = false;
 
 	constructor() {
 		this.#home = {
@@ -156,6 +162,11 @@ class Game {
 		this.#addSignUpCss2D();
 		this.#addHomeCss2D();
 		this.#addGameCss2D();
+		this.#addOfflineCss2D();
+		this.#addMatchmakingCss2D();
+		this.#addStartCss2D();
+		this.#addTournamentCss2D();
+		this.#addWinCss2D();
 		this.#addPanerCss2D();
 		this.#addSettingsCss2D();
 		this.#addSbookSettingsCss2D();
@@ -1127,7 +1138,59 @@ class Game {
 		this.#css2DObject.home.renderOrder = 1;
 	}
 
-	#addGameCss2D(){}
+	#addGameCss2D() {
+		const homeContainer = document.createElement('div');
+		homeContainer.className = 'container';
+		homeContainer.innerHTML = CHOICES;
+
+		this.#css2DObject.game = new CSS2DObject(homeContainer);
+		this.#css2DObject.game.name = 'game';
+	}
+
+	#addOfflineCss2D() {
+		const homeContainer = document.createElement('div');
+		homeContainer.className = 'container';
+		homeContainer.innerHTML = OFFLINE;
+
+		this.#css2DObject.offline = new CSS2DObject(homeContainer);
+		this.#css2DObject.offline.name = 'offline';
+	}
+
+	#addMatchmakingCss2D() {
+		const homeContainer = document.createElement('div');
+		homeContainer.className = 'container-match';
+		homeContainer.innerHTML = MATCHMAKING;
+
+		this.#css2DObject.match = new CSS2DObject(homeContainer);
+		this.#css2DObject.match.name = 'match';
+	}
+
+	#addStartCss2D() {
+		const homeContainer = document.createElement('div');
+		homeContainer.className = 'container-match';
+		homeContainer.innerHTML = START;
+
+		this.#css2DObject.start = new CSS2DObject(homeContainer);
+		this.#css2DObject.start.name = 'start';
+	}
+
+	#addTournamentCss2D() {
+		const homeContainer = document.createElement('div');
+		homeContainer.className = 'tournament-container';
+		homeContainer.innerHTML = TOURNAMENT;
+
+		this.#css2DObject.tournament = new CSS2DObject(homeContainer);
+		this.#css2DObject.tournament.name = 'tournament';
+	}
+
+	#addWinCss2D() {
+		const homeContainer = document.createElement('div');
+		homeContainer.className = 'win';
+		homeContainer.innerHTML = WIN;
+
+		this.#css2DObject.win = new CSS2DObject(homeContainer);
+		this.#css2DObject.win.name = 'win';
+	}
 
 	#addLegendCss2d() {
 		const legendContainer = document.createElement('div');
@@ -1727,14 +1790,19 @@ class Game {
 
 	#update() {
 		this.#hasChanges = false;
+
 		if (this.#ball) {
 			this.#ball.position.add(this.#ballDirection);
 			this.#ball.rotation.x += this.#ballDirection.x;
 			this.#ball.rotation.y += this.#ballDirection.y;
-			this.#ballBox.setFromObject(this.#ball);
-			// this.#checkCollisions();
+
+			if (this.#isOffline) {
+				this.#checkCollisions();
+			}
+
 			this.#hasChanges = true;
 		}
+
 		if (this.#player) {
 			this.#handelePlayerMovement(
 				this.#player,
@@ -1743,6 +1811,7 @@ class Game {
 				'Racket'
 			);
 		}
+
 		if (this.#player2) {
 			this.#handelePlayerMovement(
 				this.#player2,
@@ -1811,18 +1880,17 @@ class Game {
 	}
 
 	#handelePlayerMovement(player, playerBox, playerDirection, name) {
-		const wallBox =
-			playerDirection === 1 ? this.#wallsBoxes[0] : this.#wallsBoxes[1];
-
 		playerBox.setFromObject(player.getObjectByName(name));
-		const target = player.position.y + this.#velocity * playerDirection;
-		for (
-			;
-			player.position.y !== target;
-			player.position.y += playerDirection
-		) {
-			if (playerBox.intersectsBox(wallBox)) break;
+
+		if (playerDirection !== 0) {
+			const newY =
+				player.position.y +
+				GAME_CONSTANTS.PADDLE_SPEED * playerDirection;
+			if (this.#checkPlayerBounds(newY)) {
+				player.position.y = newY;
+			}
 		}
+
 		this.#hasChanges = true;
 	}
 
@@ -1844,11 +1912,24 @@ class Game {
 	}
 
 	#checkCollisions() {
-		this.#wallsBoxes.forEach((wallBox, i) => {
-			if (this.#ballBox.intersectsBox(wallBox)) {
-				this.#handleBallWallCollision(i);
-			}
-		});
+		if (Math.abs(this.#ball.position.y) >= GAME_CONSTANTS.COURT_HEIGHT) {
+			this.#handleBallWallCollision();
+		}
+
+		this.#ballBox.setFromObject(this.#ball);
+		this.#playerBox.setFromObject(this.#player.getObjectByName('Racket'));
+		this.#player2Box.setFromObject(
+			this.#player2.getObjectByName('Racket001')
+		);
+		this.#goalRBox.setFromObject(this.#goalR);
+		this.#goalLBox.setFromObject(this.#goalL);
+
+		if (this.#ballBox.intersectsBox(this.#playerBox)) {
+			this.#handlePlayerCollision(this.#player);
+		}
+		if (this.#ballBox.intersectsBox(this.#player2Box)) {
+			this.#handlePlayerCollision(this.#player2);
+		}
 
 		if (this.#ballBox.intersectsBox(this.#goalRBox)) {
 			this.#handleBallGoalCollision('goalR');
@@ -1856,36 +1937,24 @@ class Game {
 		if (this.#ballBox.intersectsBox(this.#goalLBox)) {
 			this.#handleBallGoalCollision('goalL');
 		}
-
-		if (this.#ballBox.intersectsBox(this.#playerBox)) {
-			this.#handlePlayerCollision(this.#player);
-		}
-
-		if (this.#ballBox.intersectsBox(this.#player2Box)) {
-			this.#handlePlayerCollision(this.#player2);
-		}
 	}
 
 	#handlePlayerCollision(player) {
-		const direction = this.#ball.position
-			.clone()
-			.sub(player.position)
-			.normalize();
-		direction.x =
-			Math.sign(direction.x) *
-			Math.max(Math.abs(direction.x), this.#minDir);
-		direction.y =
-			Math.sign(direction.y) *
-			Math.max(Math.abs(direction.y), this.#minDir);
-		direction.z =
-			Math.sign(direction.z) *
-			Math.max(Math.abs(direction.z), this.#minDir);
-		this.#ballDirection = direction.multiplyScalar(
-			this.#velocity * this.#factor
-		);
+		const relativeY =
+			(this.#ball.position.y - player.position.y) /
+			GAME_CONSTANTS.PADDLE_HEIGHT;
+		const direction = player.position.x < 0 ? 1 : -1;
+		this.#ballDirection.x = direction * this.#velocity * this.#factor;
+		this.#ballDirection.y = relativeY * this.#velocity * this.#factor;
+		const offset = 60 + GAME_CONSTANTS.BALL_RADIUS;
+		this.#ball.position.x = player.position.x + direction * offset;
 	}
 
 	#handleBallWallCollision() {
+		if (Math.abs(this.#ball.position.y) > GAME_CONSTANTS.COURT_HEIGHT) {
+			this.#ball.position.y =
+				Math.sign(this.#ball.position.y) * GAME_CONSTANTS.COURT_HEIGHT;
+		}
 		this.#ballDirection.y = -this.#ballDirection.y;
 	}
 
@@ -1894,7 +1963,27 @@ class Game {
 		this.#ball.position.set(0, 0, 0);
 		this.#updateScoreL(String(this.#scoreL));
 		this.#updateScoreR(String(this.#scoreR));
-		this.startBall();
+
+		if (!this.#checkWinCondition()) {
+			this.#startBall();
+		}
+	}
+
+	#endGame(winner) {
+		this.#resetGameState();
+		this.#ballDirection = new Vector3(0, 0, 0);
+	}
+
+	#checkWinCondition() {
+		if (this.#scoreL >= GAME_CONSTANTS.WIN_SCORE) {
+			this.#endGame('Player 1');
+			return true;
+		}
+		if (this.#scoreR >= GAME_CONSTANTS.WIN_SCORE) {
+			this.#endGame('Player 2');
+			return true;
+		}
+		return false;
 	}
 
 	#setObjects(model) {
@@ -1915,74 +2004,87 @@ class Game {
 		this.#resetScore();
 	}
 
-	// moveUp() {
-	// 	if (this.#checkPlayerCollisions(this.#player, -1, 'Racket')) {
-	// 		this.#playerDirection = -1;
-	// 		this.#hasChanges = true;
-	// 	} else {
-	// 		this.#playerDirection = 0;
-	// 		this.#hasChanges = true;
-	// 	}
-	// }
+	#moveUp() {
+		const newY = this.#player.position.y - GAME_CONSTANTS.PADDLE_SPEED;
+		if (this.#checkPlayerBounds(newY)) {
+			this.#playerDirection = -1;
+			this.#hasChanges = true;
+		} else {
+			this.#playerDirection = 0;
+		}
+	}
 
-	// moveDown() {
-	// 	if (this.#checkPlayerCollisions(this.#player, 1, 'Racket')) {
-	// 		this.#playerDirection = 1;
-	// 		this.#hasChanges = true;
-	// 	} else {
-	// 		this.#playerDirection = 0;
-	// 		this.#hasChanges = true;
-	// 	}
-	// }
+	#moveDown() {
+		const newY = this.#player.position.y + GAME_CONSTANTS.PADDLE_SPEED;
+		if (this.#checkPlayerBounds(newY)) {
+			this.#playerDirection = 1;
+			this.#hasChanges = true;
+		} else {
+			this.#playerDirection = 0;
+		}
+	}
 
-	// moveUp2() {
-	// 	if (this.#checkPlayerCollisions(this.#player2, -1, 'Racket001')) {
-	// 		this.#player2Direction = -1;
-	// 		this.#hasChanges = true;
-	// 	} else {
-	// 		this.#player2Direction = 0;
-	// 		this.#hasChanges = true;
-	// 	}
-	// }
+	#moveUp2() {
+		const newY = this.#player2.position.y - GAME_CONSTANTS.PADDLE_SPEED;
+		if (this.#checkPlayerBounds(newY)) {
+			this.#player2Direction = -1;
+			this.#hasChanges = true;
+		} else {
+			this.#player2Direction = 0;
+		}
+	}
 
-	// moveDown2() {
-	// 	if (this.#checkPlayerCollisions(this.#player2, 1, 'Racket001')) {
-	// 		this.#player2Direction = 1;
-	// 		this.#hasChanges = true;
-	// 	} else {
-	// 		this.#player2Direction = 0;
-	// 		this.#hasChanges = true;
-	// 	}
-	// }
+	#moveDown2() {
+		const newY = this.#player2.position.y + GAME_CONSTANTS.PADDLE_SPEED;
+		if (this.#checkPlayerBounds(newY)) {
+			this.#player2Direction = 1;
+			this.#hasChanges = true;
+		} else {
+			this.#player2Direction = 0;
+		}
+	}
 
-	// startBall() {
-	// 	let x = this.#random(-1.0, 1.0);
-	// 	let y = this.#random(-1.0, 1.0);
+	#checkPlayerBounds(newY) {
+		return (
+			Math.abs(newY) <=
+			GAME_CONSTANTS.COURT_HEIGHT - GAME_CONSTANTS.PADDLE_HEIGHT
+		);
+	}
 
-	// 	if (Math.abs(x) < this.#minDir) x = Math.sign(x) * this.#minDir;
-	// 	if (Math.abs(y) < this.#minDir) y = Math.sign(y) * this.#minDir;
+	#startBall() {
+		const angle = (Math.random() * Math.PI) / 2 - Math.PI / 4;
+		const direction = Math.random() < 0.5 ? -1 : 1;
 
-	// 	this.#ballDirection = new THREE.Vector3(x, y).multiplyScalar(
-	// 		this.#velocity * this.#factor
-	// 	);
-	// 	this.#hasChanges = true;
-	// }
+		let x = Math.cos(angle) * direction;
+		let y = Math.sin(angle);
 
-	// stopPlayerMovement() {
-	// 	this.#playerDirection = 0;
-	// 	this.#hasChanges = true;
-	// }
+		x = Math.sign(x) * Math.max(Math.abs(x), this.#minDir);
+		y = Math.sign(y) * Math.max(Math.abs(y), this.#minDir);
 
-	// stopPlayer2Movement() {
-	// 	this.#player2Direction = 0;
-	// 	this.#hasChanges = true;
-	// }
+		const vector = new Vector3(x, y, 0).normalize();
+		this.#ballDirection = new THREE.Vector3(
+			vector.x * this.#velocity * this.#factor,
+			vector.y * this.#velocity * this.#factor,
+			0
+		);
+		this.#hasChanges = true;
+	}
+
+	#stopPlayerMovement() {
+		this.#playerDirection = 0;
+		this.#hasChanges = true;
+	}
+
+	#stopPlayer2Movement() {
+		this.#player2Direction = 0;
+		this.#hasChanges = true;
+	}
 
 	#random(min, max) {
 		return Math.random() * (max - min) + min;
 	}
 
-	dispose() {
+	#dispose() {
 		if (this.#ball) this.#ball.geometry.dispose();
 		if (this.#ball.material) this.#ball.material.dispose();
 		if (this.#renderer) {
@@ -2266,16 +2368,13 @@ class Game {
 	}
 
 	#resetGameState() {
-		// Reset scores
 		this.#updateScoreL('0');
 		this.#updateScoreR('0');
 
-		// Reset ball position if needed
 		if (this.#ball) {
 			this.#ball.position.set(0, 0, 0);
 		}
 
-		// Reset paddle positions if needed
 		if (this.#player) {
 			this.#player.position.set(-1300, 0, 0);
 		}
@@ -2288,19 +2387,16 @@ class Game {
 
 	#updateGameState(game_data) {
 		if (this.#ball) {
-			// Update ball position
 			this.#ball.position.set(
 				game_data.ballPosition.x,
 				game_data.ballPosition.y,
 				game_data.ballPosition.z
 			);
 
-			// Add rotation for visual effect only
 			this.#ball.rotation.x += game_data.ballDirection.x;
 			this.#ball.rotation.y += game_data.ballDirection.y;
 		}
 
-		// Update paddles
 		game_data.paddlePositions.forEach(paddle => {
 			const paddleMesh =
 				paddle.playerId === 'player1' ? this.#player : this.#player2;
@@ -2313,7 +2409,6 @@ class Game {
 			}
 		});
 
-		// Update scores
 		if (game_data.scoreL !== undefined && game_data.scoreR !== undefined) {
 			this.#updateScoreL(String(game_data.scoreL));
 			this.#updateScoreR(String(game_data.scoreR));
@@ -2322,123 +2417,366 @@ class Game {
 		this.#hasChanges = true;
 	}
 
-	#twoPlayer() {
-		this.#gameWebSocket = new WebSocket(
-			`wss://${window.location.host}/api/ws/game/`
-		);
-
-		this.#gameWebSocket.onopen = e => {
-			const initData = {
-				username: this.#loggedUser,
-			};
-			this.#gameWebSocket.send(JSON.stringify(initData));
-			this.#initializeGame();
-		};
-
-		this.#gameWebSocket.onmessage = e => {
-			const data = JSON.parse(e.data);
-			if (data.type === 'update') {
-				this.#updateGameState(data);
-			}
-			if (data.type === 'game_end') {
-				console.log(data);
-			}
-		};
-
-		this.#gameWebSocket.onerror = error => {
-			console.error('WebSocket error:', error);
-		};
-
-		this.#gameWebSocket.onclose = e => {};
+	#matchmaking(data) {
+		['player1', 'player2'].forEach(player => {
+			this.#css2DObject.match.element.querySelector(
+				`#${player}`
+			).textContent = data[player].usr;
+			this.#css2DObject.match.element.querySelector(
+				`#${player}-avatar`
+			).src = data[player].avatar;
+		});
+		setTimeout(() => {
+			this.#scene.remove(this.#css2DObject.match);
+			this.#css2DObject.match.element.innerHTML = MATCHMAKING;
+		}, 4000);
 	}
 
-	#startTournamentMatch(matchData) {
-		// Check if we're already in this match
-		if (
-			this.#currentMatch &&
-			this.#currentMatch.match_id === matchData.match_id
-		) {
-			console.log('Already in this match, ignoring duplicate message');
-			return;
-		}
+	#twoPlayer() {
+		this.#scene.remove(this.#css2DObject.game);
 
-		// Store current match
-		this.#currentMatch = matchData;
+		this.#css2DObject.match.element.querySelector('#player1').textContent =
+			this.#loggedUser;
+		this.#css2DObject.match.element.querySelector('#player1-avatar').src =
+			document.querySelector('#profilePicImage').src;
+		this.#scene.add(this.#css2DObject.match);
 
-		// Close existing connection if any
 		if (this.#gameWebSocket) {
-			this.#gameWebSocket.close();
+			try {
+				this.#gameWebSocket.close();
+			} catch (e) {
+				console.error('Error closing existing WebSocket:', e);
+			}
 			this.#gameWebSocket = null;
 		}
 
-		// Create new connection
+		this.#resetGameState();
+
+		try {
+			this.#gameWebSocket = new WebSocket(
+				`wss://${window.location.host}/api/ws/game/`
+			);
+
+			if (!this.#gameWebSocket) {
+				throw new Error('Failed to create WebSocket');
+			}
+
+			this.#gameWebSocket.onopen = () => {
+				try {
+					const initData = {
+						username: this.#loggedUser,
+					};
+					if (
+						this.#gameWebSocket &&
+						this.#gameWebSocket.readyState === WebSocket.OPEN
+					) {
+						this.#gameWebSocket.send(JSON.stringify(initData));
+						this.#initializeGame();
+					}
+				} catch (e) {
+					console.error('Error in WebSocket onopen:', e);
+					this.#handleWebSocketError();
+				}
+			};
+
+			this.#gameWebSocket.onmessage = e => {
+				try {
+					if (!this.#gameWebSocket) return;
+
+					const data = JSON.parse(e.data);
+					switch (data.type) {
+						case 'game_start':
+							this.#matchmaking(data.players);
+							break;
+						case 'update':
+							this.#updateGameState(data);
+							break;
+						case 'game_end':
+							this.#handleGameEnd();
+							break;
+						case 'error':
+							console.error('Game error:', data.message);
+							this.#handleWebSocketError();
+							break;
+					}
+				} catch (error) {
+					console.error('Error processing game message:', error);
+					this.#handleWebSocketError();
+				}
+			};
+
+			this.#gameWebSocket.onerror = error => {
+				console.error('WebSocket error:', error);
+				this.#handleWebSocketError();
+			};
+
+			this.#gameWebSocket.onclose = () => {
+				this.#handleWebSocketClose();
+			};
+		} catch (error) {
+			console.error('Failed to create WebSocket connection:', error);
+			this.#handleWebSocketError();
+		}
+	}
+
+	#handleWebSocketError() {
+		if (this.#gameWebSocket) {
+			try {
+				this.#gameWebSocket.close();
+			} catch (e) {
+				console.error('Error closing WebSocket:', e);
+			}
+			this.#gameWebSocket = null;
+		}
+		this.#switchHome('home');
+	}
+
+	#handleWebSocketClose() {
+		if (this.#gameWebSocket) {
+			this.#gameWebSocket = null;
+			this.#resetGameState();
+			this.#switchHome('home');
+		}
+	}
+
+	#handleGameEnd() {
+		this.#resetGameState();
+
+		if (this.#gameWebSocket) {
+			try {
+				this.#gameWebSocket.close();
+			} catch (e) {
+				console.error('Error closing WebSocket:', e);
+			}
+			this.#gameWebSocket = null;
+		}
+
+		this.#scene.remove(this.#css2DObject.match);
+		this.#css2DObject.match.element.innerHTML = MATCHMAKING;
+
+		this.#scene.add(this.#css2DObject.game);
+	}
+
+	#startTournamentMatch(matchData) {
+		if (this.#isCurrentMatch(matchData)) return;
+
+		this.#prepareForNewMatch(matchData);
+		this.#updateStartScreen(matchData);
+		this.#setupStartButton(matchData);
+	}
+
+	#isCurrentMatch(matchData) {
+		return (
+			this.#currentMatch &&
+			this.#currentMatch.match_id === matchData.match_id
+		);
+	}
+
+	#prepareForNewMatch(matchData) {
+		this.#scene.remove(this.#css2DObject.tournament);
+		this.#currentMatch = matchData;
+		this.#cleanupGameWebSocket();
+	}
+
+	#updateStartScreen(matchData) {
+		const start = this.#css2DObject.start.element;
+
+		[matchData.player1, matchData.player2].forEach((player, i) => {
+			const playerElem = start.querySelector(`#player${i + 1}`);
+			const avatarElem = start.querySelector(`#player${i + 1}-avatar`);
+			if (playerElem && avatarElem) {
+				playerElem.textContent = player;
+				avatarElem.src = player.avatar || 'textures/svg/M.svg';
+			}
+		});
+
+		this.#scene.add(this.#css2DObject.start);
+	}
+
+	#setupStartButton(matchData) {
+		const startButton =
+			this.#css2DObject.start.element.querySelector('.start-button');
+		if (!startButton) return;
+
+		startButton.addEventListener('click', () => {
+			this.#scene.remove(this.#css2DObject.start);
+			this.#initiateTournamentGame(matchData);
+		});
+	}
+
+	#initiateTournamentGame(matchData) {
 		try {
 			this.#gameWebSocket = new WebSocket(
 				`wss://${window.location.host}/api/ws/game/`
 			);
 
 			this.#gameWebSocket.onopen = () => {
-				console.log('Tournament game connecting...');
-
-				this.#gameWebSocket.send(
-					JSON.stringify({
-						username: this.#loggedUser,
-						tournament_data: {
-							player1: matchData.player1,
-							player2: matchData.player2,
-							tournament_id: matchData.tournament_id,
-							match_id: matchData.match_id,
-							consumer: matchData.consumer,
-						},
-					})
-				);
+				this.#sendTournamentGameInit(matchData);
 				this.#initializeGame();
 			};
 
-			this.#gameWebSocket.onmessage = e => {
-				try {
-					const data = JSON.parse(e.data);
-					if (data.type === 'update') {
-						this.#updateGameState(data);
-					} else if (data.type === 'game_end') {
-						console.log('Game ended:', data);
-						this.#currentMatch = null; // Clear current match
-						this.#gameWebSocket.close();
-						this.#gameWebSocket = null;
-					}
-				} catch (error) {
-					console.error('Error handling game message:', error);
-				}
-			};
-
-			this.#gameWebSocket.onerror = error => {
-				console.error('Game WebSocket error:', error);
-			};
-
-			this.#gameWebSocket.onclose = () => {
-				console.log('Game connection closed');
-				this.#gameWebSocket = null;
-			};
+			this.#setupTournamentGameHandlers();
 		} catch (error) {
-			console.error('Error creating game connection:', error);
-			this.#gameWebSocket = null;
-			this.#currentMatch = null;
+			console.error('Error creating tournament game connection:', error);
+			this.#cleanupGameState();
 		}
 	}
 
-	#tournament() {
-		if (this.#tournamentWebSocket) {
-			this.#tournamentWebSocket.close();
-			this.#tournamentWebSocket = null;
-		}
-
-		this.#tournamentWebSocket = new WebSocket(
-			`wss://${window.location.host}/api/ws/tournament/`
+	#sendTournamentGameInit(matchData) {
+		this.#gameWebSocket?.send(
+			JSON.stringify({
+				username: this.#loggedUser,
+				tournament_data: {
+					player1: matchData.player1,
+					player2: matchData.player2,
+					tournament_id: matchData.tournament_id,
+					match_id: matchData.match_id,
+					consumer: matchData.consumer,
+				},
+			})
 		);
+	}
+
+	#setupTournamentGameHandlers() {
+		if (!this.#gameWebSocket) return;
+
+		this.#gameWebSocket.onmessage = e => {
+			try {
+				const data = JSON.parse(e.data);
+				this.#handleTournamentGameMessage(data);
+			} catch (error) {
+				console.error('Error handling game message:', error);
+			}
+		};
+
+		this.#gameWebSocket.onerror = error => {
+			console.error('Tournament game WebSocket error:', error);
+			this.#cleanupGameState();
+		};
+
+		this.#gameWebSocket.onclose = () => {
+			this.#gameWebSocket = null;
+		};
+	}
+
+	#handleTournamentGameMessage(data) {
+		switch (data.type) {
+			case 'update':
+				this.#updateGameState(data);
+				break;
+			case 'game_end':
+				this.#handleTournamentGameEnd();
+				break;
+		}
+	}
+
+	#handleTournamentGameEnd() {
+		this.#scene.add(this.#css2DObject.tournament);
+		this.#cleanupGameState();
+	}
+
+	#cleanupGameState() {
+		this.#currentMatch = null;
+		this.#cleanupGameWebSocket();
+	}
+
+	#cleanupGameWebSocket() {
+		if (this.#gameWebSocket) {
+			try {
+				this.#gameWebSocket.close();
+			} catch (e) {
+				console.error('Error closing game WebSocket:', e);
+			}
+			this.#gameWebSocket = null;
+		}
+	}
+
+	#updateTournamentUI(data) {
+		try {
+			const tournamentElem = this.#css2DObject.tournament.element;
+
+			if (!this.#started) {
+				tournamentElem.innerHTML = TOURNAMENT;
+				data.waiting_players.forEach((player, i) => {
+					if (i < 4) {
+						const playerAvatar = tournamentElem.querySelector(
+							`#player${i + 1}-avatar`
+						);
+						const playerName = tournamentElem.querySelector(
+							`#player${i + 1}`
+						);
+						if (playerAvatar && playerName) {
+							playerAvatar.src = player.avatar;
+							playerName.textContent = player.username;
+						}
+					}
+				});
+			} else {
+				const tournament = Object.values(data.tournaments)[0];
+				if (!tournament) return;
+
+				const { semifinal_winners } = tournament;
+
+				['semi1', 'semi2'].forEach((semi, index) => {
+					const winner = semifinal_winners[semi];
+					if (winner) {
+						const winnerAvatar = tournamentElem.querySelector(
+							`#winner${index + 1}-avatar`
+						);
+						const winnerName = tournamentElem.querySelector(
+							`#winner${index + 1}`
+						);
+						if (winnerAvatar && winnerName) {
+							winnerAvatar.src = winner.avatar;
+							winnerName.textContent = winner.username;
+						}
+					}
+				});
+			}
+		} catch (error) {
+			console.error('Error updating tournament UI:', error);
+		}
+	}
+
+	#updateFinale(data) {
+		try {
+			this.#scene.add(this.#css2DObject.tournament);
+			const tournamentElem = this.#css2DObject.tournament.element;
+
+			if (data.winner) {
+				const winnerAvatar =
+					tournamentElem.querySelector('#final-avatar');
+				const winnerName = tournamentElem.querySelector('#final');
+				if (winnerAvatar && winnerName) {
+					winnerAvatar.src = data.winner.avatar;
+					winnerName.textContent = data.winner.username;
+				}
+			}
+		} catch (error) {
+			console.error('Error updating finale:', error);
+		}
+	}
+
+	#tournamentStart() {
+		this.#cleanupTournamentWebSocket();
+
+		try {
+			this.#tournamentWebSocket = new WebSocket(
+				`wss://${window.location.host}/api/ws/tournament/`
+			);
+
+			this.#setupTournamentWebSocketHandlers();
+		} catch (error) {
+			console.error('Error starting tournament:', error);
+			this.#switchHome('game');
+		}
+	}
+
+	#setupTournamentWebSocketHandlers() {
+		if (!this.#tournamentWebSocket) return;
 
 		this.#tournamentWebSocket.onopen = () => {
-			console.log('Connected to tournament WebSocket.');
-			this.#tournamentWebSocket.send(
+			this.#tournamentWebSocket?.send(
 				JSON.stringify({
 					type: 'join_tournament',
 					username: this.#loggedUser,
@@ -2449,29 +2787,7 @@ class Game {
 		this.#tournamentWebSocket.onmessage = e => {
 			try {
 				const data = JSON.parse(e.data);
-				console.log('Tournament message received:', data);
-
-				if (data.type === 'match_ready') {
-					// Double check this is our match
-					if (
-						this.#loggedUser === data.player1 ||
-						this.#loggedUser === data.player2
-					) {
-						console.log(
-							`Match notification for ${this.#loggedUser}:`,
-							data
-						);
-						if (
-							!this.#currentMatch ||
-							this.#currentMatch.match_id !== data.match_id
-						) {
-							console.log('Starting new match:', data);
-							this.#startTournamentMatch(data);
-						}
-					}
-				} else if (data.type === 'players_update') {
-					console.log('Players list updated:', data.data);
-				}
+				this.#handleTournamentMessage(data);
 			} catch (error) {
 				console.error('Error handling tournament message:', error);
 			}
@@ -2479,17 +2795,62 @@ class Game {
 
 		this.#tournamentWebSocket.onerror = error => {
 			console.error('Tournament WebSocket error:', error);
+			this.#cleanupTournamentWebSocket();
 		};
 
 		this.#tournamentWebSocket.onclose = () => {
-			console.log('Tournament connection closed');
+			this.#started = false;
 			this.#tournamentWebSocket = null;
-			// Optional: Attempt to reconnect after a delay
-			// setTimeout(() => this.#tournament(), 3000);
 		};
 	}
 
-	cleanup() {
+	#handleTournamentMessage(data) {
+		switch (data.type) {
+			case 'match_ready':
+				this.#handleMatchReady(data);
+				break;
+			case 'players_update':
+				this.#updateTournamentUI(data.data);
+				break;
+			case 'tournament_complete':
+				this.#updateFinale(data);
+				break;
+			default:
+				console.warn('Unknown tournament message type:', data.type);
+		}
+	}
+
+	#handleMatchReady(data) {
+		if (!this.#isPlayerInMatch(data)) return;
+
+		this.#started = true;
+		if (
+			!this.#currentMatch ||
+			this.#currentMatch.match_id !== data.match_id
+		) {
+			setTimeout(() => this.#startTournamentMatch(data), 3000);
+		}
+	}
+
+	#isPlayerInMatch(matchData) {
+		return (
+			this.#loggedUser === matchData.player1 ||
+			this.#loggedUser === matchData.player2
+		);
+	}
+
+	#cleanupTournamentWebSocket() {
+		if (this.#tournamentWebSocket) {
+			try {
+				this.#tournamentWebSocket.close();
+			} catch (e) {
+				console.error('Error closing tournament WebSocket:', e);
+			}
+			this.#tournamentWebSocket = null;
+		}
+	}
+
+	#cleanup() {
 		if (this.#gameWebSocket) {
 			this.#gameWebSocket.close();
 			this.#gameWebSocket = null;
@@ -2501,35 +2862,139 @@ class Game {
 		this.#currentMatch = null;
 	}
 
+	#offline() {
+		this.#scene.remove(this.#css2DObject.game);
+		this.#scene.add(this.#css2DObject.offline);
+		this.#isOffline = true;
+		this.#css2DObject.offline.element
+			.querySelector('.card-container')
+			.addEventListener('click', e => {
+				const btn = e.target.closest('.card').id;
+				if (btn) {
+					const choices = {
+						singleplayer: this.#singleplayer.bind(this),
+						multiplayer: this.#multiplayer.bind(this),
+					};
+					choices[btn]();
+				}
+			});
+	}
+
+	#singleplayer() {
+		this.#scene.remove(this.#css2DObject.offline);
+		this.#css2DObject.win.element.querySelector('#win-avatar').src =
+			this.#css2DObject.profilepic.element.src;
+		this.#scene.add(this.#css2DObject.win);
+	}
+
+	#multiplayer() {
+		this.#scene.remove(this.#css2DObject.offline);
+		this.#bindKeys('offline');
+		setTimeout(() => this.#startBall(), 4000);
+	}
+
+	#online() {
+		this.#scene.remove(this.#css2DObject.game);
+		this.#bindKeys('online');
+		this.#twoPlayer();
+	}
+
+	#tournament() {
+		this.#scene.remove(this.#css2DObject.game);
+		this.#scene.add(this.#css2DObject.tournament);
+		this.#bindKeys('online');
+		this.#tournamentStart();
+	}
+
 	#GamePage() {
-		// this.#twoPlayer();
-		// this.#tournament();
+		this.#isOffline = false;
+		this.#css2DObject.game.element
+			.querySelector('.card-container')
+			.addEventListener('click', e => {
+				const btn = e.target.closest('.card').id;
+				if (btn) {
+					const choices = {
+						offline: this.#offline.bind(this),
+						online: this.#online.bind(this),
+						tournament: this.#tournament.bind(this),
+					};
+					choices[btn]();
+				}
+			});
 	}
 
 	#switchHome(home) {
-		if (this.#gameWebSocket) this.#gameWebSocket.close();
-		if (home !== 'chat') this.#onlineSocket?.close();
+		this.#isOffline = false;
+		this.#cleanupWebSockets(home);
+		[
+			'game',
+			'chat',
+			'leaderboard',
+			'offline',
+			'match',
+			'tournament',
+			'star',
+		].forEach(ele => {
+			this.#scene.remove(this.#css2DObject[ele]);
+		});
 
+		this.#css2DObject.home.element.innerHTML = this.#home[home];
+		this.#updateUIElements(home);
+
+		if (home === 'chat') {
+			this.#setupChat();
+		} else if (home === 'game') {
+			this.#GamePage();
+		}
+
+		history.replaceState(null, null, `/${home}`);
+		this.#scene.add(this.#css2DObject[home]);
+	}
+
+	#cleanupWebSockets(newPage) {
+		if (this.#gameWebSocket) {
+			try {
+				this.#gameWebSocket.close();
+			} catch (e) {
+				console.error('Error closing game WebSocket:', e);
+			}
+			this.#gameWebSocket = null;
+		}
+
+		if (this.#tournamentWebSocket) {
+			try {
+				this.#tournamentWebSocket.close();
+			} catch (e) {
+				console.error('Error closing game WebSocket:', e);
+			}
+			this.#tournamentWebSocket = null;
+		}
+
+		if (newPage !== 'chat' && this.#onlineSocket) {
+			try {
+				this.#onlineSocket.close();
+			} catch (e) {
+				console.error('Error closing online socket:', e);
+			}
+			this.#onlineSocket = null;
+		}
+	}
+
+	#updateUIElements(page) {
 		const legendText = {
 			chat: LEGEND_CHAT,
 			leaderboard: LEGEND_LEADERBOARD,
 		};
 
-		['game', 'chat', 'leaderboard'].forEach(ele => {
-			this.#scene.remove(this.#css2DObject[ele]);
-		});
-
-		this.#css2DObject.home.element.innerHTML = this.#home[home];
-
-		if (home !== 'home' && home !== 'game') {
+		if (page !== 'home' && page !== 'game') {
 			this.#css2DObject.profilepic.element.classList.add(
 				'profile-pic-tran'
 			);
 
-			if (legendText[home]) {
+			if (legendText[page]) {
 				this.#css2DObject.legend.element.querySelector(
 					'.dont-bother-me'
-				).textContent = legendText[home];
+				).textContent = legendText[page];
 				this.#scene.add(this.#css2DObject.legend);
 			}
 		} else {
@@ -2538,37 +3003,37 @@ class Game {
 			);
 			this.#scene.remove(this.#css2DObject.legend);
 		}
-		if (home === 'chat') {
-			this.#switchChatTab(1);
-			this.#onlineSocket = new WebSocket(
-				`wss://${window.location.host}/api/ws/online_status/${
-					this.#loggedUser
-				}/`
-			);
+	}
 
-			this.#onlineSocket.onopen = e => {};
+	#setupChat() {
+		this.#switchChatTab(1);
 
-			this.#onlineSocket.onmessage = e => {
+		this.#onlineSocket = new WebSocket(
+			`wss://${window.location.host}/api/ws/online_status/${
+				this.#loggedUser
+			}/`
+		);
+
+		this.#onlineSocket.onopen = () => {};
+
+		this.#onlineSocket.onmessage = e => {
+			try {
 				const data = JSON.parse(e.data);
 				this.#onlineUsers = data.online_users;
 				this.#switchChatTab(this.#selectedTab);
-			};
+			} catch (error) {
+				console.error('Error processing online status message:', error);
+			}
+		};
 
-			this.#onlineSocket.onerror = error => {
-				console.error('WebSocket error:', error);
-			};
+		this.#onlineSocket.onerror = error => {
+			console.error('Online status WebSocket error:', error);
+		};
 
-			this.#onlineSocket.onclose = e => {};
-		}
-		if (home === 'game') {
-			this.#GamePage();
-		}
-
-		history.replaceState(null, null, `/${home}`);
-		this.#scene.add(this.#css2DObject[home]);
+		this.#onlineSocket.onclose = () => {};
 	}
 
-	sendMovement(direction) {
+	#sendMovement(direction) {
 		this.#gameWebSocket?.send(
 			JSON.stringify({
 				action: 'move',
@@ -2577,12 +3042,67 @@ class Game {
 		);
 	}
 
-	stopMovement() {
+	#stopMovement() {
 		this.#gameWebSocket?.send(
 			JSON.stringify({
 				action: 'stop_move',
 			})
 		);
+	}
+
+	#bindKeys(mode) {
+		const keyState = new Set();
+
+		window.addEventListener('keydown', e => {
+			keyState.add(e.key);
+			this.#bindDownMode(e, mode, keyState);
+		});
+
+		window.addEventListener('keyup', e => {
+			keyState.delete(e.key);
+			this.#bindUpMode(e, mode, keyState);
+		});
+	}
+
+	#bindDownMode(e, mode, keyState) {
+		const KEY_W = 'w';
+		const KEY_S = 's';
+		const KEY_UP = 'ArrowUp';
+		const KEY_DOWN = 'ArrowDown';
+
+		if (mode === 'online') {
+			if (keyState.has(KEY_W)) this.#sendMovement('moveUp');
+			if (keyState.has(KEY_S)) this.#sendMovement('moveDown');
+			if (keyState.has(KEY_UP)) this.#sendMovement('moveUp');
+			if (keyState.has(KEY_DOWN)) this.#sendMovement('moveDown');
+		} else if (mode === 'offline') {
+			if (keyState.has(KEY_W)) this.#moveUp();
+			if (keyState.has(KEY_S)) this.#moveDown();
+			if (keyState.has(KEY_UP)) this.#moveUp2();
+			if (keyState.has(KEY_DOWN)) this.#moveDown2();
+		} else if (mode === 'AI') {
+			if (keyState.has(KEY_W)) this.#moveUp();
+			if (keyState.has(KEY_S)) this.#moveDown();
+		}
+	}
+
+	#bindUpMode(e, mode, keyState) {
+		const KEY_W = 'w';
+		const KEY_S = 's';
+		const KEY_UP = 'ArrowUp';
+		const KEY_DOWN = 'ArrowDown';
+
+		if (mode === 'online') {
+			this.#stopMovement();
+		} else if (mode === 'offline') {
+			if (!keyState.has(KEY_W) && !keyState.has(KEY_S))
+				this.#stopPlayerMovement();
+			if (!keyState.has(KEY_UP) && !keyState.has(KEY_DOWN))
+				this.#stopPlayer2Movement();
+		} else if (mode === 'AI') {
+			if (!keyState.has(KEY_W) && !keyState.has(KEY_S))
+				this.#stopPlayerMovement();
+		}
 	}
 }
 

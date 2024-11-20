@@ -1,13 +1,13 @@
 @font-face {
 	font-family: 'Frijole';
-	src: url('../fonts/Frijole-Regular.ttf') format('truetype');
+	src: url('/fonts/Frijole-Regular.ttf') format('truetype');
 	font-weight: normal;
 	font-style: normal;
 }
 
 @font-face {
 	font-family: 'Gabriela';
-	src: url('../fonts/Gabriela-Regular.ttf') format('truetype');
+	src: url('/fonts/Gabriela-Regular.ttf') format('truetype');
 	font-weight: normal;
 	font-style: normal;
 }
@@ -2331,4 +2331,491 @@ body {
 	justify-content: center;
 	gap: 1.25rem;
 	color: #6b3783;
+}
+
+.container {
+	top: calc(0%);
+	width: 100%;
+	height: 100%;
+	display: inline-flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.card-container {
+	flex: 1 1 0;
+	align-self: stretch;
+	display: inline-flex;
+	justify-content: center;
+	align-items: center;
+	gap: 141px;
+}
+
+.card-wrapper {
+	width: 452px;
+	height: 400px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.card {
+	width: 452px;
+	height: 400px;
+	padding: 32px;
+	box-sizing: border-box;
+	background-image: url('/textures/svg/game.svg');
+	background-size: 100% 100%;
+	background-repeat: no-repeat;
+	display: inline-flex;
+	flex-direction: column;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.card-content {
+	width: 388px;
+	height: 240px;
+	position: relative;
+}
+
+.card-title {
+	color: #d0c3a9;
+	font-size: 50px;
+	font-family: Gabriela;
+	font-weight: 400;
+	line-height: 75px;
+	word-wrap: break-word;
+}
+
+.title-offline {
+	color: #d0c3a9;
+	font-size: 50px;
+	font-family: Gabriela;
+	font-weight: 400;
+	line-height: 75px;
+	word-wrap: break-word;
+}
+
+.title-online {
+	color: #d0c3a9;
+	font-size: 50px;
+	font-family: Gabriela;
+	font-weight: 400;
+	line-height: 75px;
+	word-wrap: break-word;
+}
+
+.title-tournament {
+	color: #d0c3a9;
+	font-size: 50px;
+	font-family: Gabriela;
+	font-weight: 400;
+	line-height: 75px;
+	word-wrap: break-word;
+}
+
+.container-match {
+	top: calc(0%);
+	width: 100%;
+	height: 100%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.comparison-wrapper {
+	flex: 1;
+	align-self: stretch;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 150px;
+}
+
+.user-container {
+	width: 400px;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	align-items: center;
+	gap: 100px;
+}
+
+.user-image[src] {
+	display: block;
+}
+
+.user-image {
+	width: 300px;
+	height: 300px;
+	position: relative;
+	display: none;
+}
+
+.username-match {
+	width: 100%;
+	text-align: center;
+	color: #d0c3a9;
+	font-size: 50px;
+	font-family: 'Gabriela', serif;
+	font-weight: 400;
+	line-height: 75px;
+	word-wrap: break-word;
+}
+
+.center-icon-container {
+	width: 181px;
+	height: 181px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.center-icon-wrapper {
+	width: 181px;
+	height: 181px;
+	position: relative;
+}
+
+.center-icon {
+	width: 181px;
+	height: 181px;
+	position: absolute;
+	background-color: transparent;
+	left: 0;
+	top: 0;
+}
+
+.tournament-container {
+	top: 0%;
+	width: 1920px;
+	height: 1080px;
+	position: relative;
+}
+
+.bracket-section {
+	width: 960px;
+	height: 1080px;
+	position: absolute;
+	top: 0;
+}
+
+.right-bracket {
+	left: 960px;
+}
+
+.left-bracket {
+	left: 0;
+}
+
+.player-container {
+	position: absolute;
+	display: inline-flex;
+	align-items: center;
+	gap: 40px;
+}
+
+.player-container.top {
+	top: 95px;
+}
+
+.right-bracket .player-container.top {
+	left: 150px;
+	justify-content: flex-start;
+}
+
+.right-bracket .player-container.bottom {
+	left: 339px;
+	top: 785px;
+	justify-content: flex-end;
+	width: 471px;
+}
+
+.left-bracket .player-container.bottom {
+	left: 150px;
+	top: 785px;
+	justify-content: flex-start;
+}
+
+.left-bracket .player-container.top {
+	left: 381px;
+	top: 95px;
+	justify-content: flex-end;
+}
+
+.winner-container {
+	position: absolute;
+	display: inline-flex;
+	align-items: center;
+	gap: 40px;
+}
+
+.right-bracket .winner-container {
+	left: 429px;
+	top: 415px;
+	justify-content: flex-start;
+}
+
+.left-bracket .winner-container {
+	left: 23px;
+	top: 415px;
+	justify-content: flex-end;
+}
+
+.final-winner-container {
+	height: 430px;
+	left: 810px;
+	top: 390px;
+	position: absolute;
+	display: inline-flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	gap: 40px;
+}
+
+.player-image,
+.winner-image,
+.final-winner-image {
+	position: relative;
+	visibility: hidden;
+}
+
+.player-image[src]:not([src='']),
+.winner-image[src]:not([src='']),
+.final-winner-image[src]:not([src='']) {
+	visibility: visible;
+}
+
+.player-image {
+	width: 200px;
+	height: 200px;
+}
+
+.winner-image {
+	width: 250px;
+	height: 250px;
+}
+
+.final-winner-image {
+	width: 300px;
+	height: 300px;
+}
+
+.player-name {
+	color: #d0c3a9;
+	font-size: 50px;
+	font-family: Gabriela;
+	font-weight: 400;
+	line-height: 75px;
+	word-wrap: break-word;
+}
+
+.text-right {
+	text-align: right;
+}
+
+.final-winner-name {
+	align-self: stretch;
+	text-align: center;
+	color: #d0c3a9;
+	font-size: 60px;
+	font-family: Gabriela;
+	font-weight: 400;
+	line-height: 90px;
+	word-wrap: break-word;
+}
+
+.start-button {
+	position: absolute;
+	width: 268px;
+	height: 66px;
+	left: 50%;
+	top: 67%;
+	transform: translateX(-50%);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 3px 88px;
+}
+
+.button-background {
+	width: 100%;
+	height: 100%;
+	position: absolute;
+	left: 0;
+	top: 0;
+}
+
+.start-text {
+	text-align: center;
+	color: #9e9070;
+	font-size: 40px;
+	font-family: Gabriela;
+	font-weight: 400;
+	line-height: 60px;
+	word-wrap: break-word;
+	position: relative;
+	z-index: 1;
+}
+
+.win {
+	top: 0%;
+	width: 1920px;
+	height: 1080px;
+	position: relative;
+}
+
+.left-player {
+	height: 550px;
+	left: 325px;
+	top: 195px;
+	position: absolute;
+	flex-direction: column;
+	justify-content: flex-start;
+	align-items: center;
+	gap: 40px;
+	display: inline-flex;
+}
+
+.right-player {
+	height: 418px;
+	left: 1195px;
+	top: 261px;
+	position: absolute;
+	flex-direction: column;
+	justify-content: flex-start;
+	align-items: center;
+	gap: 40px;
+	display: inline-flex;
+}
+
+.frame-container {
+	position: relative;
+}
+
+.left-player .frame-container {
+	width: 400px;
+	height: 440px;
+}
+
+.right-player .frame-container {
+	width: 300px;
+	height: 330px;
+}
+
+.frame-win {
+	position: absolute;
+	left: 0;
+	top: 0;
+}
+
+.left-player .frame-win {
+	width: 400px;
+	height: 440px;
+}
+
+.right-player .frame-win {
+	width: 300px;
+	height: 330px;
+}
+
+.left-player .avatar {
+	width: 369px;
+	height: 408px;
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+}
+
+.right-player .avatar {
+	width: 275px;
+	height: 305px;
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+}
+
+.plate-container {
+	justify-content: center;
+	align-items: center;
+	display: inline-flex;
+}
+
+.left-player .plate-container {
+	width: 250px;
+	height: 70px;
+}
+
+.right-player .plate-container {
+	width: 180px;
+	height: 48px;
+}
+
+.left-player .nameplate {
+	width: 250px;
+	height: 70px;
+}
+
+.right-player .nameplate {
+	width: 180px;
+	height: 48px;
+}
+
+.score-container {
+	width: 470px;
+	left: 725px;
+	top: 800px;
+	position: absolute;
+	justify-content: space-between;
+	align-items: center;
+	display: inline-flex;
+}
+
+.score {
+	text-align: center;
+	color: #d0c3a9;
+	font-size: 100px;
+	font-family: Gabriela;
+	font-weight: 400;
+	line-height: 150px;
+	word-wrap: break-word;
+}
+
+.separator {
+	width: 110px;
+	height: 0;
+	border: 10px #d0c3a9 solid;
+}
+
+.player-info {
+	display: flex;
+	align-items: center;
+	gap: 20px;
+	position: relative;
+}
+
+.username {
+	color: #d0c3a9;
+	font-family: Gabriela;
+	font-weight: 400;
+	position: absolute;
+	writing-mode: vertical-rl;
+	text-orientation: mixed;
+	top: 50%;
+	transform: translateY(-50%);
+}
+
+.left-player .username {
+	left: -120px;
+	font-size: 60px;
+	transform: translateY(-50%) rotate(180deg);
+}
+
+.right-player .username {
+	left: 80px;
+	font-size: 40px;
 }
