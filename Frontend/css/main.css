@@ -2768,7 +2768,7 @@ body {
 .score-container {
 	width: 470px;
 	left: 725px;
-	top: 800px;
+	top: 880px;
 	position: absolute;
 	justify-content: space-between;
 	align-items: center;
@@ -2798,24 +2798,20 @@ body {
 	position: relative;
 }
 
-.username {
+.player-name {
+	text-align: center;
 	color: #d0c3a9;
 	font-family: Gabriela;
 	font-weight: 400;
-	position: absolute;
-	writing-mode: vertical-rl;
-	text-orientation: mixed;
-	top: 50%;
-	transform: translateY(-50%);
+	word-wrap: break-word;
 }
 
-.left-player .username {
-	left: -120px;
+.left-player .player-name {
 	font-size: 60px;
-	transform: translateY(-50%) rotate(180deg);
+	line-height: 90px;
 }
 
-.right-player .username {
-	left: 80px;
+.right-player .player-name {
 	font-size: 40px;
+	line-height: 60px;
 }

@@ -1894,23 +1894,6 @@ class Game {
 		this.#hasChanges = true;
 	}
 
-	#checkPlayerCollisions(player, playerDirection, name) {
-		const newPlayer = player.clone();
-		const wallBox =
-			playerDirection === 1 ? this.#wallsBoxes[0] : this.#wallsBoxes[1];
-
-		newPlayer.position.y += this.#velocity * playerDirection;
-
-		const playerBox = new THREE.Box3().setFromObject(
-			newPlayer.getObjectByName(name)
-		);
-
-		if (playerBox.intersectsBox(wallBox)) {
-			return false;
-		}
-		return true;
-	}
-
 	#checkCollisions() {
 		if (Math.abs(this.#ball.position.y) >= GAME_CONSTANTS.COURT_HEIGHT) {
 			this.#handleBallWallCollision();
@@ -1969,18 +1952,41 @@ class Game {
 		}
 	}
 
-	#endGame(winner) {
+	#endGame(players) {
+		this.#displayWin(players);
 		this.#resetGameState();
 		this.#ballDirection = new Vector3(0, 0, 0);
 	}
 
 	#checkWinCondition() {
 		if (this.#scoreL >= GAME_CONSTANTS.WIN_SCORE) {
-			this.#endGame('Player 1');
+			this.#endGame({
+				winner: {
+					usr: this.#loggedUser,
+					avatar: this.#css2DObject.profilepic.element.src,
+					score: this.#scoreL,
+				},
+				loser: {
+					usr: 'Player 2',
+					avatar: '/textures/png/avatar.png',
+					score: this.#scoreR,
+				},
+			});
 			return true;
 		}
 		if (this.#scoreR >= GAME_CONSTANTS.WIN_SCORE) {
-			this.#endGame('Player 2');
+			this.#endGame({
+				winner: {
+					usr: 'Player 2',
+					avatar: '/textures/png/avatar.png',
+					score: this.#scoreR,
+				},
+				loser: {
+					usr: this.#loggedUser,
+					avatar: this.#css2DObject.profilepic.element.src,
+					score: this.#scoreL,
+				},
+			});
 			return true;
 		}
 		return false;
@@ -2880,12 +2886,28 @@ class Game {
 			});
 	}
 
-	#singleplayer() {
-		this.#scene.remove(this.#css2DObject.offline);
+	#displayWin(players) {
 		this.#css2DObject.win.element.querySelector('#win-avatar').src =
-			this.#css2DObject.profilepic.element.src;
+			players['winner'].avatar;
+		this.#css2DObject.win.element.querySelector(
+			'#win-username'
+		).textContent = players['winner'].usr;
+
+		this.#css2DObject.win.element.querySelector('#lose-avatar').src =
+			players['loser'].avatar;
+		this.#css2DObject.win.element.querySelector(
+			'#lose-username'
+		).textContent = players['loser'].usr;
+
+		this.#css2DObject.win.element.querySelector('#win-score').textContent =
+			players['winner'].score;
+		this.#css2DObject.win.element.querySelector('#lose-score').textContent =
+			players['loser'].score;
+
 		this.#scene.add(this.#css2DObject.win);
 	}
+
+	#singleplayer() {}
 
 	#multiplayer() {
 		this.#scene.remove(this.#css2DObject.offline);

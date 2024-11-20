@@ -132,26 +132,26 @@ export const START = `<div class="comparison-wrapper">
 </div>`;
 
 export const WIN = `<div class="left-player">
-	<div class="player-info">
-		<span id="win-username" class="username">Username</span>
+	<div class="player-content">
+		<div id="win-username" class="player-name"></div>
 		<div class="frame-container">
 			<img class="frame-win" src="textures/svg/wood.svg" />
 			<img id="win-avatar" class="avatar" src="" />
 		</div>
 	</div>
-	<div class="plate-container">
+	<div class="nameplate-container">
 		<img class="nameplate" src="textures/svg/win.svg" />
 	</div>
 </div>
 <div class="right-player">
-	<div class="player-info">
+	<div class="player-content">
+		<div id="lose-username" class="player-name"></div>
 		<div class="frame-container">
 			<img class="frame-win" src="textures/svg/wood.svg" />
 			<img id="lose-avatar" class="avatar" src="" />
 		</div>
-		<span id="lose-username" class="username">Username</span>
 	</div>
-	<div class="plate-container">
+	<div class="nameplate-container">
 		<img class="nameplate" src="textures/svg/lose.svg" />
 	</div>
 </div>

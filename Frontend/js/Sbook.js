@@ -5,13 +5,13 @@ export const CHANGE_USERNAME = `<div class="frame-wrapper">
 			alt=""
 			src="/textures/svg/RectangleUP.svg"
 		/>
-		<div class="change-username">Change Username</div>
+		<div class="change-username">Change Display Name</div>
 	</div>
 </div>
 <div class="select-new-username-parent">
-	<div class="select-new-username">Select New Username</div>
+	<div class="select-new-username">Select New Display Name</div>
 	<div class="username-wrapper">
-		<input type="text" class="username-user" placeholder="Username" />
+		<input type="text" class="username-user" placeholder="Display Name" />
 	</div>
 	<div class="sette-wrapper">
 		<div class="change-username">Sette</div>

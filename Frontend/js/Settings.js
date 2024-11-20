@@ -4,7 +4,7 @@ export const SETTINGS = `<img class="hb-icon" alt="" src="/textures/svg/HB.svg" 
 export const SBOOK = `<img class="rectangle-icon17" alt="" src="/textures/svg/SBook 1.svg" />
 <div class="setting-frame-parent">
 	<div class="setting-frame" data-id="username">
-		<div class="setting-1">Username</div>
+		<div class="setting-1">Display Name</div>
 	</div>
 	<div class="setting-frame" data-id="password">
 		<div class="setting-1">Password</div>
