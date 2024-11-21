@@ -104,6 +104,9 @@ class Game {
 	#started = false;
 	#isOffline = false;
 
+	#keydownHandler;
+	#keyupHandler;
+
 	constructor() {
 		this.#home = {
 			home: HOME,
@@ -2564,7 +2567,6 @@ class Game {
 	#prepareForNewMatch(matchData) {
 		this.#scene.remove(this.#css2DObject.tournament);
 		this.#currentMatch = matchData;
-		this.#cleanupGameWebSocket();
 	}
 
 	#updateStartScreen(matchData) {
@@ -2575,9 +2577,17 @@ class Game {
 			const avatarElem = start.querySelector(`#player${i + 1}-avatar`);
 			if (playerElem && avatarElem) {
 				playerElem.textContent = player;
-				avatarElem.src = player.avatar || 'textures/svg/M.svg';
+				avatarElem.src = player.avatar;
 			}
 		});
+		if (matchData.avatar1 && matchData.avatar2) {
+			[matchData.avatar1, matchData.avatar2].forEach((avatar, i) => {
+				const avatarElem = start.querySelector(
+					`#player${i + 1}-avatar`
+				);
+				if (avatarElem) avatarElem.src = avatar;
+			});
+		}
 
 		this.#scene.add(this.#css2DObject.start);
 	}
@@ -2661,6 +2671,7 @@ class Game {
 
 	#handleTournamentGameEnd() {
 		this.#scene.add(this.#css2DObject.tournament);
+		this.#resetGameState();
 		this.#cleanupGameState();
 	}
 
@@ -2740,8 +2751,6 @@ class Game {
 	}
 
 	#tournamentStart() {
-		this.#cleanupTournamentWebSocket();
-
 		try {
 			this.#tournamentWebSocket = new WebSocket(
 				`wss://${window.location.host}/api/ws/tournament/`
@@ -2782,7 +2791,6 @@ class Game {
 
 		this.#tournamentWebSocket.onclose = () => {
 			this.#started = false;
-			this.#tournamentWebSocket = null;
 		};
 	}
 
@@ -2914,6 +2922,8 @@ class Game {
 	#switchHome(home) {
 		this.#isOffline = false;
 		this.#cleanupWebSockets(home);
+		this.#removeKeyListeners();
+
 		[
 			'game',
 			'chat',
@@ -2941,32 +2951,12 @@ class Game {
 	}
 
 	#cleanupWebSockets(newPage) {
-		if (this.#gameWebSocket) {
-			try {
-				this.#gameWebSocket.close();
-			} catch (e) {
-				console.error('Error closing game WebSocket:', e);
-			}
-			this.#gameWebSocket = null;
-		}
+		if (this.#gameWebSocket) this.#gameWebSocket.close();
 
-		if (this.#tournamentWebSocket) {
-			try {
-				this.#tournamentWebSocket.close();
-			} catch (e) {
-				console.error('Error closing game WebSocket:', e);
-			}
-			this.#tournamentWebSocket = null;
-		}
+		if (this.#tournamentWebSocket) this.#tournamentWebSocket.close();
 
-		if (newPage !== 'chat' && this.#onlineSocket) {
-			try {
-				this.#onlineSocket.close();
-			} catch (e) {
-				console.error('Error closing online socket:', e);
-			}
-			this.#onlineSocket = null;
-		}
+		if (newPage !== 'chat' && this.#onlineSocket)
+			this.#onlineSocket.close();
 	}
 
 	#updateUIElements(page) {
@@ -3039,18 +3029,34 @@ class Game {
 		);
 	}
 
+	#removeKeyListeners() {
+		if (this.#keydownHandler) {
+			window.removeEventListener('keydown', this.#keydownHandler);
+			this.#keydownHandler = null;
+		}
+		if (this.#keyupHandler) {
+			window.removeEventListener('keyup', this.#keyupHandler);
+			this.#keyupHandler = null;
+		}
+	}
+
 	#bindKeys(mode) {
+		this.#removeKeyListeners();
+
 		const keyState = new Set();
 
-		window.addEventListener('keydown', e => {
+		this.#keydownHandler = e => {
 			keyState.add(e.key);
 			this.#bindDownMode(e, mode, keyState);
-		});
+		};
 
-		window.addEventListener('keyup', e => {
+		this.#keyupHandler = e => {
 			keyState.delete(e.key);
 			this.#bindUpMode(e, mode, keyState);
-		});
+		};
+
+		window.addEventListener('keydown', this.#keydownHandler);
+		window.addEventListener('keyup', this.#keyupHandler);
 	}
 
 	#bindDownMode(e, mode, keyState) {

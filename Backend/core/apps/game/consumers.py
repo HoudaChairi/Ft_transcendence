@@ -673,20 +673,17 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         try:
             players_in_tournaments = {}
             for tournament_id, tournament in self.tournament_manager.tournaments.items():
-                # Get semifinal matches and winners
                 semifinal_matches = {
                     match_id: match 
                     for match_id, match in tournament.matches.items() 
                     if 'semi' in match_id
                 }
                 
-                # Get winners with their details
                 semi1_winner = next((match.winner for match_id, match in semifinal_matches.items() 
                                 if 'semi1' in match_id), None)
                 semi2_winner = next((match.winner for match_id, match in semifinal_matches.items() 
                                 if 'semi2' in match_id), None)
                 
-                # Get player details for winners
                 semi1_winner_details = await self.get_player_details(semi1_winner) if semi1_winner else None
                 semi2_winner_details = await self.get_player_details(semi2_winner) if semi2_winner else None
 
@@ -727,7 +724,6 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 }
             }
             
-            print(f"Broadcasting tournament update: {message}")  # Debug log
             
             await self.channel_layer.group_send(
                 self.TOURNAMENT_GROUP,
@@ -737,7 +733,6 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 }
             )
         except Exception as e:
-            print(f"Error in broadcast_player_lists: {str(e)}")  # Debug log
             raise
 
     async def tournament_update(self, event):
@@ -750,15 +745,19 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             match = tournament.matches[match_id]
             game_group_id = f"{match.player1}_{match.player2}"
 
-            # Send match ready notification to both players
+            player1_details = await self.get_player_details(match.player1)
+            player2_details = await self.get_player_details(match.player2)
+
             await self.channel_layer.group_send(
                 self.TOURNAMENT_GROUP,
                 {
                     "type": "match_notification",
                     "match_data": {
                         "type": "match_ready",
-                        "player1": match.player1,
-                        "player2": match.player2,
+                        "player1": player1_details.get('username'),
+                        "player2": player2_details.get('username'),
+                        "avatar1": player1_details.get('avatar'),
+                        "avatar2": player2_details.get('avatar'),
                         "tournament_id": tournament.id,
                         "match_id": match_id,
                         "game_group_id": game_group_id,
@@ -804,10 +803,14 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             if finals_match:
                 # Create the match notification
                 game_group_id = f"{finals_match.player1}_{finals_match.player2}"
+                player1_details = await self.get_player_details(finals_match.player1)
+                player2_details = await self.get_player_details(finals_match.player2)
                 match_data = {
                     "type": "match_ready",
-                    "player1": finals_match.player1,
-                    "player2": finals_match.player2,
+                    "player1": player1_details.get('username'),
+                    "player2": player2_details.get('username'),
+                    "avatar1": player1_details.get('avatar'),
+                    "avatar2": player2_details.get('avatar'),
                     "tournament_id": tournament_id,
                     "match_id": finals_match.match_id,
                     "game_group_id": game_group_id,
@@ -848,6 +851,8 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             game_group_id = f"{match.player1}_{match.player2}"
             
             # Send match ready notification to both players
+            player1_details = await self.get_player_details(match.player1)
+            player2_details = await self.get_player_details(match.player2)
             for player in [match.player1, match.player2]:
                 try:
                     message = {
@@ -857,8 +862,10 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                         "match_id": match_id,
                         "game_group_id": game_group_id,
                         "consumer": self.channel_name,
-                        "player1": match.player1,
-                        "player2": match.player2
+                        "player1": player1_details.get('username'),
+                        "player2": player2_details.get('username'),
+                        "avatar1": player1_details.get('avatar'),
+                        "avatar2": player2_details.get('avatar'),
                     }
                     if player in self.active_connections:
                         await self.active_connections[player].send(text_data=json.dumps(message))
