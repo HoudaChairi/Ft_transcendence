@@ -899,9 +899,25 @@ class Game {
 		this.#css2DObject.chatBtn.element.querySelector(
 			'.select-new-username'
 		).textContent = `Start a Game With ${user}`;
+
 		['chatBtn', 'btnOverlay'].forEach(ele => {
 			this.#scene.add(this.#css2DObject[ele]);
 		});
+
+		this.#css2DObject.chatBtn.element
+			.querySelector('.sette-wrapper')
+			.addEventListener('click', () => {
+				if (this.#onlineSocket?.readyState === WebSocket.OPEN) {
+					this.#onlineSocket.send(
+						JSON.stringify({
+							type: 'game_invite',
+							recipient: user,
+							sender: this.#loggedUser,
+						})
+					);
+					this.#toggleChatBtn();
+				}
+			});
 	}
 
 	async #blockUser(user) {
@@ -2889,6 +2905,67 @@ class Game {
 		setTimeout(() => this.#startBall(), 4000);
 	}
 
+	#startInviteGame(opponent) {
+		this.#scene.remove(this.#css2DObject.game);
+		this.#bindKeys('online');
+		this.#resetGameState();
+
+		try {
+			this.#gameWebSocket = new WebSocket(
+				`wss://${window.location.host}/api/ws/game/`
+			);
+
+			this.#gameWebSocket.onopen = () => {
+				const initData = {
+					username: this.#loggedUser,
+					invite_game: true,
+					opponent: opponent,
+				};
+
+				if (this.#gameWebSocket?.readyState === WebSocket.OPEN) {
+					this.#gameWebSocket.send(JSON.stringify(initData));
+					this.#initializeGame();
+				}
+			};
+
+			this.#gameWebSocket.onmessage = e => {
+				try {
+					const data = JSON.parse(e.data);
+					switch (data.type) {
+						case 'game_start':
+							this.#matchmaking(data.players);
+							break;
+						case 'update':
+							this.#updateGameState(data);
+							break;
+						case 'game_end':
+							this.#handleGameEnd(data);
+							break;
+						case 'error':
+							console.error('Game error:', data.message);
+							this.#handleWebSocketError();
+							break;
+					}
+				} catch (error) {
+					console.error('Error processing game message:', error);
+					this.#handleWebSocketError();
+				}
+			};
+
+			this.#gameWebSocket.onerror = error => {
+				console.error('WebSocket error:', error);
+				this.#handleWebSocketError();
+			};
+
+			this.#gameWebSocket.onclose = () => {
+				this.#handleWebSocketClose();
+			};
+		} catch (error) {
+			console.error('Failed to create WebSocket connection:', error);
+			this.#handleWebSocketError();
+		}
+	}
+
 	#online() {
 		this.#scene.remove(this.#css2DObject.game);
 		this.#bindKeys('online');
@@ -2998,18 +3075,43 @@ class Game {
 		this.#onlineSocket.onmessage = e => {
 			try {
 				const data = JSON.parse(e.data);
-				this.#onlineUsers = data.online_users;
-				this.#switchChatTab(this.#selectedTab);
+				if (data.type === 'game_invite') {
+					this.#css2DObject.chatBtn.element.innerHTML = PLAY;
+					this.#css2DObject.chatBtn.element.querySelector(
+						'.select-new-username'
+					).textContent = `${data.sender} Has Invited you to Play`;
+
+					['chatBtn', 'btnOverlay'].forEach(ele => {
+						this.#scene.add(this.#css2DObject[ele]);
+					});
+
+					this.#css2DObject.chatBtn.element
+						.querySelector('.sette-wrapper')
+						.addEventListener('click', () => {
+							this.#onlineSocket.send(
+								JSON.stringify({
+									type: 'invite_response',
+									response: 'accepted',
+									sender: data.sender,
+									recipient: this.#loggedUser,
+								})
+							);
+							this.#toggleChatBtn();
+							this.#switchHome('game');
+							this.#startInviteGame(data.sender);
+						});
+				} else if (data.type === 'start_game') {
+					this.#scene.remove(this.#css2DObject.match);
+					this.#switchHome('game');
+					this.#startInviteGame(data.recipient);
+				} else {
+					this.#onlineUsers = data.online_users;
+					this.#switchChatTab(this.#selectedTab);
+				}
 			} catch (error) {
-				console.error('Error processing online status message:', error);
+				console.error('Error processing message:', error);
 			}
 		};
-
-		this.#onlineSocket.onerror = error => {
-			console.error('Online status WebSocket error:', error);
-		};
-
-		this.#onlineSocket.onclose = () => {};
 	}
 
 	#sendMovement(direction) {

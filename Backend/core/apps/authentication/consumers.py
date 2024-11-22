@@ -2,27 +2,66 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 
 class OnlineStatusConsumer(AsyncWebsocketConsumer):
+    # Class variables shared across instances
     online_users = set()
+    user_status = {}
+    game_invites = {}
+    active_invites = {}
 
     async def connect(self):
         self.username = self.scope['url_route']['kwargs']['username']
         self.online_users.add(self.username)
+        self.user_status[self.username] = "available"
         await self.channel_layer.group_add("online_users_group", self.channel_name)
-
         await self.accept()
-        
         await self.broadcast_online_users()
 
     async def disconnect(self, close_code):
         self.online_users.discard(self.username)
-        await self.channel_layer.group_discard("online_users_group", self.channel_name)
-
-        await self.broadcast_online_users()
+        self.user_status.pop(self.username, None)
         
+        # Cancel any pending invites
+        for invite_id, invite in list(self.game_invites.items()):
+            if self.username in [invite['sender'], invite['recipient']]:
+                await self.handle_invite_response(invite_id, 'declined')
+                
+        await self.channel_layer.group_discard("online_users_group", self.channel_name)
+        await self.broadcast_online_users()
+
+    async def receive(self, text_data):
+        data = json.loads(text_data)
+        
+        if data['type'] == 'game_invite':
+            recipient = data['recipient']
+            sender = data['sender']
+            
+            if recipient in self.online_users:
+                invite_id = f"{sender}_{recipient}"
+                self.game_invites[invite_id] = {
+                    'sender': sender,
+                    'recipient': recipient,
+                    'status': 'pending'
+                }
+                
+                await self.channel_layer.group_send(
+                    "online_users_group",
+                    {
+                        'type': 'send_game_invite',
+                        'invite_id': invite_id,
+                        'recipient': recipient,
+                        'sender': sender
+                    }
+                )
+        elif data['type'] == 'invite_response':
+            sender = data['sender']
+            recipient = data['recipient']
+            invite_id = f"{sender}_{recipient}"
+            
+            if invite_id in self.game_invites:
+                await self.handle_invite_response(invite_id, data['response'])
 
     async def broadcast_online_users(self):
         online_users_list = list(self.online_users)
-
         await self.channel_layer.group_send(
             "online_users_group",
             {
@@ -32,7 +71,39 @@ class OnlineStatusConsumer(AsyncWebsocketConsumer):
         )
 
     async def send_online_users(self, event):
-        online_users_list = event['online_users']
         await self.send(text_data=json.dumps({
-            'online_users': online_users_list
+            'online_users': event['online_users']
         }))
+
+    async def send_game_invite(self, event):
+        if self.username == event['recipient']:
+            await self.send(text_data=json.dumps({
+                'type': 'game_invite',
+                'invite_id': event['invite_id'],
+                'sender': event['sender']
+            }))
+
+    async def handle_invite_response(self, invite_id: str, response: str):
+        if invite_id in self.game_invites:
+            invite = self.game_invites[invite_id]
+            
+            if response == 'accepted':
+                # Notify both players to start game
+                await self.channel_layer.group_send(
+                    "online_users_group",
+                    {
+                        'type': 'start_game',
+                        'sender': invite['sender'],
+                        'recipient': invite['recipient']
+                    }
+                )
+            
+            del self.game_invites[invite_id]
+
+    async def start_game(self, event):
+        if self.username in [event['sender'], event['recipient']]:
+            await self.send(text_data=json.dumps({
+                'type': 'start_game',
+                'sender': event['sender'],
+                'recipient': event['recipient']
+            }))
