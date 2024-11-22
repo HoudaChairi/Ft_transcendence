@@ -1,5 +1,5 @@
 // recived-parent
-export const RECIVED = `<div class="recived">
+export const RECIVED = `<div class="received">
 	<div class="you"></div>
 </div>`;
 

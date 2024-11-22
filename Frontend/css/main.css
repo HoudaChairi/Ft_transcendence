@@ -1194,7 +1194,7 @@ body {
 	overflow-wrap: anywhere;
 }
 
-.recived {
+.received {
 	position: relative;
 	display: flex;
 	flex-direction: row;
@@ -1202,15 +1202,15 @@ body {
 	justify-content: center;
 	padding: 10px 30px;
 	box-sizing: border-box;
-	background-image: url('/textures/svg/Message.svg');
-	background-size: cover;
-	background-repeat: no-repeat;
-	background-position: top;
 	min-width: 265px;
 	max-width: 530px;
 	text-align: left;
 	align-self: flex-start;
 	margin-bottom: 20px;
+	border: 3px solid #7e717b;
+	border-radius: 10px;
+	background-color: #f8eed8;
+	box-shadow: 0 2px 6px rgba(44, 39, 56, 0.15);
 }
 
 .sent {
@@ -1221,15 +1221,15 @@ body {
 	justify-content: center;
 	padding: 10px 30px;
 	box-sizing: border-box;
-	background-image: url('/textures/svg/Message.svg');
-	background-size: cover;
-	background-repeat: no-repeat;
-	background-position: top;
 	min-width: 265px;
 	max-width: 530px;
 	text-align: right;
 	align-self: flex-end;
 	margin-bottom: 20px;
+	border: 3px solid #7e717b;
+	border-radius: 10px;
+	background-color: #e0d6c1;
+	box-shadow: 0 2px 6px rgba(44, 39, 56, 0.15);
 }
 
 .recived-parent {
