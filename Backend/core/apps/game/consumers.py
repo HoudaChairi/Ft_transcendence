@@ -7,10 +7,11 @@ from core.apps.authentication.models import Player, Match
 import json
 import asyncio
 from dataclasses import asdict
-from django.db import transaction
+from typing import Dict, Set
 
 class GameConsumer(AsyncWebsocketConsumer):
     game_manager = GameManager()
+    waiting_players = {}
     connected_players = {}
     player_groups = {}
     games_data = {}
@@ -41,6 +42,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                     await self.remove_player_from_game(group_id)
 
                 self.connected_players.pop(self.username, None)
+                self.waiting_players.pop(self.username, None)
                 self.player_groups.pop(self.username, None)
         except Exception as e:
             print(f"Error in game disconnect: {e}")
@@ -94,45 +96,78 @@ class GameConsumer(AsyncWebsocketConsumer):
         try:
             data = json.loads(text_data)
             
-            if data.get('action') == 'send_invite':
-                await self.handle_send_invite(data['recipient'])
-                
-            elif data.get('action') == 'respond_invite':
-                if data['response'] == 'accepted':
-                    # Handle accept invite
-                    invite_id = data['invite_id']
-                    if invite_id in self.active_invites:
-                        await self.handle_invite_response(invite_id, 'accepted')
+            if data.get('username'):
+                if data.get('invite_game'):
+                    # Handle invite game initialization
+                    await self.handle_invite_game(data['username'], data['opponent'])
                 else:
-                    # Handle decline invite
-                    invite_id = data['invite_id'] 
-                    if invite_id in self.active_invites:
-                        await self.handle_invite_response(invite_id, 'declined')
-                        
-            elif 'username' in data:
-                # Handle new player connection
-                await self.handle_new_player(data['username'], data.get('tournament_data'))
-            
-            elif 'action' in data:
-                # Only handle movement if game exists and player is in it
-                group_id = self.player_groups.get(self.username)
-                if not group_id or group_id not in self.games_data:
-                    return
-
-                game = self.games_data[group_id]
-                if self.username not in game.paddle_directions:
-                    return
-
+                    # Handle regular matchmaking
+                    await self.handle_new_player(data['username'], data.get('tournament_data'))
+            elif data.get('action') in ['move', 'stop_move']:
                 # Handle movement
-                if data['action'] == 'move' and 'direction' in data:
-                    await self.move_paddle(data['direction'])
-                elif data['action'] == 'stop_move':
-                    await self.stop_paddle()
+                group_id = self.player_groups.get(self.username)
+                if group_id and group_id in self.games_data:
+                    game = self.games_data[group_id]
+                    if self.username in game.paddle_directions:
+                        if data['action'] == 'move':
+                            await self.move_paddle(data['direction'])
+                        else:
+                            await self.stop_paddle()
 
         except Exception as e:
             await self.send(text_data=json.dumps({
                 'type': 'error',
                 'message': 'Internal server error'
+            }))
+    
+    async def handle_invite_game(self, username: str, opponent: str):
+        self.username = username
+        group_id = f"{opponent}_{username}" if opponent < username else f"{username}_{opponent}"
+        
+        # Add to game group and store connection
+        self.player_groups[username] = group_id
+        self.connected_players[username] = self.channel_name
+        await self.channel_layer.group_add(group_id, self.channel_name)
+
+        if group_id not in self.games_data:
+            self.games_data[group_id] = self.game_manager.create_initial_state(
+                username if username < opponent else opponent,
+                opponent if username < opponent else username
+            )
+        
+        game = self.games_data[group_id]
+        game.player_labels = {
+            username if username < opponent else opponent: 'player1',
+            opponent if username < opponent else username: 'player2'
+        }
+
+        # Both players connected
+        if len([p for p in self.connected_players if p in [username, opponent]]) == 2:
+            await self.channel_layer.group_send(
+                group_id,
+                {
+                    'type': 'game_update',
+                    'data': {
+                        "type": "game_start",
+                        "players": {
+                            "player1": {
+                                "usr": username if username < opponent else opponent,
+                                "avatar": await self.get_player_avatar(username if username < opponent else opponent)
+                            },
+                            "player2": {
+                                "usr": opponent if username < opponent else username,
+                                "avatar": await self.get_player_avatar(opponent if username < opponent else username)
+                            }
+                        },
+                        "tournament": False
+                    }
+                }
+            )
+            asyncio.create_task(self.delayed_game_start(group_id))
+        else:
+            await self.send(text_data=json.dumps({
+                'type': 'waiting',
+                'message': 'Waiting for opponent to join...'
             }))
 
     async def handle_send_invite(self, recipient):
@@ -236,6 +271,48 @@ class GameConsumer(AsyncWebsocketConsumer):
         except Player.DoesNotExist:
             pass
 
+    async def setup_matchmaking_game(self, players):
+        player1, player2 = players
+        group_id = f"{player1}_{player2}"
+        
+        for player in (player1, player2):
+            self.player_groups[player] = group_id
+            await self.channel_layer.group_add(group_id, self.connected_players[player])
+            self.waiting_players.pop(player, None)
+
+        if self.username == player2:
+            self.games_data[group_id] = self.game_manager.create_initial_state(player1, player2)
+            await self.send_game_start(group_id, player1, player2)
+            asyncio.create_task(self.delayed_game_start(group_id))
+
+    async def send_game_start(self, group_id, player1, player2):
+        await self.channel_layer.group_send(
+            group_id,
+            {
+                'type': 'game_update',
+                'data': {
+                    "type": "game_start",
+                    "players": {
+                        "player1": {
+                            "usr": player1,
+                            "avatar": await self.get_player_avatar(player1)
+                        },
+                        "player2": {
+                            "usr": player2,
+                            "avatar": await self.get_player_avatar(player2)
+                        }
+                    },
+                    "tournament": False
+                }
+            }
+        )
+
+    async def send_waiting_message(self):
+        await self.send(text_data=json.dumps({
+            'type': 'waiting',
+            'message': 'Waiting for second player...'
+        }))
+
     async def handle_new_player(self, username: str, tournament_data: Optional[dict] = None) -> None:
         try:
             self.username = username
@@ -243,9 +320,6 @@ class GameConsumer(AsyncWebsocketConsumer):
             # Check if player is already in a game
             if username in self.player_groups:
                 return
-            
-            if username not in self.connected_players:
-                self.connected_players[username] = self.channel_name
 
             if tournament_data:
                 group_id = f"{tournament_data['player1']}_{tournament_data['player2']}"
@@ -254,6 +328,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                     return
 
                 self.player_groups[username] = group_id
+                self.connected_players[username] = self.channel_name
                 
                 if group_id not in self.games_data:
                     self.games_data[group_id] = self.game_manager.create_initial_state(
@@ -270,37 +345,13 @@ class GameConsumer(AsyncWebsocketConsumer):
                 if len(connected_players) == 2:
                     await self.start_game(group_id)
             else:
-                # Check for invite game first
-                invite_id = None
-                for id, invite in self.active_invites.items():
-                    if username in [invite['sender'], invite['recipient']]:
-                        invite_id = id
-                        break
-                        
-                if invite_id:
-                    # This is an invite game
-                    invite = self.active_invites[invite_id]
-                    group_id = invite_id
-                    
-                    self.player_groups[username] = group_id
-                    await self.channel_layer.group_add(group_id, self.channel_name)
-                    
-                    connected_players = [p for p in self.connected_players 
-                                    if p in [invite['sender'], invite['recipient']]]
-                    
-                    if len(connected_players) == 2:
-                        # Both players have connected, start the game
-                        await self.handle_invite_response(invite_id, 'accepted')
-                    return
+                # Regular matchmaking
+                self.connected_players[username] = self.channel_name
+                self.waiting_players[username] = self.channel_name
                 
-                # Regular matchmaking game
-                if len(self.connected_players) >= 2:
-                    player_list = list(self.connected_players.keys())
-                    # Filter out players who are in invite games or already in games
-                    available_players = [p for p in player_list 
-                                    if not any(p in invite.values() 
-                                            for invite in self.active_invites.values())
-                                    and p not in self.player_groups]
+                if len(self.waiting_players) >= 2:
+                    # Only consider players in waiting_players for matchmaking
+                    available_players = list(self.waiting_players.keys())
                     
                     if len(available_players) >= 2:
                         player1, player2 = available_players[-2:]
@@ -315,11 +366,12 @@ class GameConsumer(AsyncWebsocketConsumer):
                                 group_id,
                                 self.connected_players[player]
                             )
+                            # Remove players from waiting list once matched
+                            self.waiting_players.pop(player, None)
 
                         if username == player2:
                             self.games_data[group_id] = self.game_manager.create_initial_state(player1, player2)
                             
-                            # Send start message from here
                             await self.channel_layer.group_send(
                                 group_id,
                                 {
@@ -340,7 +392,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                                     }
                                 }
                             )
-                        
+                            
                             asyncio.create_task(self.delayed_game_start(group_id))
                     else:
                         await self.send(text_data=json.dumps({
