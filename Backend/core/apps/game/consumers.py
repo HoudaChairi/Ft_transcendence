@@ -55,7 +55,15 @@ class GameConsumer(AsyncWebsocketConsumer):
             if winner:
                 p1 = next(key for key, value in game.player_labels.items() if value == 'player1')
                 p2 = next(key for key, value in game.player_labels.items() if value == 'player2')
-                await self.create_match_record(p1, p2, winner, game.score_left, game.score_right)
+
+                if self.username == p1:
+                    score_left = 0
+                    score_right = 6
+                else:
+                    score_left = 6
+                    score_right = 0
+                
+                await self.create_match_record(p1, p2, winner, score_left, score_right)
                 
                 await self.handle_game_end(winner)
                 await self.channel_layer.group_send(
@@ -69,12 +77,12 @@ class GameConsumer(AsyncWebsocketConsumer):
                                 "player1": {
                                     "usr": p1,
                                     "avatar": await self.get_player_avatar(p1),
-                                    "score": game.score_left
+                                    "score": score_left
                                 },
                                 "player2": {
                                     "usr": p2,
                                     "avatar": await self.get_player_avatar(p2),
-                                    "score": game.score_right
+                                    "score": score_right
                                 }
                             },
                             "reason": "disconnect"

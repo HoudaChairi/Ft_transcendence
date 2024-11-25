@@ -2918,10 +2918,13 @@ class Game {
 		).textContent = players['loser'].usr;
 
 		this.#css2DObject.win.element.querySelector('#win-score').textContent =
-			players['winner'].score;
+			players['winner'].score > players['loser'].score
+				? players['winner'].score
+				: players['loser'].score;
 		this.#css2DObject.win.element.querySelector('#lose-score').textContent =
-			players['loser'].score;
-
+			players['winner'].score < players['loser'].score
+				? players['winner'].score
+				: players['loser'].score;
 		this.#scene.add(this.#css2DObject.win);
 	}
 
@@ -2962,6 +2965,7 @@ class Game {
 
 					switch (data.type) {
 						case 'game_start':
+							this.#scene.add(this.#css2DObject.match);
 							this.#matchmaking(data.players);
 							break;
 						case 'update':
@@ -3104,7 +3108,7 @@ class Game {
 		this.#onlineSocket.onmessage = e => {
 			try {
 				const data = JSON.parse(e.data);
-
+				
 				if (
 					data.type === 'invite_response' &&
 					data.response === 'cancelled'
