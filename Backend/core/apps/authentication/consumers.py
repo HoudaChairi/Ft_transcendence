@@ -2,7 +2,6 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 
 class OnlineStatusConsumer(AsyncWebsocketConsumer):
-    # Class variables shared across instances
     online_users = set()
     user_status = {}
     game_invites = {}
@@ -20,11 +19,29 @@ class OnlineStatusConsumer(AsyncWebsocketConsumer):
         self.online_users.discard(self.username)
         self.user_status.pop(self.username, None)
         
-        # Cancel any pending invites
-        for invite_id, invite in list(self.game_invites.items()):
-            if self.username in [invite['sender'], invite['recipient']]:
-                await self.handle_invite_response(invite_id, 'declined')
-                
+        # Find and cancel any invites where the disconnecting user is the sender
+        invites_to_cancel = [
+            invite_id 
+            for invite_id, invite in self.game_invites.items()
+            if invite['sender'] == self.username
+        ]
+        
+        # Cancel each invite
+        for invite_id in invites_to_cancel:
+            invite = self.game_invites[invite_id]
+            await self.channel_layer.group_send(
+                "online_users_group",
+                {
+                    'type': 'broadcast_invite_response',
+                    'invite_id': invite_id,
+                    'response': 'cancelled',
+                    'sender': self.username,
+                    'recipient': invite['recipient'],
+                    'message': 'Invite cancelled - sender disconnected'
+                }
+            )
+            del self.game_invites[invite_id]
+        
         await self.channel_layer.group_discard("online_users_group", self.channel_name)
         await self.broadcast_online_users()
 
@@ -34,6 +51,26 @@ class OnlineStatusConsumer(AsyncWebsocketConsumer):
         if data['type'] == 'game_invite':
             recipient = data['recipient']
             sender = data['sender']
+            
+            # Remove any existing invites from this sender
+            invites_to_remove = [
+                invite_id for invite_id, invite in self.game_invites.items()
+                if invite['sender'] == sender
+            ]
+            
+            for invite_id in invites_to_remove:
+                # Send cancellation notification
+                await self.channel_layer.group_send(
+                    "online_users_group",
+                    {
+                        'type': 'broadcast_invite_response',
+                        'invite_id': invite_id,
+                        'response': 'cancelled',
+                        'sender': sender,
+                        'recipient': self.game_invites[invite_id]['recipient']
+                    }
+                )
+                del self.game_invites[invite_id]
             
             if recipient in self.online_users:
                 invite_id = f"{sender}_{recipient}"
@@ -59,6 +96,16 @@ class OnlineStatusConsumer(AsyncWebsocketConsumer):
             
             if invite_id in self.game_invites:
                 await self.handle_invite_response(invite_id, data['response'])
+
+    async def broadcast_invite_response(self, event):
+        if self.username in [event['sender'], event['recipient']]:
+            await self.send(text_data=json.dumps({
+                'type': 'invite_response',
+                'invite_id': event['invite_id'],
+                'response': event['response'],
+                'sender': event['sender'],
+                'recipient': event['recipient']
+            }))
 
     async def broadcast_online_users(self):
         online_users_list = list(self.online_users)

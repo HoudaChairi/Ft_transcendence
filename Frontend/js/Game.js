@@ -174,6 +174,7 @@ class Game {
 		this.#addSettingsCss2D();
 		this.#addSbookSettingsCss2D();
 		this.#addChatBtnCss2D();
+		this.#addAcceptCss2D();
 		this.#addProfilePic();
 		this.#addChatCss2D();
 		this.#addLegendCss2d();
@@ -267,6 +268,9 @@ class Game {
 			});
 		this.#css2DObject.btnOverlay.element.addEventListener('click', e =>
 			this.#toggleChatBtn()
+		);
+		this.#css2DObject.acceptOverlay.element.addEventListener('click', e =>
+			this.#toggleAccept()
 		);
 		this.#css2DObject.chat.element
 			.querySelector('.all-players')
@@ -1273,6 +1277,23 @@ class Game {
 		this.#css2DObject.sbsettingOverlay.renderOrder = 9;
 	}
 
+	#addAcceptCss2D() {
+		const btnContainer = document.createElement('div');
+		btnContainer.className = 'frame-parent-user';
+		btnContainer.innerHTML = PLAY;
+
+		this.#css2DObject.accept = new CSS2DObject(btnContainer);
+		this.#css2DObject.accept.name = 'block';
+		this.#css2DObject.accept.renderOrder = 10;
+
+		const overlayContainer = document.createElement('div');
+		overlayContainer.className = 'overlay';
+
+		this.#css2DObject.acceptOverlay = new CSS2DObject(overlayContainer);
+		this.#css2DObject.acceptOverlay.name = 'overlay';
+		this.#css2DObject.acceptOverlay.renderOrder = 9;
+	}
+
 	#addChatBtnCss2D() {
 		const btnContainer = document.createElement('div');
 		btnContainer.className = 'frame-parent-user';
@@ -1292,6 +1313,12 @@ class Game {
 
 	#toggleChatBtn() {
 		['chatBtn', 'btnOverlay'].forEach(ele => {
+			this.#scene.remove(this.#css2DObject[ele]);
+		});
+	}
+
+	#toggleAccept() {
+		['accept', 'acceptOverlay'].forEach(ele => {
 			this.#scene.remove(this.#css2DObject[ele]);
 		});
 	}
@@ -2658,6 +2685,7 @@ class Game {
 		this.#gameWebSocket.onmessage = e => {
 			try {
 				const data = JSON.parse(e.data);
+
 				this.#handleTournamentGameMessage(data);
 			} catch (error) {
 				console.error('Error handling game message:', error);
@@ -2931,6 +2959,7 @@ class Game {
 			this.#gameWebSocket.onmessage = e => {
 				try {
 					const data = JSON.parse(e.data);
+
 					switch (data.type) {
 						case 'game_start':
 							this.#matchmaking(data.players);
@@ -3075,17 +3104,22 @@ class Game {
 		this.#onlineSocket.onmessage = e => {
 			try {
 				const data = JSON.parse(e.data);
-				if (data.type === 'game_invite') {
-					this.#css2DObject.chatBtn.element.innerHTML = PLAY;
-					this.#css2DObject.chatBtn.element.querySelector(
+
+				if (
+					data.type === 'invite_response' &&
+					data.response === 'cancelled'
+				) {
+					this.#toggleAccept();
+				} else if (data.type === 'game_invite') {
+					this.#css2DObject.accept.element.querySelector(
 						'.select-new-username'
 					).textContent = `${data.sender} Has Invited you to Play`;
 
-					['chatBtn', 'btnOverlay'].forEach(ele => {
+					['accept', 'acceptOverlay'].forEach(ele => {
 						this.#scene.add(this.#css2DObject[ele]);
 					});
 
-					this.#css2DObject.chatBtn.element
+					this.#css2DObject.accept.element
 						.querySelector('.sette-wrapper')
 						.addEventListener('click', () => {
 							this.#onlineSocket.send(
@@ -3096,12 +3130,13 @@ class Game {
 									recipient: this.#loggedUser,
 								})
 							);
-							this.#toggleChatBtn();
+							this.#toggleAccept();
 							this.#switchHome('game');
 							this.#startInviteGame(data.sender);
 						});
 				} else if (data.type === 'start_game') {
 					this.#scene.remove(this.#css2DObject.match);
+					this.#toggleChatBtn();
 					this.#switchHome('game');
 					this.#startInviteGame(data.recipient);
 				} else {
