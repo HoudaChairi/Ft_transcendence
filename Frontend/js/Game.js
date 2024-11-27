@@ -88,13 +88,13 @@ class Game {
 	#lastFrameTime = 0;
 	#frameRate = 60;
 
-	#chatWebSocket = {};
 	#chatuser;
 	#gameWebSocket;
 	#tournamentWebSocket;
 	#currentMatch;
 	#onlineSocket;
-	#onlineUsers;
+	#onlineUsers = [];
+	#chatWebSocket = {};
 
 	#loggedUser;
 	#enabled2fa = false;
@@ -134,7 +134,27 @@ class Game {
 			chat: CHAT,
 			leaderboard: LEADERBOARD,
 		};
+		window.addEventListener('popstate', this.#handlePopState.bind(this));
 		this.#init();
+	}
+
+	#handlePopState() {
+		const path = window.location.pathname.slice(1) || 'home';
+		this.#removeAllOverlays();
+		if (this.#loggedUser && Object.keys(this.#home).includes(path)) {
+			this.#switchHome(path);
+		} else {
+			this.#LoginPage();
+		}
+	}
+	
+	#removeAllOverlays() {
+		['signOverlay', 'upOverlay', 'sbOverlay', 'sbsettingOverlay', 'btnOverlay', 'acceptOverlay'].forEach(overlay => {
+			this.#scene.remove(this.#css2DObject[overlay]);
+		});
+		['sign', 'register', 'valid', 'usersprofile', 'sbook', 'sbsetting', 'chatBtn', 'accept'].forEach(element => {
+			this.#scene.remove(this.#css2DObject[element]);
+		});
 	}
 
 	#init() {
@@ -3270,35 +3290,22 @@ class Game {
 		this.#isOffline = false;
 		this.#cleanupWebSockets(home);
 		this.#removeKeyListeners();
-
-		[
-			'game',
-			'chat',
-			'leaderboard',
-			'offline',
-			'match',
-			'tournament',
-			'star',
-			'win',
-		].forEach(ele => {
-			this.#scene.remove(this.#css2DObject[ele]);
-		});
-
+	
+		['game', 'chat', 'leaderboard', 'offline', 'match', 'tournament', 'star', 'win']
+			.forEach(ele => this.#scene.remove(this.#css2DObject[ele]));
+	
 		this.#css2DObject.home.element.innerHTML = this.#home[home];
 		this.#updateUIElements(home);
+	
 		switch (home) {
-			case 'chat':
-				this.#setupChat();
-				break;
-			case 'game':
-				this.#GamePage();
-				break;
-			case 'leaderboard':
-				this.#LeaderBoard();
-				break;
+			case 'chat': this.#setupChat(); break;
+			case 'game': this.#GamePage(); break;
+			case 'leaderboard': this.#LeaderBoard(); break;
 		}
-
-		history.replaceState(null, null, `/${home}`);
+	
+		if (window.location.pathname !== `/${home}`) {
+			history.pushState({page: home}, '', `/${home}`);
+		}
 		this.#scene.add(this.#css2DObject[home]);
 	}
 
