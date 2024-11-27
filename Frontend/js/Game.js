@@ -1602,7 +1602,7 @@ class Game {
 				this.#chatWebSocket[user.username] = {};
 				this.#chatWebSocket[user.username].elem = userHTML;
 				this.#chatWebSocket[user.username].sock = new WebSocket(
-					`wss://window.location.host}/api/ws/chat/${room}/`
+					`wss://${window.location.host}/api/ws/chat/${room}/`
 				);
 				this.#chatWebSocket[user.username].sock.onmessage = e => {
 					const data = JSON.parse(e.data);
@@ -2562,7 +2562,7 @@ class Game {
 
 		try {
 			this.#gameWebSocket = new WebSocket(
-				`wss://window.location.host}/api/ws/game/`
+				`wss://${window.location.host}/api/ws/game/`
 			);
 
 			if (!this.#gameWebSocket) {
@@ -2715,7 +2715,7 @@ class Game {
 	#initiateTournamentGame(matchData) {
 		try {
 			this.#gameWebSocket = new WebSocket(
-				`wss://window.location.host}/api/ws/game/`
+				`wss://${window.location.host}/api/ws/game/`
 			);
 
 			this.#gameWebSocket.onopen = () => {
@@ -2863,7 +2863,7 @@ class Game {
 	#tournamentStart() {
 		try {
 			this.#tournamentWebSocket = new WebSocket(
-				`wss://window.location.host}/api/ws/tournament/`
+				`wss://${window.location.host}/api/ws/tournament/`
 			);
 
 			this.#setupTournamentWebSocketHandlers();
@@ -3151,7 +3151,7 @@ class Game {
 
 		try {
 			this.#gameWebSocket = new WebSocket(
-				`wss://window.location.host}/api/ws/game/`
+				`wss://${window.location.host}/api/ws/game/`
 			);
 
 			this.#gameWebSocket.onopen = () => {
@@ -3347,7 +3347,7 @@ class Game {
 		this.#switchChatTab(1);
 
 		this.#onlineSocket = new WebSocket(
-			`wss://window.location.host}/api/ws/online_status/${
+			`wss://${window.location.host}/api/ws/online_status/${
 				this.#loggedUser
 			}/`
 		);

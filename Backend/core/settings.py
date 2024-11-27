@@ -10,7 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-e!-e$qj*#i@8s!=rd9=#2cwk99^-nx9#zk7_e^qethq*vwg!$('
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -106,9 +108,9 @@ WSGI_APPLICATION = 'core.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'transcendence_db',
-        'USER': 'postgres_user',
-        'PASSWORD': '1337transcendence',
+        'NAME': os.getenv('POSTGRES_DB'),
+        'USER': os.getenv('POSTGRES_USER'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
         'HOST': 'postgres',
         'PORT': '5432',
     }
@@ -205,12 +207,12 @@ CHANNEL_LAYERS = {
     },
 }
 
-# GOOGLE 
+DOMAIN_NAME = os.getenv('DOMAIN_NAME', 'localhost')
 
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '851881649681-crjcohss2l0bh66tore6s4b6ik695g74.apps.googleusercontent.com'
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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'
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY')
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET')
 
-GOOGLE_REDIRECT_URI = 'https://localhost/api/auth/google/callback/'
+GOOGLE_REDIRECT_URI = f'https://{DOMAIN_NAME}/api/auth/google/callback/'
 
 SOCIAL_AUTH_URL_NAMESPACE = 'social'
 
@@ -220,9 +222,9 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # 42
 
-SOCIAL_AUTH_42_KEY = 'u-s4t2ud-cbb98f88ec757c172c1f5f2ec653fa1f1e0694ffe0f0e43fb5707487add59a72'
-SOCIAL_AUTH_42_SECRET = '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'
-SOCIAL_AUTH_42_REDIRECT_URI = 'https://localhost/api/auth/42/callback/' 
+SOCIAL_AUTH_42_KEY = os.getenv('SOCIAL_AUTH_42_KEY')
+SOCIAL_AUTH_42_SECRET = os.getenv('SOCIAL_AUTH_42_SECRET')
+SOCIAL_AUTH_42_REDIRECT_URI = f'https://{DOMAIN_NAME}/api/auth/42/callback/' 
 
 CACHES = {
     'default': {
