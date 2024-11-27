@@ -2576,11 +2576,11 @@ class Game {
 	#handleGameEnd(data) {
 		const players = {
 			winner:
-				data.winner === data.score.player1.us
+				data.winner === data.score.player1.usr
 					? data.score.player1
 					: data.score.player2,
 			loser:
-				data.winner === data.score.player1.us
+				data.winner === data.score.player1.usr
 					? data.score.player2
 					: data.score.player1,
 		};
