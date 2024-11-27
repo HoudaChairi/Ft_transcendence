@@ -124,7 +124,7 @@ class Game {
 		missedBalls: 0,
 		successfulBlocks: 0,
 		avgInterceptTime: 0,
-		lastPositions: []
+		lastPositions: [],
 	};
 
 	constructor() {
@@ -147,12 +147,28 @@ class Game {
 			this.#LoginPage();
 		}
 	}
-	
+
 	#removeAllOverlays() {
-		['signOverlay', 'upOverlay', 'sbOverlay', 'sbsettingOverlay', 'btnOverlay', 'acceptOverlay'].forEach(overlay => {
+		[
+			'signOverlay',
+			'upOverlay',
+			'sbOverlay',
+			'sbsettingOverlay',
+			'btnOverlay',
+			'acceptOverlay',
+		].forEach(overlay => {
 			this.#scene.remove(this.#css2DObject[overlay]);
 		});
-		['sign', 'register', 'valid', 'usersprofile', 'sbook', 'sbsetting', 'chatBtn', 'accept'].forEach(element => {
+		[
+			'sign',
+			'register',
+			'valid',
+			'usersprofile',
+			'sbook',
+			'sbsetting',
+			'chatBtn',
+			'accept',
+		].forEach(element => {
 			this.#scene.remove(this.#css2DObject[element]);
 		});
 	}
@@ -2021,9 +2037,12 @@ class Game {
 			this.#aiStats.successfulBlocks++;
 			const positions = this.#aiStats.lastPositions;
 			if (positions.length >= 2) {
-				const interceptTime = positions[positions.length - 1].time - positions[0].time;
-				this.#aiStats.avgInterceptTime = 
-					(this.#aiStats.avgInterceptTime * this.#aiStats.successfulBlocks + interceptTime) /
+				const interceptTime =
+					positions[positions.length - 1].time - positions[0].time;
+				this.#aiStats.avgInterceptTime =
+					(this.#aiStats.avgInterceptTime *
+						this.#aiStats.successfulBlocks +
+						interceptTime) /
 					(this.#aiStats.successfulBlocks + 1);
 			}
 		}
@@ -2057,14 +2076,14 @@ class Game {
 			clearInterval(this.#aiUpdateTimer);
 			this.#aiUpdateTimer = null;
 		}
-		
+
 		this.#aiStats = {
 			missedBalls: 0,
 			successfulBlocks: 0,
 			avgInterceptTime: 0,
-			lastPositions: []
+			lastPositions: [],
 		};
-		
+
 		this.#displayWin(players);
 		this.#resetGameState();
 		this.#ballDirection = new Vector3(0, 0, 0);
@@ -3000,44 +3019,41 @@ class Game {
 		this.#aiLastUpdateTime = 0;
 		this.#aiCurrentInput = null;
 		this.#aiTargetPosition = 0;
-		
-		
+
 		setTimeout(() => {
 			this.#startBall();
 			this.#initAILoop();
 		}, 4000);
 	}
-	
+
 	#initAILoop() {
 		if (this.#aiUpdateTimer) clearInterval(this.#aiUpdateTimer);
-		
-		
+
 		this.#aiUpdateTimer = setInterval(() => {
 			if (!this.#ball || !this.#player2) return;
-			
+
 			const now = performance.now();
 			if (now - this.#aiLastUpdateTime >= this.#AI_UPDATE_INTERVAL) {
 				this.#updateAIDecision();
 				this.#aiLastUpdateTime = now;
 			}
-			
-			
+
 			this.#simulateAIInput();
-		}, 16); 
+		}, 16);
 	}
-	
+
 	#updateAIDecision() {
 		const now = performance.now();
 		this.#aiStats.lastPositions.push({
 			x: this.#ball.position.x,
 			y: this.#ball.position.y,
-			time: now
+			time: now,
 		});
-		
+
 		while (this.#aiStats.lastPositions.length > 6) {
 			this.#aiStats.lastPositions.shift();
 		}
-		
+
 		const prediction = this.#predictBallTrajectory();
 		const anticipation = this.#calculateAnticipation();
 		this.#aiTargetPosition = prediction.y + anticipation;
@@ -3045,94 +3061,119 @@ class Game {
 
 	#calculateAnticipation() {
 		if (Math.abs(this.#ball.position.x) < this.#AI_ANTICIPATION_DISTANCE) {
-			
 			return this.#ball.position.y * 0.3;
 		}
 		return 0;
-	}	
-	
+	}
+
 	#predictBallTrajectory() {
 		const positions = this.#aiStats.lastPositions;
-		if (positions.length < 2) return { x: this.#ball.position.x, y: this.#ball.position.y };
-		
-		
+		if (positions.length < 2)
+			return { x: this.#ball.position.x, y: this.#ball.position.y };
+
 		const recentPositions = positions.slice(-4);
 		let weightedVelocity = { x: 0, y: 0 };
 		let weightSum = 0;
-		
+
 		for (let i = 1; i < recentPositions.length; i++) {
 			const weight = i / (recentPositions.length - 1);
 			weightSum += weight;
-			weightedVelocity.x += weight * (recentPositions[i].x - recentPositions[i-1].x) / 
-								 (recentPositions[i].time - recentPositions[i-1].time);
-			weightedVelocity.y += weight * (recentPositions[i].y - recentPositions[i-1].y) / 
-								 (recentPositions[i].time - recentPositions[i-1].time);
+			weightedVelocity.x +=
+				(weight * (recentPositions[i].x - recentPositions[i - 1].x)) /
+				(recentPositions[i].time - recentPositions[i - 1].time);
+			weightedVelocity.y +=
+				(weight * (recentPositions[i].y - recentPositions[i - 1].y)) /
+				(recentPositions[i].time - recentPositions[i - 1].time);
 		}
-		
+
 		weightedVelocity.x /= weightSum;
 		weightedVelocity.y /= weightSum;
-		
+
 		let predictedY = this.#ball.position.y;
 		let predictedVelY = weightedVelocity.y;
-		const timeToIntercept = Math.abs((1300 - this.#ball.position.x) / weightedVelocity.x);
-		
-		
+		const timeToIntercept = Math.abs(
+			(1300 - this.#ball.position.x) / weightedVelocity.x
+		);
+
 		const steps = Math.ceil(timeToIntercept / 16);
 		const energyLoss = 0.98;
-		
+
 		for (let i = 0; i < steps; i++) {
 			predictedY += predictedVelY * 16;
 			if (Math.abs(predictedY) >= GAME_CONSTANTS.COURT_HEIGHT - 15) {
-				predictedY = Math.sign(predictedY) * (GAME_CONSTANTS.COURT_HEIGHT - 15);
+				predictedY =
+					Math.sign(predictedY) * (GAME_CONSTANTS.COURT_HEIGHT - 15);
 				predictedVelY *= -energyLoss;
 			}
 		}
-		
-		
-		const distanceFactor = Math.min(1, Math.abs(1300 - this.#ball.position.x) / 1300);
-		const errorMultiplier = Math.max(0.15, 1 - (this.#aiStats.successfulBlocks * this.#AI_LEARNING_RATE));
-		const error = (Math.random() - 0.5) * this.#AI_PREDICTION_ERROR * errorMultiplier * distanceFactor;
-		
+
+		const distanceFactor = Math.min(
+			1,
+			Math.abs(1300 - this.#ball.position.x) / 1300
+		);
+		const errorMultiplier = Math.max(
+			0.15,
+			1 - this.#aiStats.successfulBlocks * this.#AI_LEARNING_RATE
+		);
+		const error =
+			(Math.random() - 0.5) *
+			this.#AI_PREDICTION_ERROR *
+			errorMultiplier *
+			distanceFactor;
+
 		return {
 			x: 1300,
-			y: Math.max(-GAME_CONSTANTS.COURT_HEIGHT + 60, 
-				Math.min(GAME_CONSTANTS.COURT_HEIGHT - 60, predictedY + error))
+			y: Math.max(
+				-GAME_CONSTANTS.COURT_HEIGHT + 60,
+				Math.min(GAME_CONSTANTS.COURT_HEIGHT - 60, predictedY + error)
+			),
 		};
 	}
-		
+
 	#simulateAIInput() {
 		if (!this.#player2) return;
-		
+
 		const currentY = this.#player2.position.y;
 		const diff = this.#aiTargetPosition - currentY;
 		const momentum = this.#player2Direction * this.#AI_MOMENTUM_FACTOR;
-		
-		
+
 		const speedFactor = Math.min(1, Math.abs(diff) / 150);
-		const tolerance = this.#AI_MIN_TOLERANCE + 
-			(this.#AI_MAX_TOLERANCE - this.#AI_MIN_TOLERANCE) * (1 - speedFactor);
-		
-		
-		const predictedPosition = currentY + (momentum * 50);
+		const tolerance =
+			this.#AI_MIN_TOLERANCE +
+			(this.#AI_MAX_TOLERANCE - this.#AI_MIN_TOLERANCE) *
+				(1 - speedFactor);
+
+		const predictedPosition = currentY + momentum * 50;
 		const adjustedDiff = this.#aiTargetPosition - predictedPosition;
-		
+
 		if (Math.abs(adjustedDiff) > tolerance) {
 			const newInput = adjustedDiff > 0 ? 'ArrowDown' : 'ArrowUp';
-			
+
 			const now = performance.now();
-			if (!this.#lastDirectionChange || now - this.#lastDirectionChange > 120) {
+			if (
+				!this.#lastDirectionChange ||
+				now - this.#lastDirectionChange > 120
+			) {
 				if (this.#aiCurrentInput) {
-					this.#handleKeyEvent(new KeyboardEvent('keyup', { key: this.#aiCurrentInput }));
+					this.#handleKeyEvent(
+						new KeyboardEvent('keyup', {
+							key: this.#aiCurrentInput,
+						})
+					);
 				}
 				setTimeout(() => {
-					this.#handleKeyEvent(new KeyboardEvent('keydown', { key: newInput }));
+					this.#handleKeyEvent(
+						new KeyboardEvent('keydown', { key: newInput })
+					);
 					this.#aiCurrentInput = newInput;
 					this.#lastDirectionChange = performance.now();
 				}, this.#AI_REACTION_TIME);
 			}
-		} else if (Math.abs(diff) < tolerance/2 && this.#aiCurrentInput) {
+		} else if (Math.abs(diff) < tolerance / 2 && this.#aiCurrentInput) {
 			setTimeout(() => {
-				this.#handleKeyEvent(new KeyboardEvent('keyup', { key: this.#aiCurrentInput }));
+				this.#handleKeyEvent(
+					new KeyboardEvent('keyup', { key: this.#aiCurrentInput })
+				);
 				this.#aiCurrentInput = null;
 			}, this.#AI_REACTION_TIME / 2);
 		}
@@ -3237,7 +3278,7 @@ class Game {
 			});
 	}
 
-	async #LeaderBoard(){
+	async #LeaderBoard() {
 		try {
 			const leader = this.#css2DObject.leaderboard.element;
 			const response = await fetch(`api/leader/`, {
@@ -3250,36 +3291,54 @@ class Game {
 			});
 			const data = await response.json();
 			if (response.ok) {
-				const table = leader.querySelector('.element-parent-leaderboard');
-				const players = [...table.children]
-				players.forEach((player, i)=>{
-					if (data.users[i])
-					{
+				const table = leader.querySelector(
+					'.element-parent-leaderboard'
+				);
+				const players = [...table.children];
+				players.forEach((player, i) => {
+					if (data.users[i]) {
 						player.style.visibility = 'visible';
-						player.querySelector('.element-child').src = data.users[i].avatar;
-						player.querySelector('.sword-prowess-lv').textContent = data.users[i].username;
-						if (i>2)
-							player.querySelector('.div3').textContent = data.users[i].t_points;
-						else{
-							leader.querySelector(`#w${i + 1}`).querySelector('.a-icon').src = data.users[i].avatar
-							leader.querySelector(`#w${i + 1}`).querySelector('.w-usr').textContent = data.users[i].username
-							leader.querySelector(`#w${i + 1}`).querySelector('.div-num').textContent = data.users[i].t_points
+						player.querySelector('.element-child').src =
+							data.users[i].avatar;
+						player.querySelector('.sword-prowess-lv').textContent =
+							data.users[i].username;
+						if (i > 2)
+							player.querySelector('.div3').textContent =
+								data.users[i].t_points;
+						else {
+							leader
+								.querySelector(`#w${i + 1}`)
+								.querySelector('.a-icon').src =
+								data.users[i].avatar;
+							leader
+								.querySelector(`#w${i + 1}`)
+								.querySelector('.w-usr').textContent =
+								data.users[i].username;
+							leader
+								.querySelector(`#w${i + 1}`)
+								.querySelector('.div-num').textContent =
+								data.users[i].t_points;
 						}
-					}
-					else {
+					} else {
 						player.style.visibility = 'hidden';
 					}
-				})
-				table.addEventListener('click',e=>{
-					const btn = e.target.closest('.l-elem')
+				});
+				table.addEventListener('click', e => {
+					const btn = e.target.closest('.l-elem');
 					if (btn)
-						this.#toggleUsersProfile(btn.querySelector('.sword-prowess-lv').textContent);
-				})
-				leader.querySelector('.leader-back-1').addEventListener('click',e=>{
-					const btn = e.target.closest('.l-winners')
-					if (btn && btn.querySelector('.w-usr').textContent)
-						this.#toggleUsersProfile(btn.querySelector('.w-usr').textContent);
-				})
+						this.#toggleUsersProfile(
+							btn.querySelector('.sword-prowess-lv').textContent
+						);
+				});
+				leader
+					.querySelector('.leader-back-1')
+					.addEventListener('click', e => {
+						const btn = e.target.closest('.l-winners');
+						if (btn && btn.querySelector('.w-usr').textContent)
+							this.#toggleUsersProfile(
+								btn.querySelector('.w-usr').textContent
+							);
+					});
 			}
 		} catch (error) {
 			alert(error);
@@ -3290,21 +3349,35 @@ class Game {
 		this.#isOffline = false;
 		this.#cleanupWebSockets(home);
 		this.#removeKeyListeners();
-	
-		['game', 'chat', 'leaderboard', 'offline', 'match', 'tournament', 'star', 'win']
-			.forEach(ele => this.#scene.remove(this.#css2DObject[ele]));
-	
+
+		[
+			'game',
+			'chat',
+			'leaderboard',
+			'offline',
+			'match',
+			'tournament',
+			'star',
+			'win',
+		].forEach(ele => this.#scene.remove(this.#css2DObject[ele]));
+
 		this.#css2DObject.home.element.innerHTML = this.#home[home];
 		this.#updateUIElements(home);
-	
+
 		switch (home) {
-			case 'chat': this.#setupChat(); break;
-			case 'game': this.#GamePage(); break;
-			case 'leaderboard': this.#LeaderBoard(); break;
+			case 'chat':
+				this.#setupChat();
+				break;
+			case 'game':
+				this.#GamePage();
+				break;
+			case 'leaderboard':
+				this.#LeaderBoard();
+				break;
 		}
-	
+
 		if (window.location.pathname !== `/${home}`) {
-			history.pushState({page: home}, '', `/${home}`);
+			history.pushState({ page: home }, '', `/${home}`);
 		}
 		this.#scene.add(this.#css2DObject[home]);
 	}
@@ -3357,7 +3430,7 @@ class Game {
 		this.#onlineSocket.onmessage = e => {
 			try {
 				const data = JSON.parse(e.data);
-				
+
 				if (
 					data.type === 'invite_response' &&
 					data.response === 'cancelled'
@@ -3432,7 +3505,10 @@ class Game {
 		} else if (event.type === 'keyup') {
 			if (event.key === 'ArrowUp' && this.#player2Direction === -1) {
 				this.#player2Direction = 0;
-			} else if (event.key === 'ArrowDown' && this.#player2Direction === 1) {
+			} else if (
+				event.key === 'ArrowDown' &&
+				this.#player2Direction === 1
+			) {
 				this.#player2Direction = 0;
 			}
 		}
