@@ -13,6 +13,7 @@ urlpatterns = [
     path('refresh-token/', CustomTokenRefreshView.as_view(), name='token_refresh'),
     
     path('users/', UserList.as_view(), name='user_list'),
+    path('leader/', LeaderBoard.as_view(), name='LeaderBoard'),
     path('user/<str:username>/', UserInfos.as_view(), name='user-info'),
     # 2FA
     path('enable-2fa/', Enable2FA.as_view(), name='enable_2fa'),

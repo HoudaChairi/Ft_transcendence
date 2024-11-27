@@ -12,95 +12,95 @@ export const LEADERBOARDMAIN = `<div class="leader-back-1">
 			src="/textures/svg/Crown.svg"
 		/>
 	</div>
-	<div class="a-parent">
-		<img class="a-icon gold" alt="" src="/textures/svg/M.svg" />
+	<div class="a-parent l-winners" id="w1">
+		<img class="a-icon gold" alt="" />
 		<div class="infos-leaderboard">
-			<div class="agimi">agimi</div>
-			<div class="div-num">10</div>
+			<div class="agimi w-usr"></div>
+			<div class="div-num"></div>
 		</div>
 	</div>
-	<div class="avatarf-1-1-parent">
-		<img class="a-icon silver" alt="" src="/textures/svg/F.svg" />
+	<div class="avatarf-1-1-parent l-winners" id="w2">
+		<img class="a-icon silver" alt="" />
 		<div class="infos-leaderboard">
-			<div class="mel-moun-leaderboard">mel-moun</div>
-			<div class="div-num">9</div>
+			<div class="mel-moun-leaderboard w-usr"></div>
+			<div class="div-num"></div>
 		</div>
 	</div>
-	<div class="avatarf-1-1-group">
-		<img class="a-icon bronze" alt="" src="/textures/svg/F.svg" />
+	<div class="avatarf-1-1-group l-winners" id="w3">
+		<img class="a-icon bronze" alt="" />
 		<div class="infos-leaderboard">
-			<div class="hchairi">hchairi</div>
-			<div class="div-num">8</div>
+			<div class="hchairi w-usr"></div>
+			<div class="div-num"></div>
 		</div>
 	</div>
 </div>
 <div class="element-parent-leaderboard">
-	<div class="element-leaderboard">
-		<img class="element-child" alt="" src="/textures/svg/Rectangle 1.svg" />
-		<div class="sword-prowess-lv">Player 1</div>
+	<div class="element-leaderboard l-elem">
+		<img class="element-child" alt="" />
+		<div class="sword-prowess-lv"></div>
 	</div>
-	<div class="element1">
-		<img class="element-child" alt="" src="/textures/svg/Rectangle 1.svg" />
-		<div class="sword-prowess-lv">Player 2</div>
+	<div class="element1 l-elem">
+		<img class="element-child" alt="" />
+		<div class="sword-prowess-lv"></div>
 	</div>
-	<div class="element2">
-		<img class="element-child" alt="" src="/textures/svg/Rectangle 1.svg" />
-		<div class="sword-prowess-lv">Player 3</div>
+	<div class="element2 l-elem">
+		<img class="element-child" alt="" />
+		<div class="sword-prowess-lv"></div>
 	</div>
-	<div class="element-group">
+	<div class="element-group l-elem">
 		<div class="element3">
 			<img
 				class="element-child"
 				alt=""
-				src="/textures/svg/Rectangle 1.svg"
+			
 			/>
-			<div class="sword-prowess-lv">Player 4</div>
+			<div class="sword-prowess-lv"></div>
 		</div>
-		<div class="div3">7</div>
+		<div class="div3"></div>
 	</div>
-	<div class="element-group">
+	<div class="element-group l-elem">
 		<div class="element3">
 			<img
 				class="element-child"
 				alt=""
-				src="/textures/svg/Rectangle 1.svg"
+			
 			/>
-			<div class="sword-prowess-lv">Player 5</div>
+			<div class="sword-prowess-lv"></div>
 		</div>
-		<div class="div3">6</div>
+		<div class="div3"></div>
 	</div>
-	<div class="element-group">
+	<div class="element-group l-elem">
 		<div class="element3">
 			<img
 				class="element-child"
 				alt=""
-				src="/textures/svg/Rectangle 1.svg"
+			
 			/>
-			<div class="sword-prowess-lv">Player 6</div>
+			<div class="sword-prowess-lv"></div>
 		</div>
-		<div class="div3">5</div>
+		<div class="div3"></div>
 	</div>
-	<div class="element-group">
+	<div class="element-group l-elem">
 		<div class="element3">
 			<img
 				class="element-child"
 				alt=""
-				src="/textures/svg/Rectangle 1.svg"
+			
 			/>
-			<div class="sword-prowess-lv">Player 7</div>
+			<div class="sword-prowess-lv"></div>
 			<div class="indicator"></div>
 		</div>
-		<div class="div3">4</div>
+		<div class="div3"></div>
 	</div>
-	<div class="element-group">
+	<div class="element-group l-elem">
 		<div class="element3">
 			<img
 				class="element-child"
 				alt=""
-				src="/textures/svg/Rectangle 1.svg"
+			
 			/>
-			<div class="sword-prowess-lv">Player 8</div>
+			<div class="sword-prowess-lv"></div>
 		</div>
-		<div class="div3">3</div>
+		<div class="div3"></div>
 	</div>
 </div>`;

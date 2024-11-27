@@ -3029,6 +3029,55 @@ class Game {
 			});
 	}
 
+	async #LeaderBoard(){
+		try {
+			const leader = this.#css2DObject.leaderboard.element;
+			const response = await fetch(`api/leader/`, {
+				method: 'GET',
+				headers: {
+					Authorization: `Bearer ${localStorage.getItem(
+						'accessToken'
+					)}`,
+				},
+			});
+			const data = await response.json();
+			if (response.ok) {
+				const table = leader.querySelector('.element-parent-leaderboard');
+				const players = [...table.children]
+				players.forEach((player, i)=>{
+					if (data.users[i])
+					{
+						player.style.visibility = 'visible';
+						player.querySelector('.element-child').src = data.users[i].avatar;
+						player.querySelector('.sword-prowess-lv').textContent = data.users[i].username;
+						if (i>2)
+							player.querySelector('.div3').textContent = data.users[i].t_points;
+						else{
+							leader.querySelector(`#w${i + 1}`).querySelector('.a-icon').src = data.users[i].avatar
+							leader.querySelector(`#w${i + 1}`).querySelector('.w-usr').textContent = data.users[i].username
+							leader.querySelector(`#w${i + 1}`).querySelector('.div-num').textContent = data.users[i].t_points
+						}
+					}
+					else {
+						player.style.visibility = 'hidden';
+					}
+				})
+				table.addEventListener('click',e=>{
+					const btn = e.target.closest('.l-elem')
+					if (btn)
+						this.#toggleUsersProfile(btn.querySelector('.sword-prowess-lv').textContent);
+				})
+				leader.querySelector('.leader-back-1').addEventListener('click',e=>{
+					const btn = e.target.closest('.l-winners')
+					if (btn)
+						this.#toggleUsersProfile(btn.querySelector('.w-usr').textContent);
+				})
+			}
+		} catch (error) {
+			alert(error);
+		}
+	}
+
 	#switchHome(home) {
 		this.#isOffline = false;
 		this.#cleanupWebSockets(home);
@@ -3049,11 +3098,16 @@ class Game {
 
 		this.#css2DObject.home.element.innerHTML = this.#home[home];
 		this.#updateUIElements(home);
-
-		if (home === 'chat') {
-			this.#setupChat();
-		} else if (home === 'game') {
-			this.#GamePage();
+		switch (home) {
+			case 'chat':
+				this.#setupChat();
+				break;
+			case 'game':
+				this.#GamePage();
+				break;
+			case 'leaderboard':
+				this.#LeaderBoard();
+				break;
 		}
 
 		history.replaceState(null, null, `/${home}`);

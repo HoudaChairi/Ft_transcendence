@@ -271,6 +271,28 @@ class UserList(APIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class LeaderBoard(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            users = Player.objects.order_by('-t_points')
+
+            users_list = [
+                {
+                    'username': user.username,
+                    'avatar': user.get_avatar_url(),
+                    't_points': user.t_points,
+                }
+                for user in users
+            ]
+
+            return Response({'users': users_list})
+        
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class UserInfos(APIView):
     permission_classes = [IsAuthenticated]
 
