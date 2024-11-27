@@ -107,6 +107,26 @@ class Game {
 	#keydownHandler;
 	#keyupHandler;
 
+	#aiUpdateTimer;
+	#aiLastUpdateTime;
+	#aiTargetPosition;
+	#aiCurrentInput;
+	#lastDirectionChange;
+	#AI_UPDATE_INTERVAL = 1000;
+	#AI_REACTION_TIME = 80;
+	#AI_PREDICTION_ERROR = 25;
+	#AI_LEARNING_RATE = 0.25;
+	#AI_MIN_TOLERANCE = 10;
+	#AI_MAX_TOLERANCE = 35;
+	#AI_MOMENTUM_FACTOR = 0.15;
+	#AI_ANTICIPATION_DISTANCE = 500;
+	#aiStats = {
+		missedBalls: 0,
+		successfulBlocks: 0,
+		avgInterceptTime: 0,
+		lastPositions: []
+	};
+
 	constructor() {
 		this.#home = {
 			home: HOME,
@@ -122,7 +142,7 @@ class Game {
 		this.#createCamera();
 		this.#createRenderer();
 		this.#addDOMElem();
-		// this.#createControls();
+		//.#createControls();
 		this.#loadEnvironment();
 		this.#loadFont();
 		window.addEventListener('resize', () => this.#onWindowResize());
@@ -1562,7 +1582,7 @@ class Game {
 				this.#chatWebSocket[user.username] = {};
 				this.#chatWebSocket[user.username].elem = userHTML;
 				this.#chatWebSocket[user.username].sock = new WebSocket(
-					`wss://${window.location.host}/api/ws/chat/${room}/`
+					`wss://window.location.host}/api/ws/chat/${room}/`
 				);
 				this.#chatWebSocket[user.username].sock.onmessage = e => {
 					const data = JSON.parse(e.data);
@@ -1977,6 +1997,16 @@ class Game {
 		this.#ballDirection.y = relativeY * this.#velocity * this.#factor;
 		const offset = 60 + GAME_CONSTANTS.BALL_RADIUS;
 		this.#ball.position.x = player.position.x + direction * offset;
+		if (player === this.#player2) {
+			this.#aiStats.successfulBlocks++;
+			const positions = this.#aiStats.lastPositions;
+			if (positions.length >= 2) {
+				const interceptTime = positions[positions.length - 1].time - positions[0].time;
+				this.#aiStats.avgInterceptTime = 
+					(this.#aiStats.avgInterceptTime * this.#aiStats.successfulBlocks + interceptTime) /
+					(this.#aiStats.successfulBlocks + 1);
+			}
+		}
 	}
 
 	#handleBallWallCollision() {
@@ -1996,9 +2026,25 @@ class Game {
 		if (!this.#checkWinCondition()) {
 			this.#startBall();
 		}
+
+		if (goal === 'goalR') {
+			this.#aiStats.missedBalls++;
+		}
 	}
 
 	#endGame(players) {
+		if (this.#aiUpdateTimer) {
+			clearInterval(this.#aiUpdateTimer);
+			this.#aiUpdateTimer = null;
+		}
+		
+		this.#aiStats = {
+			missedBalls: 0,
+			successfulBlocks: 0,
+			avgInterceptTime: 0,
+			lastPositions: []
+		};
+		
 		this.#displayWin(players);
 		this.#resetGameState();
 		this.#ballDirection = new Vector3(0, 0, 0);
@@ -2496,7 +2542,7 @@ class Game {
 
 		try {
 			this.#gameWebSocket = new WebSocket(
-				`wss://${window.location.host}/api/ws/game/`
+				`wss://window.location.host}/api/ws/game/`
 			);
 
 			if (!this.#gameWebSocket) {
@@ -2649,7 +2695,7 @@ class Game {
 	#initiateTournamentGame(matchData) {
 		try {
 			this.#gameWebSocket = new WebSocket(
-				`wss://${window.location.host}/api/ws/game/`
+				`wss://window.location.host}/api/ws/game/`
 			);
 
 			this.#gameWebSocket.onopen = () => {
@@ -2797,7 +2843,7 @@ class Game {
 	#tournamentStart() {
 		try {
 			this.#tournamentWebSocket = new WebSocket(
-				`wss://${window.location.host}/api/ws/tournament/`
+				`wss://window.location.host}/api/ws/tournament/`
 			);
 
 			this.#setupTournamentWebSocketHandlers();
@@ -2928,7 +2974,149 @@ class Game {
 		this.#scene.add(this.#css2DObject.win);
 	}
 
-	#singleplayer() {}
+	#singleplayer() {
+		this.#scene.remove(this.#css2DObject.offline);
+		this.#bindKeys('AI');
+		this.#aiLastUpdateTime = 0;
+		this.#aiCurrentInput = null;
+		this.#aiTargetPosition = 0;
+		
+		
+		setTimeout(() => {
+			this.#startBall();
+			this.#initAILoop();
+		}, 4000);
+	}
+	
+	#initAILoop() {
+		if (this.#aiUpdateTimer) clearInterval(this.#aiUpdateTimer);
+		
+		
+		this.#aiUpdateTimer = setInterval(() => {
+			if (!this.#ball || !this.#player2) return;
+			
+			const now = performance.now();
+			if (now - this.#aiLastUpdateTime >= this.#AI_UPDATE_INTERVAL) {
+				this.#updateAIDecision();
+				this.#aiLastUpdateTime = now;
+			}
+			
+			
+			this.#simulateAIInput();
+		}, 16); 
+	}
+	
+	#updateAIDecision() {
+		const now = performance.now();
+		this.#aiStats.lastPositions.push({
+			x: this.#ball.position.x,
+			y: this.#ball.position.y,
+			time: now
+		});
+		
+		while (this.#aiStats.lastPositions.length > 6) {
+			this.#aiStats.lastPositions.shift();
+		}
+		
+		const prediction = this.#predictBallTrajectory();
+		const anticipation = this.#calculateAnticipation();
+		this.#aiTargetPosition = prediction.y + anticipation;
+	}
+
+	#calculateAnticipation() {
+		if (Math.abs(this.#ball.position.x) < this.#AI_ANTICIPATION_DISTANCE) {
+			
+			return this.#ball.position.y * 0.3;
+		}
+		return 0;
+	}	
+	
+	#predictBallTrajectory() {
+		const positions = this.#aiStats.lastPositions;
+		if (positions.length < 2) return { x: this.#ball.position.x, y: this.#ball.position.y };
+		
+		
+		const recentPositions = positions.slice(-4);
+		let weightedVelocity = { x: 0, y: 0 };
+		let weightSum = 0;
+		
+		for (let i = 1; i < recentPositions.length; i++) {
+			const weight = i / (recentPositions.length - 1);
+			weightSum += weight;
+			weightedVelocity.x += weight * (recentPositions[i].x - recentPositions[i-1].x) / 
+								 (recentPositions[i].time - recentPositions[i-1].time);
+			weightedVelocity.y += weight * (recentPositions[i].y - recentPositions[i-1].y) / 
+								 (recentPositions[i].time - recentPositions[i-1].time);
+		}
+		
+		weightedVelocity.x /= weightSum;
+		weightedVelocity.y /= weightSum;
+		
+		let predictedY = this.#ball.position.y;
+		let predictedVelY = weightedVelocity.y;
+		const timeToIntercept = Math.abs((1300 - this.#ball.position.x) / weightedVelocity.x);
+		
+		
+		const steps = Math.ceil(timeToIntercept / 16);
+		const energyLoss = 0.98;
+		
+		for (let i = 0; i < steps; i++) {
+			predictedY += predictedVelY * 16;
+			if (Math.abs(predictedY) >= GAME_CONSTANTS.COURT_HEIGHT - 15) {
+				predictedY = Math.sign(predictedY) * (GAME_CONSTANTS.COURT_HEIGHT - 15);
+				predictedVelY *= -energyLoss;
+			}
+		}
+		
+		
+		const distanceFactor = Math.min(1, Math.abs(1300 - this.#ball.position.x) / 1300);
+		const errorMultiplier = Math.max(0.15, 1 - (this.#aiStats.successfulBlocks * this.#AI_LEARNING_RATE));
+		const error = (Math.random() - 0.5) * this.#AI_PREDICTION_ERROR * errorMultiplier * distanceFactor;
+		
+		return {
+			x: 1300,
+			y: Math.max(-GAME_CONSTANTS.COURT_HEIGHT + 60, 
+				Math.min(GAME_CONSTANTS.COURT_HEIGHT - 60, predictedY + error))
+		};
+	}
+		
+	#simulateAIInput() {
+		if (!this.#player2) return;
+		
+		const currentY = this.#player2.position.y;
+		const diff = this.#aiTargetPosition - currentY;
+		const momentum = this.#player2Direction * this.#AI_MOMENTUM_FACTOR;
+		
+		
+		const speedFactor = Math.min(1, Math.abs(diff) / 150);
+		const tolerance = this.#AI_MIN_TOLERANCE + 
+			(this.#AI_MAX_TOLERANCE - this.#AI_MIN_TOLERANCE) * (1 - speedFactor);
+		
+		
+		const predictedPosition = currentY + (momentum * 50);
+		const adjustedDiff = this.#aiTargetPosition - predictedPosition;
+		
+		if (Math.abs(adjustedDiff) > tolerance) {
+			const newInput = adjustedDiff > 0 ? 'ArrowDown' : 'ArrowUp';
+			
+			const now = performance.now();
+			if (!this.#lastDirectionChange || now - this.#lastDirectionChange > 120) {
+				if (this.#aiCurrentInput) {
+					this.#handleKeyEvent(new KeyboardEvent('keyup', { key: this.#aiCurrentInput }));
+				}
+				setTimeout(() => {
+					this.#handleKeyEvent(new KeyboardEvent('keydown', { key: newInput }));
+					this.#aiCurrentInput = newInput;
+					this.#lastDirectionChange = performance.now();
+				}, this.#AI_REACTION_TIME);
+			}
+		} else if (Math.abs(diff) < tolerance/2 && this.#aiCurrentInput) {
+			setTimeout(() => {
+				this.#handleKeyEvent(new KeyboardEvent('keyup', { key: this.#aiCurrentInput }));
+				this.#aiCurrentInput = null;
+			}, this.#AI_REACTION_TIME / 2);
+		}
+	}
 
 	#multiplayer() {
 		this.#scene.remove(this.#css2DObject.offline);
@@ -2943,7 +3131,7 @@ class Game {
 
 		try {
 			this.#gameWebSocket = new WebSocket(
-				`wss://${window.location.host}/api/ws/game/`
+				`wss://window.location.host}/api/ws/game/`
 			);
 
 			this.#gameWebSocket.onopen = () => {
@@ -3152,7 +3340,7 @@ class Game {
 		this.#switchChatTab(1);
 
 		this.#onlineSocket = new WebSocket(
-			`wss://${window.location.host}/api/ws/online_status/${
+			`wss://window.location.host}/api/ws/online_status/${
 				this.#loggedUser
 			}/`
 		);
@@ -3222,6 +3410,25 @@ class Game {
 				action: 'stop_move',
 			})
 		);
+	}
+
+	#handleKeyEvent(event) {
+		if (event.type === 'keydown') {
+			switch (event.key) {
+				case 'ArrowUp':
+					this.#player2Direction = -1;
+					break;
+				case 'ArrowDown':
+					this.#player2Direction = 1;
+					break;
+			}
+		} else if (event.type === 'keyup') {
+			if (event.key === 'ArrowUp' && this.#player2Direction === -1) {
+				this.#player2Direction = 0;
+			} else if (event.key === 'ArrowDown' && this.#player2Direction === 1) {
+				this.#player2Direction = 0;
+			}
+		}
 	}
 
 	#removeKeyListeners() {
