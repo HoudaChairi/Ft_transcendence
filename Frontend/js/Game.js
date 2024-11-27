@@ -3277,7 +3277,7 @@ class Game {
 				})
 				leader.querySelector('.leader-back-1').addEventListener('click',e=>{
 					const btn = e.target.closest('.l-winners')
-					if (btn)
+					if (btn && btn.querySelector('.w-usr').textContent)
 						this.#toggleUsersProfile(btn.querySelector('.w-usr').textContent);
 				})
 			}
