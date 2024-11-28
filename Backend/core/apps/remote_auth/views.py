@@ -35,6 +35,15 @@ class GoogleView(APIView):
 
 class GoogleCallbackView(APIView):
     def get(self, request):
+        error = request.GET.get('error')
+        if error:
+            if error == 'access_denied':
+                frontend_url = f'https://{request.get_host()}/login?error=access_denied'
+                return redirect(frontend_url)
+            else:
+                frontend_url = f'https://{request.get_host()}/login?error={error}'
+                return redirect(frontend_url)
+
         google = OAuth2Session(GOOGLE_CLIENT_ID, redirect_uri=GOOGLE_REDIRECT_URI)
         authorization_response = request.build_absolute_uri()
 
@@ -45,8 +54,8 @@ class GoogleCallbackView(APIView):
                 client_secret=GOOGLE_CLIENT_SECRET
             )
         except Exception as e:
-            print(f"Error fetching token: {e}")
-            return Response({"error": str(e)}, status=400)
+            frontend_url = f'https://{request.get_host()}/login?error=token_fetch_failed'
+            return redirect(frontend_url)
 
         userinfo_response = requests.get(
             'https://www.googleapis.com/oauth2/v1/userinfo',
@@ -107,7 +116,6 @@ class FtCallbackView(APIView):
                 client_secret=FT_CLIENT_SECRET
             )
         except Exception as e:
-            print(f"Error fetching token: {e}")
             return Response({"error": str(e)}, status=400)
 
         userinfo_response = requests.get(
