@@ -107,6 +107,7 @@ class Game {
 	#keydownHandler;
 	#keyupHandler;
 
+	#AI = false;
 	#aiUpdateTimer;
 	#aiLastUpdateTime;
 	#aiTargetPosition;
@@ -125,6 +126,30 @@ class Game {
 		successfulBlocks: 0,
 		avgInterceptTime: 0,
 		lastPositions: [],
+	};
+
+	#currentAnimation;
+	#cameraPositions = {
+		home: {
+			pos: new THREE.Vector3(17, 5, -5),
+			look: new THREE.Vector3(0, 0, 0),
+		},
+		game: {
+			pos: new THREE.Vector3(0, 15, 10),
+			look: new THREE.Vector3(0, 0, 0),
+		},
+		chat: {
+			pos: new THREE.Vector3(-15, 10, 15),
+			look: new THREE.Vector3(0, 0, 0),
+		},
+		leaderboard: {
+			pos: new THREE.Vector3(15, 10, 15),
+			look: new THREE.Vector3(0, 0, 0),
+		},
+		singleplayer: {
+			pos: new THREE.Vector3(-20, 10, 0),
+			look: new THREE.Vector3(0, 0, 0),
+		},
 	};
 
 	constructor() {
@@ -178,7 +203,6 @@ class Game {
 		this.#createCamera();
 		this.#createRenderer();
 		this.#addDOMElem();
-		//.#createControls();
 		this.#loadEnvironment();
 		this.#loadFont();
 		window.addEventListener('resize', () => this.#onWindowResize());
@@ -198,7 +222,7 @@ class Game {
 			0.5,
 			1000
 		);
-		this.#camera.position.set(0, 15, 10);
+		this.#camera.position.set(17, 5, -5);
 		this.#camera.lookAt(new THREE.Vector3(0, 0, 0));
 	}
 
@@ -2084,9 +2108,14 @@ class Game {
 			lastPositions: [],
 		};
 
+		const cameraConfig = this.#cameraPositions['game'];
+		if (cameraConfig) {
+			this.#animateCamera(cameraConfig.pos, cameraConfig.look);
+		}
+
 		this.#displayWin(players);
-		this.#resetGameState();
 		this.#ballDirection = new Vector3(0, 0, 0);
+		this.#initializeGame();
 	}
 
 	#checkWinCondition() {
@@ -2098,18 +2127,23 @@ class Game {
 					score: this.#scoreL,
 				},
 				loser: {
-					usr: 'Player 2',
-					avatar: '/textures/png/avatar.png',
+					usr: this.#AI ? 'Claude' : 'Player 2',
+					avatar: this.#AI
+						? '/textures/svg/AI.svg'
+						: '/textures/png/avatar.png',
 					score: this.#scoreR,
 				},
 			});
+			this.#AI = false;
 			return true;
 		}
 		if (this.#scoreR >= GAME_CONSTANTS.WIN_SCORE) {
 			this.#endGame({
 				winner: {
-					usr: 'Player 2',
-					avatar: '/textures/png/avatar.png',
+					usr: this.#AI ? 'Claude' : 'Player 2',
+					avatar: this.#AI
+						? '/textures/svg/AI.svg'
+						: '/textures/png/avatar.png',
 					score: this.#scoreR,
 				},
 				loser: {
@@ -2118,6 +2152,7 @@ class Game {
 					score: this.#scoreL,
 				},
 			});
+			this.#AI = false;
 			return true;
 		}
 		return false;
@@ -3014,11 +3049,17 @@ class Game {
 	}
 
 	#singleplayer() {
+		this.#AI = true;
 		this.#scene.remove(this.#css2DObject.offline);
 		this.#bindKeys('AI');
 		this.#aiLastUpdateTime = 0;
 		this.#aiCurrentInput = null;
 		this.#aiTargetPosition = 0;
+
+		const cameraConfig = this.#cameraPositions['singleplayer'];
+		if (cameraConfig) {
+			this.#animateCamera(cameraConfig.pos, cameraConfig.look);
+		}
 
 		setTimeout(() => {
 			this.#startBall();
@@ -3350,6 +3391,11 @@ class Game {
 		this.#cleanupWebSockets(home);
 		this.#removeKeyListeners();
 
+		const cameraConfig = this.#cameraPositions[home];
+		if (cameraConfig) {
+			this.#animateCamera(cameraConfig.pos, cameraConfig.look);
+		}
+
 		[
 			'game',
 			'chat',
@@ -3549,6 +3595,10 @@ class Game {
 		const KEY_S = 's';
 		const KEY_UP = 'ArrowUp';
 		const KEY_DOWN = 'ArrowDown';
+		const KEY_A = 'a';
+		const KEY_D = 'd';
+		const KEY_LEFT = 'ArrowLeft';
+		const KEY_RIGHT = 'ArrowRight';
 
 		if (mode === 'online') {
 			if (keyState.has(KEY_W)) this.#sendMovement('moveUp');
@@ -3561,8 +3611,10 @@ class Game {
 			if (keyState.has(KEY_UP)) this.#moveUp2();
 			if (keyState.has(KEY_DOWN)) this.#moveDown2();
 		} else if (mode === 'AI') {
-			if (keyState.has(KEY_W)) this.#moveUp();
-			if (keyState.has(KEY_S)) this.#moveDown();
+			if (keyState.has(KEY_A)) this.#moveUp();
+			if (keyState.has(KEY_D)) this.#moveDown();
+			if (keyState.has(KEY_LEFT)) this.#moveUp();
+			if (keyState.has(KEY_RIGHT)) this.#moveDown();
 		}
 	}
 
@@ -3583,6 +3635,44 @@ class Game {
 			if (!keyState.has(KEY_W) && !keyState.has(KEY_S))
 				this.#stopPlayerMovement();
 		}
+	}
+
+	#animateCamera(targetPos, targetLook) {
+		if (this.#currentAnimation) {
+			cancelAnimationFrame(this.#currentAnimation);
+		}
+
+		const startPos = this.#camera.position.clone();
+		const startLook = this.#camera.target || new THREE.Vector3(0, 0, 0);
+		let progress = 0;
+		const duration = 1000;
+		const startTime = Date.now();
+
+		const animate = () => {
+			const currentTime = Date.now();
+			progress = Math.min((currentTime - startTime) / duration, 1);
+
+			const eased =
+				progress < 0.5
+					? 2 * progress * progress
+					: -1 + (4 - 2 * progress) * progress;
+
+			this.#camera.position.lerpVectors(startPos, targetPos, eased);
+			const currentLook = new THREE.Vector3().lerpVectors(
+				startLook,
+				targetLook,
+				eased
+			);
+			this.#camera.lookAt(currentLook);
+
+			if (progress < 1) {
+				this.#currentAnimation = requestAnimationFrame(animate);
+			} else {
+				this.#camera.target = targetLook.clone();
+			}
+		};
+
+		animate();
 	}
 }
 
