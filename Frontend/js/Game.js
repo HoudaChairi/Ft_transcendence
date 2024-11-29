@@ -2254,23 +2254,6 @@ class Game {
 		this.#hasChanges = true;
 	}
 
-	#random(min, max) {
-		return Math.random() * (max - min) + min;
-	}
-
-	#dispose() {
-		if (this.#ball) this.#ball.geometry.dispose();
-		if (this.#ball.material) this.#ball.material.dispose();
-		if (this.#renderer) {
-			this.#renderer.dispose();
-			this.#renderer = null;
-		}
-		this.#scene.traverse(object => {
-			if (object.geometry) object.geometry.dispose();
-			if (object.material) object.material.dispose();
-		});
-	}
-
 	async #loggedin() {
 		try {
 			const access = localStorage.getItem('accessToken');
@@ -2522,7 +2505,7 @@ class Game {
 				this.#scene.remove(this.#css2DObject[ele]);
 			});
 			this.#scene.add(this.#css2DObject.login);
-		}
+		} else this.#handlePopState();
 	}
 
 	#HomePage() {
