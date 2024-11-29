@@ -1502,15 +1502,16 @@ class Game {
 		});
 	}
 
-	async #switchChatTab(btn) {
+	async #switchChatTab(btn, on = true) {
 		try {
-			this.#css2DObject.chat.element.querySelector(
+			if (on)
+			{this.#css2DObject.chat.element.querySelector(
 				'.infos-chat'
 			).innerHTML = '';
 			this.#css2DObject.chat.element.querySelector(
 				'.recived-parent'
 			).innerHTML = '';
-			this.#chatuser = undefined;
+			this.#chatuser = undefined;}
 			const id = {
 				1: ALL_PLAYERS,
 				2: FRIENDS,
@@ -2785,7 +2786,7 @@ class Game {
 	}
 
 	#sendTournamentGameInit(matchData) {
-		this.#gameWebSocket?.send(
+		this.#gameWebSocket.send(
 			JSON.stringify({
 				username: this.#loggedUser,
 				tournament_data: {
@@ -3517,7 +3518,7 @@ class Game {
 					this.#startInviteGame(data.recipient);
 				} else {
 					this.#onlineUsers = data.online_users;
-					this.#switchChatTab(this.#selectedTab);
+					this.#switchChatTab(this.#selectedTab,false);
 				}
 			} catch (error) {
 				console.error('Error processing message:', error);
