@@ -2877,7 +2877,9 @@ class Game {
 				const { semifinal_winners } = tournament;
 
 				['semi1', 'semi2'].forEach((semi, index) => {
-					const winner = semifinal_winners[semi];
+					const winner = semifinal_winners[semi]
+						? semifinal_winners[semi]
+						: null;
 					if (winner) {
 						const winnerAvatar = tournamentElem.querySelector(
 							`#winner${index + 1}-avatar`
