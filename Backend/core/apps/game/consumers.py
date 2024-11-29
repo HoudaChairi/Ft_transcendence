@@ -889,20 +889,11 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 if tournament:
                     tournament_id = tournament.id
                     if tournament_id not in players_in_tournaments:
-                        semifinal_matches = {
-                            match_id: match 
-                            for match_id, match in tournament.matches.items() 
-                            if 'semi' in match_id
-                        }
+                        semifinal_matches = {match_id: match for match_id, match in tournament.matches.items() if 'semi' in match_id}
                         
-                        semi1_winner = next((match.winner for match_id, match in semifinal_matches.items() 
-                                        if 'semi1' in match_id), None)
-                        semi2_winner = next((match.winner for match_id, match in semifinal_matches.items() 
-                                        if 'semi2' in match_id), None)
+                        semi1_winner = next((match.winner for match_id, match in semifinal_matches.items() if 'semi1' in match_id), None)
+                        semi2_winner = next((match.winner for match_id, match in semifinal_matches.items() if 'semi2' in match_id), None)
                         
-                        semi1_winner_details = await self.get_player_details(semi1_winner) if semi1_winner else None
-                        semi2_winner_details = await self.get_player_details(semi2_winner) if semi2_winner else None
-
                         players_in_tournaments[tournament_id] = {
                             'matches': {
                                 match_id: {
@@ -915,49 +906,62 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                                 for match_id, match in tournament.matches.items()
                             },
                             'semifinal_winners': {
-                                'semi1': semi1_winner_details,
-                                'semi2': semi2_winner_details
+                                'semi1': await self.get_player_details(semi1_winner) if semi1_winner else None,
+                                'semi2': await self.get_player_details(semi2_winner) if semi2_winner else None
                             },
                             'state': tournament.state.value
                         }
 
-            for username in self.connected_players:
-                tournament = self.tournament_manager.get_player_tournament(username)
-                tournament_id = tournament.id if tournament else None
-
-                player_message = {
-                    "type": "players_update",
-                    "data": {
-                        "waiting_players": [
-                            await self.get_player_details(player) 
-                            for player in self.tournament_manager.waiting_players
-                        ],
-                        "all_connected_players": [
-                            await self.get_player_details(player) 
-                            for player in self.connected_players
-                        ],
-                        "tournaments": {
-                            tournament_id: players_in_tournaments[tournament_id]
-                        } if tournament_id and tournament_id in players_in_tournaments else {},
-                        "tournament_states": {
-                            tournament_id: tournament.state.value
-                        } if tournament_id else {}
+            await self.channel_layer.group_send(
+                self.TOURNAMENT_GROUP,
+                {
+                    "type": "tournament_update",
+                    "message": {
+                        "type": "players_update",
+                        "data": {
+                            "waiting_players": [
+                                await self.get_player_details(player) 
+                                for player in self.tournament_manager.waiting_players
+                            ],
+                            "all_connected_players": [
+                                await self.get_player_details(player) 
+                                for player in self.connected_players
+                            ],
+                            "tournaments": players_in_tournaments,
+                            "tournament_states": {
+                                t_id: t.state.value 
+                                for t_id, t in self.tournament_manager.tournaments.items()
+                            }
+                        }
                     }
                 }
-                
-                await self.channel_layer.send(
-                    self.player_channels.get(username, ''),
-                    {
-                        "type": "tournament_update",
-                        "message": player_message
-                    }
-                )
+            )
         except Exception as e:
+            print(f"Broadcast error: {str(e)}")
             raise
 
     async def tournament_update(self, event):
-        """Handle updates from channel layer"""
-        await self.send(text_data=json.dumps(event['message']))
+        """Handle tournament updates by filtering data for this player"""
+        try:
+            message = event['message']
+            if message['type'] == 'players_update':
+                # Filter tournaments data for this player
+                tournament = self.tournament_manager.get_player_tournament(self.username)
+                if tournament:
+                    tournament_id = tournament.id
+                    message['data']['tournaments'] = {
+                        tournament_id: message['data']['tournaments'].get(tournament_id, {})
+                    }
+                    message['data']['tournament_states'] = {
+                        tournament_id: message['data']['tournament_states'].get(tournament_id, '')
+                    }
+                else:
+                    message['data']['tournaments'] = {}
+                    message['data']['tournament_states'] = {}
+                    
+            await self.send(text_data=json.dumps(message))
+        except Exception as e:
+            print(f"Update error: {str(e)}")
 
     async def start_tournament_matches(self, tournament: Tournament):
         """Send match notifications to appropriate players"""
