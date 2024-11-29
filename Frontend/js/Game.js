@@ -2682,7 +2682,7 @@ class Game {
 	}
 
 	#handleWebSocketError() {
-		this.#gameWebSocket.close();
+		if (this.#gameWebSocket) this.#gameWebSocket.close();
 		this.#switchHome('home');
 	}
 
@@ -2709,7 +2709,7 @@ class Game {
 
 		this.#resetGameState();
 
-		this.#gameWebSocket.close();
+		if (this.#gameWebSocket) this.#gameWebSocket.close();
 	}
 
 	#startTournamentMatch(matchData) {
@@ -2845,7 +2845,7 @@ class Game {
 	}
 
 	#cleanupGameWebSocket() {
-		this.#gameWebSocket.close();
+		if (this.#gameWebSocket) this.#gameWebSocket.close();
 	}
 
 	#updateTournamentUI(data) {
