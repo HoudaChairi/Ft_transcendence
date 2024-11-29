@@ -36,8 +36,43 @@ class GameConsumer(AsyncWebsocketConsumer):
                 group_id = self.player_groups.get(self.username)
                 if group_id:
                     game = self.games_data.get(group_id)
-                    if game and game.is_running:
-                        await self.handle_disconnect_win(group_id)
+                    if game:
+                        opponent = next((player for player in game.connected_players if player != self.username), None)
+                        if opponent:
+                            p1 = next(key for key, value in game.player_labels.items() if value == 'player1')
+                            p2 = next(key for key, value in game.player_labels.items() if value == 'player2')
+
+                            score_left = 6 if opponent == p1 else 0
+                            score_right = 0 if opponent == p1 else 6
+
+                            await self.create_match_record(p1, p2, opponent, score_left, score_right)
+                            await self.handle_game_end(opponent)
+
+                            await self.channel_layer.group_send(
+                                group_id,
+                                {
+                                    'type': 'game_update',
+                                    'data': {
+                                        "type": "game_end",
+                                        "winner": opponent,
+                                        "score": {
+                                            "player1": {
+                                                "usr": p1,
+                                                "avatar": await self.get_player_avatar(p1),
+                                                "score": score_left
+                                            },
+                                            "player2": {
+                                                "usr": p2,
+                                                "avatar": await self.get_player_avatar(p2),
+                                                "score": score_right
+                                            }
+                                        },
+                                        "reason": "disconnect"
+                                    }
+                                }
+                            )
+                            game.is_running = False
+
                     await self.channel_layer.group_discard(group_id, self.channel_name)
                     await self.remove_player_from_game(group_id)
 
