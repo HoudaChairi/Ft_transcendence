@@ -46,23 +46,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                             score_right = 0 if opponent == p1 else 6
 
                             await self.create_match_record(p1, p2, opponent, score_left, score_right)
-                            
-                            if hasattr(game, 'tournament_data') and game.tournament_data:
-                                try:
-                                    await self.channel_layer.send(
-                                        game.tournament_data['consumer'],
-                                        {
-                                            'type': 'receive',
-                                            'text_data': json.dumps({
-                                                'type': 'game_complete',
-                                                'tournament_id': game.tournament_data['tournament_id'],
-                                                'match_id': game.tournament_data['match_id'],
-                                                'winner': opponent
-                                            })
-                                        }
-                                    )
-                                except Exception as e:
-                                    print(f"Error sending tournament game completion: {str(e)}")
+                            await self.handle_game_end(opponent)
 
                             await self.channel_layer.group_send(
                                 group_id,
@@ -861,23 +845,17 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             self.connected_players.discard(self.username)
             
             tournament = self.tournament_manager.get_player_tournament(self.username)
-            if tournament:
-                if tournament.state == TournamentState.WAITING:
-                    # Remove player from tournament
-                    tournament.players.remove(self.username)
-                    
-                    # Remove tournament if insufficient players
-                    if len(tournament.players) < TOURNAMENT_CONFIG['PLAYERS_PER_TOURNAMENT']:
-                        for player in tournament.players:
-                            if player in self.tournament_manager.player_to_tournament:
-                                del self.tournament_manager.player_to_tournament[player]
-                        if tournament.id in self.tournament_manager.tournaments:
-                            del self.tournament_manager.tournaments[tournament.id]
+            if tournament and tournament.state == TournamentState.WAITING:
+                tournament.players.remove(self.username)
+                if not tournament.players:
+                    del self.tournament_manager.tournaments[tournament.id]
             
             await self.broadcast_player_lists()
 
     async def receive(self, text_data=None):
         try:
+            
+            # If it's already a dict (from channel layer), process it directly
             if isinstance(text_data, dict):
                 data = text_data.get('text_data')
                 if data:
@@ -885,22 +863,24 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 else:
                     data = text_data
             else:
+                # If it's text data from WebSocket, parse it
                 data = json.loads(text_data)
             
             if data.get('type') == 'join_tournament':
                 await self.handle_join_tournament(data['username'])
-            elif data.get('type') == 'start_tournament':
-                tournament = self.tournament_manager.get_player_tournament(self.username)
-                if tournament and self.tournament_manager.start_tournament(tournament.id):
-                    await self.start_tournament_matches(tournament)
             elif data.get('type') == 'game_complete':
                 await self.handle_game_complete(
                     data['tournament_id'],
                     data['match_id'],
                     data['winner']
                 )
+            
+        except json.JSONDecodeError:
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': 'Invalid JSON format'
+            }))
         except Exception as e:
-            print(f"Error in receive: {str(e)}")
             await self.send(text_data=json.dumps({
                 'type': 'error',
                 'message': 'Internal server error'
@@ -944,20 +924,11 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 if tournament:
                     tournament_id = tournament.id
                     if tournament_id not in players_in_tournaments:
-                        semifinal_matches = {
-                            match_id: match 
-                            for match_id, match in tournament.matches.items() 
-                            if 'semi' in match_id
-                        }
+                        semifinal_matches = {match_id: match for match_id, match in tournament.matches.items() if 'semi' in match_id}
                         
-                        semi1_winner = next((match.winner for match_id, match in semifinal_matches.items() 
-                                        if 'semi1' in match_id), None)
-                        semi2_winner = next((match.winner for match_id, match in semifinal_matches.items() 
-                                        if 'semi2' in match_id), None)
+                        semi1_winner = next((match.winner for match_id, match in semifinal_matches.items() if 'semi1' in match_id), None)
+                        semi2_winner = next((match.winner for match_id, match in semifinal_matches.items() if 'semi2' in match_id), None)
                         
-                        semi1_winner_details = await self.get_player_details(semi1_winner) if semi1_winner else None
-                        semi2_winner_details = await self.get_player_details(semi2_winner) if semi2_winner else None
-
                         players_in_tournaments[tournament_id] = {
                             'matches': {
                                 match_id: {
@@ -970,49 +941,62 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                                 for match_id, match in tournament.matches.items()
                             },
                             'semifinal_winners': {
-                                'semi1': semi1_winner_details,
-                                'semi2': semi2_winner_details
+                                'semi1': await self.get_player_details(semi1_winner) if semi1_winner else None,
+                                'semi2': await self.get_player_details(semi2_winner) if semi2_winner else None
                             },
                             'state': tournament.state.value
                         }
 
-            for username in self.connected_players:
-                tournament = self.tournament_manager.get_player_tournament(username)
-                tournament_id = tournament.id if tournament else None
-
-                player_message = {
-                    "type": "players_update",
-                    "data": {
-                        "waiting_players": [
-                            await self.get_player_details(player) 
-                            for player in self.tournament_manager.waiting_players
-                        ],
-                        "all_connected_players": [
-                            await self.get_player_details(player) 
-                            for player in self.connected_players
-                        ],
-                        "tournaments": {
-                            tournament_id: players_in_tournaments[tournament_id]
-                        } if tournament_id and tournament_id in players_in_tournaments else {},
-                        "tournament_states": {
-                            tournament_id: tournament.state.value
-                        } if tournament_id else {}
+            await self.channel_layer.group_send(
+                self.TOURNAMENT_GROUP,
+                {
+                    "type": "tournament_update",
+                    "message": {
+                        "type": "players_update",
+                        "data": {
+                            "waiting_players": [
+                                await self.get_player_details(player) 
+                                for player in self.tournament_manager.waiting_players
+                            ],
+                            "all_connected_players": [
+                                await self.get_player_details(player) 
+                                for player in self.connected_players
+                            ],
+                            "tournaments": players_in_tournaments,
+                            "tournament_states": {
+                                t_id: t.state.value 
+                                for t_id, t in self.tournament_manager.tournaments.items()
+                            }
+                        }
                     }
                 }
-                
-                await self.channel_layer.send(
-                    self.player_channels.get(username, ''),
-                    {
-                        "type": "tournament_update",
-                        "message": player_message
-                    }
-                )
+            )
         except Exception as e:
+            print(f"Broadcast error: {str(e)}")
             raise
 
     async def tournament_update(self, event):
-        """Handle updates from channel layer"""
-        await self.send(text_data=json.dumps(event['message']))
+        """Handle tournament updates by filtering data for this player"""
+        try:
+            message = event['message']
+            if message['type'] == 'players_update':
+                # Filter tournaments data for this player
+                tournament = self.tournament_manager.get_player_tournament(self.username)
+                if tournament:
+                    tournament_id = tournament.id
+                    message['data']['tournaments'] = {
+                        tournament_id: message['data']['tournaments'].get(tournament_id, {})
+                    }
+                    message['data']['tournament_states'] = {
+                        tournament_id: message['data']['tournament_states'].get(tournament_id, '')
+                    }
+                else:
+                    message['data']['tournaments'] = {}
+                    message['data']['tournament_states'] = {}
+                    
+            await self.send(text_data=json.dumps(message))
+        except Exception as e:
+            print(f"Update error: {str(e)}")
 
     async def start_tournament_matches(self, tournament: Tournament):
         """Send match notifications to appropriate players"""
@@ -1065,47 +1049,58 @@ class TournamentConsumer(AsyncWebsocketConsumer):
     async def handle_game_complete(self, tournament_id: str, match_id: str, winner: str):
         tournament = self.tournament_manager.tournaments.get(tournament_id)
         if not tournament:
-            print(f"Tournament {tournament_id} not found")
             return
+        
+        # Use TournamentManager to handle the match completion
+        success, next_action = self.tournament_manager.handle_match_complete(tournament_id, match_id, winner)
 
-        match = tournament.matches.get(match_id)
-        if match:
-            match.winner = winner
-            match.game_completed = True
+        if not success:
+            return
             
-            # Check if current round is complete
-            current_round_complete = all(
-                tournament.matches[match_id].game_completed 
-                for match_id in tournament.current_round_matches
-            )
-            
-            if current_round_complete:
-                if tournament.state == TournamentState.SEMIFINALS:
-                    # Both semifinals complete, set up finals
-                    tournament.state = TournamentState.FINALS
-                    finals_match = tournament.matches.get(f"{tournament_id}_finals")
-                    if not finals_match:
-                        # Get winners from semifinals
-                        semifinal_winners = [
-                            tournament.matches[match_id].winner
-                            for match_id in tournament.current_round_matches
-                        ]
-                        
-                        # Create finals match
-                        finals_match_id = f"{tournament_id}_finals"
-                        tournament.matches[finals_match_id] = TournamentMatch(
-                            finals_match_id,
-                            semifinal_winners[0],
-                            semifinal_winners[1]
+        if next_action == 'finals':
+            finals_match = self.tournament_manager.setup_finals(tournament_id)
+            if finals_match:
+                # Create the match notification
+                game_group_id = f"{finals_match.player1}_{finals_match.player2}"
+                player1_details = await self.get_player_details(finals_match.player1)
+                player2_details = await self.get_player_details(finals_match.player2)
+                match_data = {
+                    "type": "match_ready",
+                    "player1": player1_details.get('username'),
+                    "player2": player2_details.get('username'),
+                    "avatar1": player1_details.get('avatar'),
+                    "avatar2": player2_details.get('avatar'),
+                    "tournament_id": tournament_id,
+                    "match_id": finals_match.match_id,
+                    "game_group_id": game_group_id,
+                    "consumer": self.channel_name,
+                    "tournament_data": {
+                        "tournament_id": tournament_id,
+                        "match_id": finals_match.match_id,
+                        "player1": finals_match.player1,
+                        "player2": finals_match.player2
+                    }
+                }
+
+                # Send to both players individually
+                for player in [finals_match.player1, finals_match.player2]:
+                    try:
+                        await self.channel_layer.group_send(
+                            self.TOURNAMENT_GROUP,
+                            {
+                                "type": "match_notification",
+                                "match_data": {
+                                    **match_data,
+                                    "opponent": finals_match.player2 if player == finals_match.player1 else finals_match.player1
+                                }
+                            }
                         )
-                        tournament.current_round_matches = {finals_match_id}
-                        await self.start_tournament_matches(tournament)
-                        
-                elif tournament.state == TournamentState.FINALS:
-                    # Tournament complete
-                    tournament.state = TournamentState.COMPLETED
-                    await self.end_tournament(tournament)
-            
+                    except Exception as e:
+                        print(f"Error sending finals notification to {player}: {str(e)}")
+                
+        elif next_action == 'complete':
+            await self.end_tournament(tournament)
+        
         # Broadcast updated state
         await self.broadcast_player_lists()
 

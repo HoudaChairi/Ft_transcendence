@@ -65,17 +65,20 @@ class TournamentManager:
     def create_tournament(self, players: List[str]) -> Tournament:
         tournament_id = str(uuid.uuid4())
         
+        match1_id = f"{tournament_id}_semi1"
+        match2_id = f"{tournament_id}_semi2"
+        
         matches = {
-            f"{tournament_id}_semi1": TournamentMatch(f"{tournament_id}_semi1", players[0], players[1]),
-            f"{tournament_id}_semi2": TournamentMatch(f"{tournament_id}_semi2", players[2], players[3])
+            match1_id: TournamentMatch(match1_id, players[0], players[1]),
+            match2_id: TournamentMatch(match2_id, players[2], players[3])
         }
         
         tournament = Tournament(
             id=tournament_id,
             players=players,
-            state=TournamentState.WAITING,  # Start in WAITING state
+            state=TournamentState.SEMIFINALS,
             matches=matches,
-            current_round_matches=set(),  # Empty until tournament starts
+            current_round_matches={match1_id, match2_id},
             winners=[]
         )
         
@@ -85,15 +88,6 @@ class TournamentManager:
             self.player_to_tournament[player] = tournament_id
             
         return tournament
-    
-    def start_tournament(self, tournament_id: str) -> bool:
-        tournament = self.tournaments.get(tournament_id)
-        if not tournament or tournament.state != TournamentState.WAITING:
-            return False
-
-        tournament.state = TournamentState.SEMIFINALS
-        tournament.current_round_matches = {f"{tournament_id}_semi1", f"{tournament_id}_semi2"}
-        return True
 
     def get_player_tournament(self, player: str) -> Optional[Tournament]:
         tournament_id = self.player_to_tournament.get(player)
