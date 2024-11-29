@@ -861,10 +861,18 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             self.connected_players.discard(self.username)
             
             tournament = self.tournament_manager.get_player_tournament(self.username)
-            if tournament and tournament.state == TournamentState.WAITING:
-                tournament.players.remove(self.username)
-                if not tournament.players:
-                    del self.tournament_manager.tournaments[tournament.id]
+            if tournament:
+                if tournament.state == TournamentState.WAITING:
+                    # Remove player from tournament
+                    tournament.players.remove(self.username)
+                    
+                    # Remove tournament if insufficient players
+                    if len(tournament.players) < TOURNAMENT_CONFIG['PLAYERS_PER_TOURNAMENT']:
+                        for player in tournament.players:
+                            if player in self.tournament_manager.player_to_tournament:
+                                del self.tournament_manager.player_to_tournament[player]
+                        if tournament.id in self.tournament_manager.tournaments:
+                            del self.tournament_manager.tournaments[tournament.id]
             
             await self.broadcast_player_lists()
 
