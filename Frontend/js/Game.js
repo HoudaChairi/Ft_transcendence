@@ -3399,6 +3399,8 @@ class Game {
 		}
 
 		[
+			'match',
+			'start',
 			'game',
 			'chat',
 			'leaderboard',
