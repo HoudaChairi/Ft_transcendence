@@ -3433,8 +3433,10 @@ class Game {
 
 		if (this.#tournamentWebSocket) this.#tournamentWebSocket.close();
 
-		if (newPage !== 'chat' && this.#onlineSocket)
+		if (newPage !== 'chat' && this.#onlineSocket) {
 			this.#onlineSocket.close();
+			this.#onlineSocket = null;
+		}
 	}
 
 	#updateUIElements(page) {
@@ -3472,6 +3474,8 @@ class Game {
 		);
 
 		this.#onlineSocket.onopen = () => {};
+
+		this.#onlineSocket.onclose = () => (this.#onlineSocket = null);
 
 		this.#onlineSocket.onmessage = e => {
 			try {
