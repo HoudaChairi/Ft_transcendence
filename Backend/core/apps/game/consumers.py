@@ -46,7 +46,23 @@ class GameConsumer(AsyncWebsocketConsumer):
                             score_right = 0 if opponent == p1 else 6
 
                             await self.create_match_record(p1, p2, opponent, score_left, score_right)
-                            await self.handle_game_end(opponent)
+                            
+                            if hasattr(game, 'tournament_data') and game.tournament_data:
+                                try:
+                                    await self.channel_layer.send(
+                                        game.tournament_data['consumer'],
+                                        {
+                                            'type': 'receive',
+                                            'text_data': json.dumps({
+                                                'type': 'game_complete',
+                                                'tournament_id': game.tournament_data['tournament_id'],
+                                                'match_id': game.tournament_data['match_id'],
+                                                'winner': opponent
+                                            })
+                                        }
+                                    )
+                                except Exception as e:
+                                    print(f"Error sending tournament game completion: {str(e)}")
 
                             await self.channel_layer.group_send(
                                 group_id,
