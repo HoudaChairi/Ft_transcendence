@@ -140,7 +140,6 @@ class UpdateAvatarView(APIView):
 
 #  ------------------------------------- 2FA AUTHENTICATION ------------------------------------- #
 
-# View for Enabling 2FA
 class Enable2FA(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -171,7 +170,6 @@ class Enable2FA(APIView):
 
         return Response({'qr_code': f'data:image/png;base64,{img_str}'}, status=status.HTTP_200_OK)
 
-
 class Confirm2FA(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -193,8 +191,6 @@ class Confirm2FA(APIView):
         else:
             return Response({'error': 'Invalid OTP. Please try again.'}, status=status.HTTP_400_BAD_REQUEST)
 
-
-# View for Verifying OTP
 class Verify2FA(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -210,7 +206,6 @@ class Verify2FA(APIView):
         else:
             return Response({'error': 'Invalid OTP! Please try again.'}, status=status.HTTP_400_BAD_REQUEST)
         
-# View for Disabling 2FA
 class Disable2FA(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -314,7 +309,6 @@ class UserInfos(APIView):
                 'date_played': match.date_played
             } for match in matches]
 
-            # Return the user data along with their matches
             return Response({
                 'username': user.username,
                 'email': user.email,
