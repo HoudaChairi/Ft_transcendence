@@ -2115,7 +2115,7 @@ class Game {
 
 		this.#displayWin(players);
 		this.#ballDirection = new Vector3(0, 0, 0);
-		this.#initializeGame();
+		this.#resetGameState();
 	}
 
 	#checkWinCondition() {
