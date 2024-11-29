@@ -141,13 +141,10 @@ class GameConsumer(AsyncWebsocketConsumer):
             
             if data.get('username'):
                 if data.get('invite_game'):
-                    # Handle invite game initialization
                     await self.handle_invite_game(data['username'], data['opponent'])
                 else:
-                    # Handle regular matchmaking
                     await self.handle_new_player(data['username'], data.get('tournament_data'))
             elif data.get('action') in ['move', 'stop_move']:
-                # Handle movement
                 group_id = self.player_groups.get(self.username)
                 if group_id and group_id in self.games_data:
                     game = self.games_data[group_id]
@@ -167,7 +164,6 @@ class GameConsumer(AsyncWebsocketConsumer):
         self.username = username
         group_id = f"{opponent}_{username}" if opponent < username else f"{username}_{opponent}"
         
-        # Add to game group and store connection
         self.player_groups[username] = group_id
         self.connected_players[username] = self.channel_name
         await self.channel_layer.group_add(group_id, self.channel_name)
@@ -184,7 +180,6 @@ class GameConsumer(AsyncWebsocketConsumer):
             opponent if username < opponent else username: 'player2'
         }
 
-        # Both players connected
         if len([p for p in self.connected_players if p in [username, opponent]]) == 2:
             await self.channel_layer.group_send(
                 group_id,
@@ -236,7 +231,6 @@ class GameConsumer(AsyncWebsocketConsumer):
            invite = self.active_invites[invite_id]
            
            if response == 'accepted':
-               # Set up game between players
                group_id = invite_id
                
                for player in [invite['sender'], invite['recipient']]:
@@ -249,7 +243,6 @@ class GameConsumer(AsyncWebsocketConsumer):
                    invite['recipient']
                )
                
-               # Send game start message
                await self.channel_layer.group_send(
                    group_id,
                    {
@@ -271,10 +264,8 @@ class GameConsumer(AsyncWebsocketConsumer):
                    }
                )
                
-               # Start game
                asyncio.create_task(self.delayed_game_start(group_id))
            
-           # Notify players of response
            await self.channel_layer.group_send(
                "game_invites", 
                {
@@ -360,7 +351,6 @@ class GameConsumer(AsyncWebsocketConsumer):
         try:
             self.username = username
             
-            # Check if player is already in a game
             if username in self.player_groups:
                 return
 
@@ -388,12 +378,10 @@ class GameConsumer(AsyncWebsocketConsumer):
                 if len(connected_players) == 2:
                     await self.start_game(group_id)
             else:
-                # Regular matchmaking
                 self.connected_players[username] = self.channel_name
                 self.waiting_players[username] = self.channel_name
                 
                 if len(self.waiting_players) >= 2:
-                    # Only consider players in waiting_players for matchmaking
                     available_players = list(self.waiting_players.keys())
                     
                     if len(available_players) >= 2:
@@ -409,7 +397,6 @@ class GameConsumer(AsyncWebsocketConsumer):
                                 group_id,
                                 self.connected_players[player]
                             )
-                            # Remove players from waiting list once matched
                             self.waiting_players.pop(player, None)
 
                         if username == player2:
@@ -559,38 +546,30 @@ class GameConsumer(AsyncWebsocketConsumer):
                 continue
 
             try:
-                # Update paddle positions
                 self.update_paddle_positions(game)
 
-                # Update ball position based on direction and time
                 new_x = game.ball_position.x + (game.ball_direction.x * delta_time)
                 new_y = game.ball_position.y + (game.ball_direction.y * delta_time)
                 new_position = Vector3(new_x, new_y, 0)
 
-                # Wall collisions (top/bottom)
                 if abs(new_position.y) >= C['COURT_HEIGHT']:
                     game.ball_direction.y *= -1
                     new_position.y = math.copysign(C['COURT_HEIGHT'], new_position.y)
 
-                # Paddle collisions
                 for player_id, paddle_box in game.paddle_boxes.items():
                     if (paddle_box["min"].x <= new_position.x <= paddle_box["max"].x and
                         paddle_box["min"].y <= new_position.y <= paddle_box["max"].y):
-                        # Reverse ball direction completely
                         game.ball_direction.x *= -1
-                        # Place ball just outside paddle
                         new_position.x = (paddle_box["max"].x + C['BALL_RADIUS']
                                         if game.ball_direction.x > 0
                                         else paddle_box["min"].x - C['BALL_RADIUS'])
                         break
 
-                # Scoring
                 if abs(new_position.x) >= C['COURT_WIDTH']:
                     if new_position.x > 0:
                         game.score_left += 1
                     else:
                         game.score_right += 1
-                    # Reset ball to the center
                     game.ball_position = Vector3(0, 0, 0)
                     game.ball_direction = self.game_manager.start_ball_direction()
                     if await self.check_win_condition(game, group_id):
@@ -598,14 +577,12 @@ class GameConsumer(AsyncWebsocketConsumer):
                 else:
                     game.ball_position = new_position
 
-                # Send update
                 await self.broadcast_game_state(group_id, game)
                 last_update = current_time
 
             except Exception as e:
                 continue
 
-    # Channel layer handlers
     async def game_start(self, event):
         await self.send(text_data=json.dumps(event['data']))
 
@@ -736,7 +713,6 @@ class GameConsumer(AsyncWebsocketConsumer):
                 score_player2=score_player2
             )
 
-            # Update player stats
             if winner == player1.username:
                 player1.wins += 1
                 player2.losses += 1
@@ -779,12 +755,11 @@ class GameConsumer(AsyncWebsocketConsumer):
                         'winner': winner
                     }
                     
-                    # Send through channel layer
                     await self.channel_layer.send(
                         tournament_data['consumer'],
                         {
                             'type': 'receive',
-                            'data': message  # Send as data instead of text_data
+                            'data': message
                         }
                     )
                 except Exception as e:
@@ -821,14 +796,14 @@ class GameConsumer(AsyncWebsocketConsumer):
 class TournamentConsumer(AsyncWebsocketConsumer):
     tournament_manager = TournamentManager()
     connected_players: Set[str] = set()
-    player_channels: Dict[str, str] = {}  # Store channel names
+    player_channels: Dict[str, str] = {}
     TOURNAMENT_GROUP = 'tournament_group'
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.username: Optional[str] = None
         self.tournament_id: Optional[str] = None
-        self.active_connections: Dict[str, AsyncWebsocketConsumer] = {}  # Add this
+        self.active_connections: Dict[str, AsyncWebsocketConsumer] = {}
 
     async def connect(self):
         await self.accept()
@@ -855,7 +830,6 @@ class TournamentConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data=None):
         try:
             
-            # If it's already a dict (from channel layer), process it directly
             if isinstance(text_data, dict):
                 data = text_data.get('text_data')
                 if data:
@@ -863,7 +837,6 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 else:
                     data = text_data
             else:
-                # If it's text data from WebSocket, parse it
                 data = json.loads(text_data)
             
             if data.get('type') == 'join_tournament':
@@ -893,16 +866,13 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         if username not in self.tournament_manager.waiting_players:
             self.tournament_manager.waiting_players.append(username)
             
-        # Always broadcast after adding a new player
         await self.broadcast_player_lists()
         
-        # Check if we have enough players
         if len(self.tournament_manager.waiting_players) >= TOURNAMENT_CONFIG['PLAYERS_PER_TOURNAMENT']:
             tournament_players = self.tournament_manager.waiting_players[:TOURNAMENT_CONFIG['PLAYERS_PER_TOURNAMENT']]
             self.tournament_manager.waiting_players = self.tournament_manager.waiting_players[TOURNAMENT_CONFIG['PLAYERS_PER_TOURNAMENT']:]
             tournament = self.tournament_manager.create_tournament(tournament_players)
             await self.start_tournament_matches(tournament)
-            # Broadcast again after creating tournament
             await self.broadcast_player_lists()
 
     @database_sync_to_async
@@ -919,7 +889,6 @@ class TournamentConsumer(AsyncWebsocketConsumer):
     async def broadcast_player_lists(self):
         try:
             players_in_tournaments = {}
-            # Get data for all active tournaments
             for t_id, tournament in self.tournament_manager.tournaments.items():
                 semifinal_matches = {match_id: match for match_id, match in tournament.matches.items() if 'semi' in match_id}
                 
@@ -967,7 +936,6 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         try:
             message = event['message']
             if message['type'] == 'players_update':
-                # Get the tournament this player is in
                 tournament = self.tournament_manager.get_player_tournament(self.username)
                 
                 filtered_data = {
@@ -1019,7 +987,6 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         """Handle match notifications"""
         match_data = event["match_data"]
         
-        # Only forward if this user is part of the match
         if self.username in [match_data["player1"], match_data["player2"]]:
             match_data["opponent"] = (
                 match_data["player2"] 
@@ -1031,7 +998,6 @@ class TournamentConsumer(AsyncWebsocketConsumer):
     async def tournament_match_ready(self, event):
         """Handle match ready messages"""
         message = event["message"]
-        # Only send if this connection is for the intended recipient
         if self.username == message["recipient"]:
             await self.send(text_data=json.dumps(message))
 
@@ -1041,7 +1007,6 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         if not tournament:
             return
         
-        # Use TournamentManager to handle the match completion
         success, next_action = self.tournament_manager.handle_match_complete(tournament_id, match_id, winner)
 
         if not success:
@@ -1050,7 +1015,6 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         if next_action == 'finals':
             finals_match = self.tournament_manager.setup_finals(tournament_id)
             if finals_match:
-                # Create the match notification
                 game_group_id = f"{finals_match.player1}_{finals_match.player2}"
                 player1_details = await self.get_player_details(finals_match.player1)
                 player2_details = await self.get_player_details(finals_match.player2)
@@ -1072,7 +1036,6 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                     }
                 }
 
-                # Send to both players individually
                 for player in [finals_match.player1, finals_match.player2]:
                     try:
                         await self.channel_layer.group_send(
@@ -1091,7 +1054,6 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         elif next_action == 'complete':
             await self.end_tournament(tournament)
         
-        # Broadcast updated state
         await self.broadcast_player_lists()
 
     async def start_matches(self, tournament: Tournament):
@@ -1099,7 +1061,6 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             match = tournament.matches[match_id]
             game_group_id = f"{match.player1}_{match.player2}"
             
-            # Send match ready notification to both players
             player1_details = await self.get_player_details(match.player1)
             player2_details = await self.get_player_details(match.player2)
             for player in [match.player1, match.player2]:
@@ -1122,13 +1083,11 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                     print(f"Error notifying player {player} about match: {e}")
 
     async def start_finals(self, tournament: Tournament):
-        # Get winners from semifinals
         semifinal_winners = [
             tournament.matches[match_id].winner
             for match_id in tournament.current_round_matches
         ]
         
-        # Create finals match
         finals_match_id = f"{tournament.id}_finals"
         tournament.matches[finals_match_id] = TournamentMatch(
             finals_match_id,
@@ -1136,11 +1095,9 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             semifinal_winners[1]
         )
         
-        # Update tournament state
         tournament.state = TournamentState.FINALS
         tournament.current_round_matches = {finals_match_id}
         
-        # Start finals match
         await self.start_matches(tournament)
 
     async def end_tournament(self, tournament: Tournament):
@@ -1148,7 +1105,6 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         tournament.state = TournamentState.COMPLETED
         
         winner = await self.get_player_details(finals_match.winner)
-        # Notify all tournament players about the winner
         message = {
             "type": "tournament_complete",
             "tournament_id": tournament.id,
@@ -1163,7 +1119,6 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             }
         )
         
-        # Cleanup tournament data
         for player in tournament.players:
             self.tournament_manager.player_to_tournament.pop(player, None)
         del self.tournament_manager.tournaments[tournament.id]
