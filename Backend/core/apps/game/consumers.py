@@ -967,26 +967,32 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         try:
             message = event['message']
             if message['type'] == 'players_update':
-                # Get all tournaments this player is in
-                player_tournaments = [t_id for t_id, t in self.tournament_manager.tournaments.items() 
-                                   if self.username in t.players]
+                # Debug logging
+                print(f"Player {self.username} tournaments in data:", message['data']['tournaments'].keys())
+                print(f"Tournament states:", message['data']['tournament_states'])
                 
+                # Get tournaments this player is in
+                player_tournaments = []
+                for t_id, tournament in self.tournament_manager.tournaments.items():
+                    if self.username in tournament.players:
+                        player_tournaments.append(t_id)
+                        
+                print(f"Found tournaments for player {self.username}:", player_tournaments)
+
                 filtered_data = {
                     'waiting_players': message['data']['waiting_players'],
                     'all_connected_players': message['data']['all_connected_players'],
-                    'tournaments': {t_id: message['data']['tournaments'][t_id] 
-                                  for t_id in player_tournaments 
-                                  if t_id in message['data']['tournaments']},
-                    'tournament_states': {t_id: message['data']['tournament_states'][t_id] 
-                                        for t_id in player_tournaments 
-                                        if t_id in message['data']['tournament_states']}
+                    'tournaments': message['data']['tournaments'],  # Send all tournament data
+                    'tournament_states': message['data']['tournament_states']  # Send all states
                 }
 
                 message['data'] = filtered_data
                     
             await self.send(text_data=json.dumps(message))
         except Exception as e:
-            print(f"Update error: {str(e)}")
+            print(f"Update error for {self.username}: {str(e)}")
+            import traceback
+            print(traceback.format_exc())
 
     async def start_tournament_matches(self, tournament: Tournament):
         """Send match notifications to appropriate players"""
