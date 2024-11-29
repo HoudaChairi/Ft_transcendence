@@ -878,8 +878,6 @@ class TournamentConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data=None):
         try:
-            
-            # If it's already a dict (from channel layer), process it directly
             if isinstance(text_data, dict):
                 data = text_data.get('text_data')
                 if data:
@@ -887,24 +885,22 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 else:
                     data = text_data
             else:
-                # If it's text data from WebSocket, parse it
                 data = json.loads(text_data)
             
             if data.get('type') == 'join_tournament':
                 await self.handle_join_tournament(data['username'])
+            elif data.get('type') == 'start_tournament':
+                tournament = self.tournament_manager.get_player_tournament(self.username)
+                if tournament and self.tournament_manager.start_tournament(tournament.id):
+                    await self.start_tournament_matches(tournament)
             elif data.get('type') == 'game_complete':
                 await self.handle_game_complete(
                     data['tournament_id'],
                     data['match_id'],
                     data['winner']
                 )
-            
-        except json.JSONDecodeError:
-            await self.send(text_data=json.dumps({
-                'type': 'error',
-                'message': 'Invalid JSON format'
-            }))
         except Exception as e:
+            print(f"Error in receive: {str(e)}")
             await self.send(text_data=json.dumps({
                 'type': 'error',
                 'message': 'Internal server error'
