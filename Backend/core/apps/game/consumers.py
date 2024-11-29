@@ -1065,58 +1065,47 @@ class TournamentConsumer(AsyncWebsocketConsumer):
     async def handle_game_complete(self, tournament_id: str, match_id: str, winner: str):
         tournament = self.tournament_manager.tournaments.get(tournament_id)
         if not tournament:
+            print(f"Tournament {tournament_id} not found")
             return
-        
-        # Use TournamentManager to handle the match completion
-        success, next_action = self.tournament_manager.handle_match_complete(tournament_id, match_id, winner)
 
-        if not success:
-            return
+        match = tournament.matches.get(match_id)
+        if match:
+            match.winner = winner
+            match.game_completed = True
             
-        if next_action == 'finals':
-            finals_match = self.tournament_manager.setup_finals(tournament_id)
-            if finals_match:
-                # Create the match notification
-                game_group_id = f"{finals_match.player1}_{finals_match.player2}"
-                player1_details = await self.get_player_details(finals_match.player1)
-                player2_details = await self.get_player_details(finals_match.player2)
-                match_data = {
-                    "type": "match_ready",
-                    "player1": player1_details.get('username'),
-                    "player2": player2_details.get('username'),
-                    "avatar1": player1_details.get('avatar'),
-                    "avatar2": player2_details.get('avatar'),
-                    "tournament_id": tournament_id,
-                    "match_id": finals_match.match_id,
-                    "game_group_id": game_group_id,
-                    "consumer": self.channel_name,
-                    "tournament_data": {
-                        "tournament_id": tournament_id,
-                        "match_id": finals_match.match_id,
-                        "player1": finals_match.player1,
-                        "player2": finals_match.player2
-                    }
-                }
-
-                # Send to both players individually
-                for player in [finals_match.player1, finals_match.player2]:
-                    try:
-                        await self.channel_layer.group_send(
-                            self.TOURNAMENT_GROUP,
-                            {
-                                "type": "match_notification",
-                                "match_data": {
-                                    **match_data,
-                                    "opponent": finals_match.player2 if player == finals_match.player1 else finals_match.player1
-                                }
-                            }
+            # Check if current round is complete
+            current_round_complete = all(
+                tournament.matches[match_id].game_completed 
+                for match_id in tournament.current_round_matches
+            )
+            
+            if current_round_complete:
+                if tournament.state == TournamentState.SEMIFINALS:
+                    # Both semifinals complete, set up finals
+                    tournament.state = TournamentState.FINALS
+                    finals_match = tournament.matches.get(f"{tournament_id}_finals")
+                    if not finals_match:
+                        # Get winners from semifinals
+                        semifinal_winners = [
+                            tournament.matches[match_id].winner
+                            for match_id in tournament.current_round_matches
+                        ]
+                        
+                        # Create finals match
+                        finals_match_id = f"{tournament_id}_finals"
+                        tournament.matches[finals_match_id] = TournamentMatch(
+                            finals_match_id,
+                            semifinal_winners[0],
+                            semifinal_winners[1]
                         )
-                    except Exception as e:
-                        print(f"Error sending finals notification to {player}: {str(e)}")
-                
-        elif next_action == 'complete':
-            await self.end_tournament(tournament)
-        
+                        tournament.current_round_matches = {finals_match_id}
+                        await self.start_tournament_matches(tournament)
+                        
+                elif tournament.state == TournamentState.FINALS:
+                    # Tournament complete
+                    tournament.state = TournamentState.COMPLETED
+                    await self.end_tournament(tournament)
+            
         # Broadcast updated state
         await self.broadcast_player_lists()
 
