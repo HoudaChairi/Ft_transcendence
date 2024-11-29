@@ -1504,14 +1504,15 @@ class Game {
 
 	async #switchChatTab(btn, on = true) {
 		try {
-			if (on)
-			{this.#css2DObject.chat.element.querySelector(
-				'.infos-chat'
-			).innerHTML = '';
-			this.#css2DObject.chat.element.querySelector(
-				'.recived-parent'
-			).innerHTML = '';
-			this.#chatuser = undefined;}
+			if (on) {
+				this.#css2DObject.chat.element.querySelector(
+					'.infos-chat'
+				).innerHTML = '';
+				this.#css2DObject.chat.element.querySelector(
+					'.recived-parent'
+				).innerHTML = '';
+				this.#chatuser = undefined;
+			}
 			const id = {
 				1: ALL_PLAYERS,
 				2: FRIENDS,
@@ -3518,7 +3519,7 @@ class Game {
 					this.#startInviteGame(data.recipient);
 				} else {
 					this.#onlineUsers = data.online_users;
-					this.#switchChatTab(this.#selectedTab,false);
+					this.#switchChatTab(this.#selectedTab, false);
 				}
 			} catch (error) {
 				console.error('Error processing message:', error);
