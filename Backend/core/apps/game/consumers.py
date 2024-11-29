@@ -80,7 +80,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 self.waiting_players.pop(self.username, None)
                 self.player_groups.pop(self.username, None)
         except Exception as e:
-            print(f"Error in game disconnect: {e}")
+            pass
     
     async def handle_disconnect_win(self, group_id: str) -> None:
         if group_id in self.games_data:
@@ -633,7 +633,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 }
             )
         except Exception as e:
-            print(f"Error broadcasting game state: {str(e)}")
+            pass
 
     async def check_win_condition(self, game: GameState, group_id: str) -> bool:
         winner = None
@@ -667,7 +667,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                             }
                         )
                 except Exception as e:
-                    print(f"Error sending game completion: {str(e)}")
+                    pass
 
             await self.channel_layer.group_send(
                 group_id,
@@ -763,7 +763,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                         }
                     )
                 except Exception as e:
-                    print(f"Error sending game completion: {str(e)}")
+                    pass
 
     def update_paddle_positions(self, game: GameState) -> None:
         C = GAME_CONSTANTS
@@ -929,8 +929,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 }
             )
         except Exception as e:
-            print(f"Broadcast error: {str(e)}")
-            raise
+            pass
 
     async def tournament_update(self, event):
         try:
@@ -954,7 +953,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                     
             await self.send(text_data=json.dumps(message))
         except Exception as e:
-            print(f"Update error: {str(e)}")
+            pass
 
     async def start_tournament_matches(self, tournament: Tournament):
         """Send match notifications to appropriate players"""
@@ -1049,7 +1048,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                             }
                         )
                     except Exception as e:
-                        print(f"Error sending finals notification to {player}: {str(e)}")
+                        pass
                 
         elif next_action == 'complete':
             await self.end_tournament(tournament)
@@ -1080,7 +1079,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                     if player in self.active_connections:
                         await self.active_connections[player].send(text_data=json.dumps(message))
                 except Exception as e:
-                    print(f"Error notifying player {player} about match: {e}")
+                    pass
 
     async def start_finals(self, tournament: Tournament):
         semifinal_winners = [
