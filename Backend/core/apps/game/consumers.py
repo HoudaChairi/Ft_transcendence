@@ -976,23 +976,32 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             raise
 
     async def tournament_update(self, event):
-        """Handle tournament updates by filtering data for this player"""
         try:
             message = event['message']
             if message['type'] == 'players_update':
-                # Filter tournaments data for this player
+                # Get player's tournament
                 tournament = self.tournament_manager.get_player_tournament(self.username)
+
+                # Keep waiting players list for everyone
+                filtered_data = {
+                    'waiting_players': message['data']['waiting_players'],
+                    'all_connected_players': message['data']['all_connected_players'],
+                    'tournaments': {},
+                    'tournament_states': {}
+                }
+
+                # Only include tournament data if player is in a tournament
                 if tournament:
                     tournament_id = tournament.id
-                    message['data']['tournaments'] = {
-                        tournament_id: message['data']['tournaments'].get(tournament_id, {})
-                    }
-                    message['data']['tournament_states'] = {
-                        tournament_id: message['data']['tournament_states'].get(tournament_id, '')
-                    }
-                else:
-                    message['data']['tournaments'] = {}
-                    message['data']['tournament_states'] = {}
+                    if tournament_id in message['data']['tournaments']:
+                        filtered_data['tournaments'] = {
+                            tournament_id: message['data']['tournaments'][tournament_id]
+                        }
+                        filtered_data['tournament_states'] = {
+                            tournament_id: message['data']['tournament_states'][tournament_id]
+                        }
+
+                message['data'] = filtered_data
                     
             await self.send(text_data=json.dumps(message))
         except Exception as e:
