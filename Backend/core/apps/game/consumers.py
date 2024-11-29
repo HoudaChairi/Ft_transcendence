@@ -967,28 +967,26 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         try:
             message = event['message']
             if message['type'] == 'players_update':
-                # Get player's tournaments
-                player_tournaments = []
-                for t_id, tournament in self.tournament_manager.tournaments.items():
-                    if self.username in tournament.players:
-                        player_tournaments.append(t_id)
-
+                # Get the tournament this player is in
+                tournament = self.tournament_manager.get_player_tournament(self.username)
+                
                 filtered_data = {
                     'waiting_players': message['data']['waiting_players'],
                     'all_connected_players': message['data']['all_connected_players'],
-                    'tournaments': {t_id: message['data']['tournaments'][t_id] 
-                                  for t_id in player_tournaments 
-                                  if t_id in message['data']['tournaments']},
-                    'tournament_states': {t_id: message['data']['tournament_states'][t_id] 
-                                        for t_id in player_tournaments 
-                                        if t_id in message['data']['tournament_states']}
+                    'tournaments': {},
+                    'tournament_states': {}
                 }
+                
+                if tournament:
+                    tournament_id = tournament.id
+                    filtered_data['tournaments'][tournament_id] = message['data']['tournaments'][tournament_id]
+                    filtered_data['tournament_states'][tournament_id] = message['data']['tournament_states'][tournament_id]
 
                 message['data'] = filtered_data
                     
             await self.send(text_data=json.dumps(message))
         except Exception as e:
-            print(f"Update error for {self.username}: {str(e)}")
+            print(f"Update error: {str(e)}")
 
     async def start_tournament_matches(self, tournament: Tournament):
         """Send match notifications to appropriate players"""
