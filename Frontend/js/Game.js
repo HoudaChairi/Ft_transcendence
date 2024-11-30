@@ -2740,8 +2740,6 @@ class Game {
 	#updateStartScreen(matchData) {
 		const start = this.#css2DObject.start.element;
 
-		console.log('matchdata', matchData);
-
 		[matchData.player1, matchData.player2].forEach((player, i) => {
 			const playerElem = start.querySelector(`#player${i + 1}`);
 			const avatarElem = start.querySelector(`#player${i + 1}-avatar`);
