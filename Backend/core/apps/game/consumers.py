@@ -829,7 +829,6 @@ class TournamentConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data=None):
         try:
-            
             if isinstance(text_data, dict):
                 data = text_data.get('text_data')
                 if data:
@@ -870,15 +869,19 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         
         if len(self.tournament_manager.waiting_players) >= TOURNAMENT_CONFIG['PLAYERS_PER_TOURNAMENT']:
             tournament_players = self.tournament_manager.waiting_players[:TOURNAMENT_CONFIG['PLAYERS_PER_TOURNAMENT']]
-            self.tournament_manager.waiting_players = self.tournament_manager.waiting_players[TOURNAMENT_CONFIG['PLAYERS_PER_TOURNAMENT']:]
             tournament = self.tournament_manager.create_tournament(tournament_players)
+            
+            # Send player update with current waiting list
+            await self.broadcast_player_lists()
+            
+            # Now clear the waiting players
+            self.tournament_manager.waiting_players = self.tournament_manager.waiting_players[TOURNAMENT_CONFIG['PLAYERS_PER_TOURNAMENT']:]
             
             for player in tournament_players:
                 if player in self.connected_players:
                     self.tournament_id = tournament.id
             
             await self.start_tournament_matches(tournament)
-            await self.broadcast_player_lists()
 
     @database_sync_to_async
     def get_player_details(self, username: str) -> dict:
@@ -889,7 +892,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 "avatar": player.get_avatar_url()
             }
         except Player.DoesNotExist:
-            pass
+            return {}
 
     async def broadcast_player_lists(self):
         try:
@@ -1007,7 +1010,6 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         message = event["message"]
         if self.username == message["recipient"]:
             await self.send(text_data=json.dumps(message))
-
 
     async def handle_game_complete(self, tournament_id: str, match_id: str, winner: str):
         tournament = self.tournament_manager.tournaments.get(tournament_id)

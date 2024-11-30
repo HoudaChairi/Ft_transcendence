@@ -2667,7 +2667,10 @@ class Game {
 	}
 
 	#handleWebSocketError() {
-		if (this.#gameWebSocket) this.#gameWebSocket.close();
+		if (this.#gameWebSocket) {
+			this.#gameWebSocket.close();
+			this.#gameWebSocket = null;
+		}
 		this.#switchHome('home');
 	}
 
@@ -2694,15 +2697,32 @@ class Game {
 
 		this.#resetGameState();
 
-		if (this.#gameWebSocket) this.#gameWebSocket.close();
+		if (this.#gameWebSocket) {
+			this.#gameWebSocket.close();
+			this.#gameWebSocket = null;
+		}
 	}
 
 	#startTournamentMatch(matchData) {
 		if (this.#isCurrentMatch(matchData)) return;
 
-		this.#prepareForNewMatch(matchData);
-		this.#updateStartScreen(matchData);
-		this.#setupStartButton(matchData);
+		try {
+			this.#cleanupCurrentMatch();
+			this.#prepareForNewMatch(matchData);
+			this.#updateStartScreen(matchData);
+			this.#setupStartButton(matchData);
+		} catch (error) {
+			console.error('Error starting tournament match:', error);
+			this.#cleanupGameState();
+		}
+	}
+
+	#cleanupCurrentMatch() {
+		if (this.#gameWebSocket) {
+			this.#gameWebSocket.close();
+			this.#gameWebSocket = null;
+		}
+		this.#currentMatch = null;
 	}
 
 	#isCurrentMatch(matchData) {
@@ -2745,24 +2765,52 @@ class Game {
 			this.#css2DObject.start.element.querySelector('.start-button');
 		if (!startButton) return;
 
-		startButton.addEventListener('click', () => {
+		const clickHandler = () => {
 			this.#scene.remove(this.#css2DObject.start);
 			this.#initiateTournamentGame(matchData);
-		});
+		};
+
+		startButton.replaceWith(startButton.cloneNode(true));
+		const newStartButton =
+			this.#css2DObject.start.element.querySelector('.start-button');
+		newStartButton.addEventListener('click', clickHandler, { once: true });
 	}
 
 	#initiateTournamentGame(matchData) {
 		try {
+			if (this.#gameWebSocket) {
+				this.#gameWebSocket.close();
+				this.#gameWebSocket = null;
+			}
+
 			this.#gameWebSocket = new WebSocket(
 				`wss://${window.location.host}/api/ws/game/`
 			);
 
 			this.#gameWebSocket.onopen = () => {
-				this.#sendTournamentGameInit(matchData);
-				this.#initializeGame();
+				if (this.#gameWebSocket?.readyState === WebSocket.OPEN) {
+					this.#sendTournamentGameInit(matchData);
+					this.#initializeGame();
+				}
 			};
 
-			this.#setupTournamentGameHandlers();
+			this.#gameWebSocket.onerror = error => {
+				console.error('Tournament game WebSocket error:', error);
+				this.#cleanupGameState();
+			};
+
+			this.#gameWebSocket.onmessage = e => {
+				try {
+					const data = JSON.parse(e.data);
+					this.#handleTournamentGameMessage(data);
+				} catch (error) {
+					console.error('Error handling game message:', error);
+				}
+			};
+
+			this.#gameWebSocket.onclose = () => {
+				this.#gameWebSocket = null;
+			};
 		} catch (error) {
 			console.error('Error creating tournament game connection:', error);
 			this.#cleanupGameState();
@@ -2770,41 +2818,31 @@ class Game {
 	}
 
 	#sendTournamentGameInit(matchData) {
-		this.#gameWebSocket.send(
-			JSON.stringify({
-				username: this.#loggedUser,
-				tournament_data: {
-					player1: matchData.player1,
-					player2: matchData.player2,
-					tournament_id: matchData.tournament_id,
-					match_id: matchData.match_id,
-					consumer: matchData.consumer,
-				},
-			})
-		);
-	}
-
-	#setupTournamentGameHandlers() {
-		if (!this.#gameWebSocket) return;
-
-		this.#gameWebSocket.onmessage = e => {
-			try {
-				const data = JSON.parse(e.data);
-
-				this.#handleTournamentGameMessage(data);
-			} catch (error) {
-				console.error('Error handling game message:', error);
+		try {
+			if (
+				!this.#gameWebSocket ||
+				this.#gameWebSocket.readyState !== WebSocket.OPEN
+			) {
+				console.error('WebSocket not ready for tournament game init');
+				return;
 			}
-		};
 
-		this.#gameWebSocket.onerror = error => {
-			console.error('Tournament game WebSocket error:', error);
+			this.#gameWebSocket.send(
+				JSON.stringify({
+					username: this.#loggedUser,
+					tournament_data: {
+						player1: matchData.player1,
+						player2: matchData.player2,
+						tournament_id: matchData.tournament_id,
+						match_id: matchData.match_id,
+						consumer: matchData.consumer,
+					},
+				})
+			);
+		} catch (error) {
+			console.error('Error sending tournament game init:', error);
 			this.#cleanupGameState();
-		};
-
-		this.#gameWebSocket.onclose = () => {
-			this.#gameWebSocket = null;
-		};
+		}
 	}
 
 	#handleTournamentGameMessage(data) {
@@ -2825,12 +2863,14 @@ class Game {
 	}
 
 	#cleanupGameState() {
-		this.#currentMatch = null;
-		this.#cleanupGameWebSocket();
+		this.#cleanupCurrentMatch();
 	}
 
 	#cleanupGameWebSocket() {
-		if (this.#gameWebSocket) this.#gameWebSocket.close();
+		if (this.#gameWebSocket) {
+			this.#gameWebSocket.close();
+			this.#gameWebSocket = null;
+		}
 	}
 
 	#updateTournamentUI(data) {
@@ -2895,7 +2935,35 @@ class Game {
 					winnerAvatar.src = data.winner.avatar;
 					winnerName.textContent = data.winner.username;
 				}
+				if (this.#tournamentWebSocket) {
+					this.#tournamentWebSocket.close();
+					this.#tournamentWebSocket = null;
+				}
 			}
+
+			if (!data.tournaments) return;
+			const tournament = Object.values(data.tournaments)[0];
+			if (!tournament) return;
+
+			const { semifinal_winners } = tournament;
+
+			['semi1', 'semi2'].forEach((semi, index) => {
+				const winner = semifinal_winners[semi]
+					? semifinal_winners[semi]
+					: null;
+				if (winner) {
+					const winnerAvatar = tournamentElem.querySelector(
+						`#winner${index + 1}-avatar`
+					);
+					const winnerName = tournamentElem.querySelector(
+						`#winner${index + 1}`
+					);
+					if (winnerAvatar && winnerName) {
+						winnerAvatar.src = winner.avatar;
+						winnerName.textContent = winner.username;
+					}
+				}
+			});
 		} catch (error) {
 			console.error('Error updating finale:', error);
 		}
@@ -2903,6 +2971,11 @@ class Game {
 
 	#tournamentStart() {
 		try {
+			if (this.#tournamentWebSocket) {
+				this.#tournamentWebSocket.close();
+				this.#tournamentWebSocket = null;
+			}
+
 			this.#tournamentWebSocket = new WebSocket(
 				`wss://${window.location.host}/api/ws/tournament/`
 			);
@@ -2918,18 +2991,21 @@ class Game {
 		if (!this.#tournamentWebSocket) return;
 
 		this.#tournamentWebSocket.onopen = () => {
-			this.#tournamentWebSocket?.send(
-				JSON.stringify({
-					type: 'join_tournament',
-					username: this.#loggedUser,
-				})
-			);
+			if (this.#tournamentWebSocket?.readyState === WebSocket.OPEN) {
+				this.#tournamentWebSocket.send(
+					JSON.stringify({
+						type: 'join_tournament',
+						username: this.#loggedUser,
+					})
+				);
+			}
 		};
 
 		this.#tournamentWebSocket.onmessage = e => {
 			try {
+				if (!this.#tournamentWebSocket) return;
+
 				const data = JSON.parse(e.data);
-				console.log(data); // remove
 				this.#handleTournamentMessage(data);
 			} catch (error) {
 				console.error('Error handling tournament message:', error);
@@ -2943,10 +3019,13 @@ class Game {
 
 		this.#tournamentWebSocket.onclose = () => {
 			this.#started = false;
+			this.#tournamentWebSocket = null;
 		};
 	}
 
 	#handleTournamentMessage(data) {
+		if (!this.#tournamentWebSocket) return;
+
 		switch (data.type) {
 			case 'match_ready':
 				this.#handleMatchReady(data);
@@ -2984,12 +3063,15 @@ class Game {
 	#cleanupTournamentWebSocket() {
 		if (this.#tournamentWebSocket) {
 			try {
-				this.#tournamentWebSocket.close();
+				if (this.#tournamentWebSocket.readyState === WebSocket.OPEN) {
+					this.#tournamentWebSocket.close();
+				}
 			} catch (e) {
 				console.error('Error closing tournament WebSocket:', e);
 			}
 			this.#tournamentWebSocket = null;
 		}
+		this.#started = false;
 	}
 
 	#offline() {
@@ -3287,6 +3369,8 @@ class Game {
 		this.#scene.remove(this.#css2DObject.game);
 		this.#scene.add(this.#css2DObject.tournament);
 		this.#bindKeys('online');
+
+		this.#cleanupTournamentWebSocket();
 		this.#tournamentStart();
 	}
 
@@ -3295,7 +3379,7 @@ class Game {
 		this.#css2DObject.game.element
 			.querySelector('.card-container')
 			.addEventListener('click', e => {
-				const btn = e.target.closest('.card').id;
+				const btn = e.target.closest('.card')?.id;
 				if (btn) {
 					const choices = {
 						offline: this.#offline.bind(this),
@@ -3439,7 +3523,10 @@ class Game {
 	}
 
 	#cleanupWebSockets(newPage) {
-		if (this.#gameWebSocket) this.#gameWebSocket.close();
+		if (this.#gameWebSocket) {
+			this.#gameWebSocket.close();
+			this.#gameWebSocket = null;
+		}
 
 		if (this.#tournamentWebSocket) this.#tournamentWebSocket.close();
 
