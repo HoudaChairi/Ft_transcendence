@@ -1,7 +1,7 @@
 export const CHOICES = `<div class="card-container">
 	<div class="card-wrapper">
 		<div class="card" id="offline">
-			<img src="/textures/png/Offline.png" class="card-content" alt="" />
+			<img src="/textures/png/OfflineG.png" class="card-content" alt="" />
 			<div class="card-title title-offline">Offline</div>
 		</div>
 	</div>
