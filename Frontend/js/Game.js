@@ -3374,7 +3374,26 @@ class Game {
 		}
 	}
 
+	#clearAI() {
+		if (this.#aiUpdateTimer) {
+			clearInterval(this.#aiUpdateTimer);
+			this.#aiUpdateTimer = null;
+		}
+
+		this.#AI = false;
+		this.#aiStats = {
+			missedBalls: 0,
+			successfulBlocks: 0,
+			avgInterceptTime: 0,
+			lastPositions: [],
+		};
+		this.#aiCurrentInput = null;
+		this.#aiTargetPosition = 0;
+		this.#lastDirectionChange = null;
+	}
+
 	#switchHome(home) {
+		this.#clearAI();
 		this.#isOffline = false;
 		this.#cleanupWebSockets(home);
 		this.#removeKeyListeners();
