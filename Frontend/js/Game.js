@@ -3469,6 +3469,7 @@ class Game {
 		this.#aiCurrentInput = null;
 		this.#aiTargetPosition = 0;
 		this.#lastDirectionChange = null;
+		this.#player2Direction = 0;
 	}
 
 	#switchHome(home) {
