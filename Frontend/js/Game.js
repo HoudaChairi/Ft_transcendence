@@ -2740,6 +2740,8 @@ class Game {
 	#updateStartScreen(matchData) {
 		const start = this.#css2DObject.start.element;
 
+		console.log('matchdata', matchData);
+
 		[matchData.player1, matchData.player2].forEach((player, i) => {
 			const playerElem = start.querySelector(`#player${i + 1}`);
 			const avatarElem = start.querySelector(`#player${i + 1}-avatar`);
@@ -2866,13 +2868,6 @@ class Game {
 		this.#cleanupCurrentMatch();
 	}
 
-	#cleanupGameWebSocket() {
-		if (this.#gameWebSocket) {
-			this.#gameWebSocket.close();
-			this.#gameWebSocket = null;
-		}
-	}
-
 	#updateTournamentUI(data) {
 		try {
 			const tournamentElem = this.#css2DObject.tournament.element;
@@ -2917,6 +2912,7 @@ class Game {
 					}
 				});
 			}
+			if (data.waiting_players.length >= 4) this.#started = true;
 		} catch (error) {
 			console.error('Error updating tournament UI:', error);
 		}

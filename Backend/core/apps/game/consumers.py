@@ -863,7 +863,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         self.username = username
         self.connected_players.add(username)
         
-        if username not in self.tournament_manager.waiting_players:
+        if username not in self.tournament_manager.waiting_players and not self.tournament_manager.get_player_tournament(username):
             self.tournament_manager.waiting_players.append(username)
             
         await self.broadcast_player_lists()
@@ -872,9 +872,10 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             tournament_players = self.tournament_manager.waiting_players[:TOURNAMENT_CONFIG['PLAYERS_PER_TOURNAMENT']]
             tournament = self.tournament_manager.create_tournament(tournament_players)
             
-            await self.broadcast_player_lists()
+            self.tournament_manager.waiting_players = [p for p in self.tournament_manager.waiting_players 
+                                                    if p not in tournament_players]
             
-            self.tournament_manager.waiting_players = self.tournament_manager.waiting_players[TOURNAMENT_CONFIG['PLAYERS_PER_TOURNAMENT']:]
+            await self.broadcast_player_lists()
             
             for player in tournament_players:
                 if player in self.connected_players:
@@ -951,14 +952,15 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 filtered_data = {
                     'waiting_players': message['data']['waiting_players'],
                     'all_connected_players': message['data']['all_connected_players'],
-                    'tournaments': {},
-                    'tournament_states': {}
+                    'tournaments': message['data']['tournaments'] or {},  # Ensure we always send an object, even if empty
+                    'tournament_states': message['data']['tournament_states'] or {}
                 }
                 
                 if tournament:
                     tournament_id = tournament.id
-                    filtered_data['tournaments'][tournament_id] = message['data']['tournaments'][tournament_id]
-                    filtered_data['tournament_states'][tournament_id] = message['data']['tournament_states'][tournament_id]
+                    if tournament_id in message['data']['tournaments']:
+                        filtered_data['tournaments'][tournament_id] = message['data']['tournaments'][tournament_id]
+                        filtered_data['tournament_states'][tournament_id] = message['data']['tournament_states'][tournament_id]
 
                 message['data'] = filtered_data
                     
@@ -1134,6 +1136,10 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         
         for player in tournament.players:
             self.tournament_manager.player_to_tournament.pop(player, None)
+            if player in self.connected_players:
+                if player not in self.tournament_manager.waiting_players:
+                    self.tournament_manager.waiting_players.append(player)
+        
         del self.tournament_manager.tournaments[tournament.id]
         
         await self.broadcast_player_lists()
