@@ -887,7 +887,8 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         try:
             player = Player.objects.get(username=username)
             return {
-                "username": player.tournament_username,
+                "username": username,
+                "display_name": player.tournament_username,
                 "avatar": player.get_avatar_url()
             }
         except Player.DoesNotExist:
@@ -980,8 +981,10 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                     "type": "match_notification",
                     "match_data": {
                         "type": "match_ready",
-                        "player1": player1_details.get('username'),
-                        "player2": player2_details.get('username'),
+                        "player1": match.player1,
+                        "player2": match.player2,
+                        "player1_details": player1_details,
+                        "player2_details": player2_details,
                         "avatar1": player1_details.get('avatar'),
                         "avatar2": player2_details.get('avatar'),
                         "tournament_id": tournament.id,
@@ -1002,6 +1005,8 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 if self.username == match_data["player1"] 
                 else match_data["player1"]
             )
+            match_data["display_player1"] = match_data.pop("player1_details", {}).get("display_name", match_data["player1"])
+            match_data["display_player2"] = match_data.pop("player2_details", {}).get("display_name", match_data["player2"])
             await self.send(text_data=json.dumps(match_data))
 
     async def tournament_match_ready(self, event):

@@ -2889,7 +2889,7 @@ class Game {
 						);
 						if (playerAvatar && playerName) {
 							playerAvatar.src = player.avatar;
-							playerName.textContent = player.username;
+							playerName.textContent = player.display_name;
 						}
 					}
 				});
@@ -2912,7 +2912,7 @@ class Game {
 						);
 						if (winnerAvatar && winnerName) {
 							winnerAvatar.src = winner.avatar;
-							winnerName.textContent = winner.username;
+							winnerName.textContent = winner.display_name;
 						}
 					}
 				});
