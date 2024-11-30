@@ -2929,7 +2929,7 @@ class Game {
 		this.#tournamentWebSocket.onmessage = e => {
 			try {
 				const data = JSON.parse(e.data);
-				console.log(data);
+				console.log(data); // remove
 				this.#handleTournamentMessage(data);
 			} catch (error) {
 				console.error('Error handling tournament message:', error);
