@@ -911,7 +911,6 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                         'semi2': await self.get_player_details(semi2_winner) if semi2_winner else None
                     },
                     'state': tournament.state.value,
-                    'players': [await self.get_player_details(player) for player in tournament.players]
                 }
 
             await self.channel_layer.group_send(
@@ -922,6 +921,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                         "type": "players_update",
                         "data": {
                             "waiting_players": [await self.get_player_details(player) for player in self.tournament_manager.waiting_players],
+                            'players': [await self.get_player_details(player) for player in tournament.players],
                             "all_connected_players": [await self.get_player_details(player) for player in self.connected_players],
                             "tournaments": players_in_tournaments,
                             "tournament_states": {t_id: t.state.value for t_id, t in self.tournament_manager.tournaments.items()}
