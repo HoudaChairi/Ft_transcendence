@@ -872,6 +872,11 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             tournament_players = self.tournament_manager.waiting_players[:TOURNAMENT_CONFIG['PLAYERS_PER_TOURNAMENT']]
             self.tournament_manager.waiting_players = self.tournament_manager.waiting_players[TOURNAMENT_CONFIG['PLAYERS_PER_TOURNAMENT']:]
             tournament = self.tournament_manager.create_tournament(tournament_players)
+            
+            for player in tournament_players:
+                if player in self.connected_players:
+                    self.tournament_id = tournament.id
+            
             await self.start_tournament_matches(tournament)
             await self.broadcast_player_lists()
 
@@ -894,7 +899,9 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 
                 semi1_winner = next((match.winner for match_id, match in semifinal_matches.items() if 'semi1' in match_id), None)
                 semi2_winner = next((match.winner for match_id, match in semifinal_matches.items() if 'semi2' in match_id), None)
-                players = [await self.get_player_details(player) for player in tournament.players]
+                
+                tournament_players = [await self.get_player_details(player) for player in tournament.players]
+                
                 players_in_tournaments[t_id] = {
                     'matches': {
                         match_id: {
@@ -911,6 +918,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                         'semi2': await self.get_player_details(semi2_winner) if semi2_winner else None
                     },
                     'state': tournament.state.value,
+                    'players': tournament_players
                 }
 
             await self.channel_layer.group_send(
@@ -921,7 +929,6 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                         "type": "players_update",
                         "data": {
                             "waiting_players": [await self.get_player_details(player) for player in self.tournament_manager.waiting_players],
-                            'players': players,
                             "all_connected_players": [await self.get_player_details(player) for player in self.connected_players],
                             "tournaments": players_in_tournaments,
                             "tournament_states": {t_id: t.state.value for t_id, t in self.tournament_manager.tournaments.items()}
