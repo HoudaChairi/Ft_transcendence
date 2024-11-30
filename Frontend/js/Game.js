@@ -3006,6 +3006,7 @@ class Game {
 				if (!this.#tournamentWebSocket) return;
 
 				const data = JSON.parse(e.data);
+				console.log(data);
 				this.#handleTournamentMessage(data);
 			} catch (error) {
 				console.error('Error handling tournament message:', error);
@@ -3528,7 +3529,10 @@ class Game {
 			this.#gameWebSocket = null;
 		}
 
-		if (this.#tournamentWebSocket) this.#tournamentWebSocket.close();
+		if (this.#tournamentWebSocket) {
+			this.#tournamentWebSocket.close();
+			this.#tournamentWebSocket = null;
+		}
 
 		if (newPage !== 'chat' && this.#onlineSocket) {
 			this.#onlineSocket.close();
