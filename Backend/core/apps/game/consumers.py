@@ -894,7 +894,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 
                 semi1_winner = next((match.winner for match_id, match in semifinal_matches.items() if 'semi1' in match_id), None)
                 semi2_winner = next((match.winner for match_id, match in semifinal_matches.items() if 'semi2' in match_id), None)
-                
+                players = [await self.get_player_details(player) for player in tournament.players]
                 players_in_tournaments[t_id] = {
                     'matches': {
                         match_id: {
@@ -921,7 +921,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                         "type": "players_update",
                         "data": {
                             "waiting_players": [await self.get_player_details(player) for player in self.tournament_manager.waiting_players],
-                            'players': [await self.get_player_details(player) for player in tournament.players],
+                            'players': players,
                             "all_connected_players": [await self.get_player_details(player) for player in self.connected_players],
                             "tournaments": players_in_tournaments,
                             "tournament_states": {t_id: t.state.value for t_id, t in self.tournament_manager.tournaments.items()}
