@@ -871,10 +871,8 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             tournament_players = self.tournament_manager.waiting_players[:TOURNAMENT_CONFIG['PLAYERS_PER_TOURNAMENT']]
             tournament = self.tournament_manager.create_tournament(tournament_players)
             
-            # Send player update with current waiting list
             await self.broadcast_player_lists()
             
-            # Now clear the waiting players
             self.tournament_manager.waiting_players = self.tournament_manager.waiting_players[TOURNAMENT_CONFIG['PLAYERS_PER_TOURNAMENT']:]
             
             for player in tournament_players:
