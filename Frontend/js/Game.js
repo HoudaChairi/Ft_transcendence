@@ -2116,7 +2116,6 @@ class Game {
 		}
 
 		this.#displayWin(players);
-		this.#ballDirection = new Vector3(0, 0, 0);
 		this.#resetGameState();
 	}
 
@@ -2525,6 +2524,7 @@ class Game {
 	}
 
 	#resetGameState() {
+		this.#ballDirection = new Vector3(0, 0, 0);
 		this.#resetScore();
 
 		if (this.#ball) {
@@ -3378,6 +3378,7 @@ class Game {
 		this.#isOffline = false;
 		this.#cleanupWebSockets(home);
 		this.#removeKeyListeners();
+		this.#resetGameState();
 
 		const cameraConfig = this.#cameraPositions[home];
 		if (cameraConfig) {
