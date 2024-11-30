@@ -952,7 +952,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                 filtered_data = {
                     'waiting_players': message['data']['waiting_players'],
                     'all_connected_players': message['data']['all_connected_players'],
-                    'tournaments': message['data']['tournaments'] or {},  # Ensure we always send an object, even if empty
+                    'tournaments': message['data']['tournaments'] or {},
                     'tournament_states': message['data']['tournament_states'] or {}
                 }
                 

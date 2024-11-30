@@ -109,7 +109,6 @@ class TournamentManager:
         match.game_completed = True
         print(f"Match {match_id} completed: {winner} won")
         
-        # Check if all current round matches are complete
         all_complete = all(
             tournament.matches[mid].game_completed 
             for mid in tournament.current_round_matches
@@ -129,7 +128,6 @@ class TournamentManager:
         if not tournament:
             return None
         
-        # Get winners from semifinals
         semifinal_winners = [
             tournament.matches[match_id].winner
             for match_id in tournament.current_round_matches
@@ -139,7 +137,6 @@ class TournamentManager:
             print("Error: Need exactly 2 semifinal winners")
             return None
             
-        # Create finals match
         finals_match_id = f"{tournament.id}_finals"
         finals_match = TournamentMatch(
             finals_match_id,
@@ -147,7 +144,6 @@ class TournamentManager:
             semifinal_winners[1]
         )
         
-        # Update tournament state
         tournament.matches[finals_match_id] = finals_match
         tournament.state = TournamentState.FINALS
         tournament.current_round_matches = {finals_match_id}
