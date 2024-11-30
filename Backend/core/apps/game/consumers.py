@@ -910,7 +910,8 @@ class TournamentConsumer(AsyncWebsocketConsumer):
                         'semi1': await self.get_player_details(semi1_winner) if semi1_winner else None,
                         'semi2': await self.get_player_details(semi2_winner) if semi2_winner else None
                     },
-                    'state': tournament.state.value
+                    'state': tournament.state.value,
+                    'players': [await self.get_player_details(player) for player in tournament.players]
                 }
 
             await self.channel_layer.group_send(
