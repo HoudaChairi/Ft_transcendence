@@ -98,6 +98,7 @@ FT_Transcendence is an advanced web-based application designed to provide an int
     ```bash
     git clone https://github.com/HoudaChairi/Ft_transcendence.git
     cd Ft_transcendence
+    make build
     ```
 
 ---
