@@ -1,16 +1,10 @@
 {
-  "name": "The Game",
-  "version": "69",
-  "description": "ThreeJS PONG",
-  "type": "module",
-  "main": "index.js",
-  "scripts": {
-    "start": "vite --host 0.0.0.0"
-  },
-  "dependencies": {
-    "three": "^0.169.0"
-  },
-  "devDependencies": {
-    "vite": "^5.4.11"
-  }
+	"name": "The Game",
+	"version": "69",
+	"description": "ThreeJS PONG",
+	"type": "module",
+	"main": "index.js",
+	"scripts": {
+		"start": "vite --host 0.0.0.0"
+	}
 }
