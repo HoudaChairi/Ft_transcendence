@@ -22,13 +22,13 @@ export const CHOICES = `<div class="card-container">
 export const OFFLINE = `<div class="card-container">
 	<div class="card-wrapper">
 		<div class="card" id="singleplayer">
-			<img src="/textures/png/SingleplayerG.png" class="card-content" alt="" />
+			<img src="/textures/png/SinglePlayerG.png" class="card-content" alt="" />
 			<div class="card-title title-offline">Singleplayer</div>
 		</div>
 	</div>
 	<div class="card-wrapper">
 		<div class="card" id="multiplayer">
-			<img src="/textures/png/MultiplayerG.png" class="card-content" alt="" />
+			<img src="/textures/png/MultiPlayerG.png" class="card-content" alt="" />
 			<div class="card-title title-online">Multiplayer</div>
 		</div>
 	</div>
