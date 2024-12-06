@@ -96,9 +96,12 @@ FT_Transcendence is an advanced web-based application designed to provide an int
     ```bash
     git clone https://github.com/HoudaChairi/Ft_transcendence.git
     cd Ft_transcendence
+    ```
+2. Build the project:
+    ```bash
     make build
     ```
-
+    Make sure to run Docker before building the project to ensure all services are properly initialized.
 ---
 
 ## 🚀 Usage
