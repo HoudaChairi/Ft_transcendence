@@ -1,7 +1,7 @@
 # 🎮 FT_Transcendence
 
 
-FT_Transcendence is an advanced web-based application designed to provide an interactive multiplayer gaming experience combined with innovative features like real-time live chat, AI opponents, and robust authentication systems. The project also emphasizes browser compatibility, 3D graphical enhancements, and dynamic server-client interactions.
+`FT_Transcendence` is an advanced web-based application designed to provide an interactive multiplayer gaming experience combined with innovative features like real-time live chat, AI opponents, and robust authentication systems. The project also emphasizes browser compatibility, 3D graphical enhancements, and dynamic server-client interactions.
 
 <img width="2556" alt="Screen Shot 2024-12-11 at 5 02 25 PM" src="https://github.com/user-attachments/assets/2ce1d85f-88a5-4d4e-8e14-7a17e322ef17" />
 
