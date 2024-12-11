@@ -3000,7 +3000,6 @@ class Game {
 				if (!this.#tournamentWebSocket) return;
 
 				const data = JSON.parse(e.data);
-				console.log(data);
 				this.#handleTournamentMessage(data);
 			} catch (error) {
 				console.error('Error handling tournament message:', error);
