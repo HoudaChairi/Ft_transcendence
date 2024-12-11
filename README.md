@@ -4,7 +4,7 @@ FT_Transcendence is an advanced web-based application designed to provide an int
 
 👥 **Teammates with**: <a href="https://github.com/ThEWoLf882-42" style="color: blue;"><b>@ThEWoLf882-42</b></a>, <a href="https://github.com/mel-moun" style="color: blue;"><b>@mel-moun</b></a>
 
-🌐 **Live Demo**: [Visit FT_Transcendence Website](https://89.42.88.113/)
+🌐 **Live Demo**: [Visit FT_Transcendence Website](https://noskillpong.com/)
 
 ---
 
@@ -102,6 +102,7 @@ FT_Transcendence is an advanced web-based application designed to provide an int
     make build
     ```
     Make sure to run Docker before building the project to ensure all services are properly initialized.
+
 ---
 
 ## 🚀 Usage
