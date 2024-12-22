@@ -118,3 +118,29 @@
         -   Multiplayer: Play locally with another player.
     -   **Online Mode**: Compete against other players online.
 -   **🏆 Tournaments**: Join or create tournaments and track user statistics.
+
+## 🌆 Preview
+
+👤 Profile Dashboard
+
+<img width="2560" alt="Screen Shot 2024-12-22 at 11 18 40 AM" src="https://github.com/user-attachments/assets/024d647b-f31e-4900-8262-8483a0ead8de" />
+
+🎮 Game Pages
+
+<img width="2560" alt="Screen Shot 2024-12-22 at 10 39 03 AM" src="https://github.com/user-attachments/assets/8664a049-51b3-4034-ab36-a9b685ae9850" />
+<img width="2560" alt="Screen Shot 2024-12-22 at 11 09 09 AM" src="https://github.com/user-attachments/assets/c725e917-6993-40da-ba26-141f2c168bca" />
+<img width="2560" alt="Screen Shot 2024-12-22 at 11 10 09 AM" src="https://github.com/user-attachments/assets/ba6e2638-6199-4262-9116-584ea70a6b91" />
+<img width="2560" alt="Screen Shot 2024-12-22 at 11 10 28 AM" src="https://github.com/user-attachments/assets/88aabeec-a4ea-4540-bc7f-b8e7185eab93" />
+<img width="2560" alt="Screen Shot 2024-12-22 at 11 21 01 AM" src="https://github.com/user-attachments/assets/f317bffa-28ff-4c3f-b11f-9344b75facff" />
+
+💬 Chat Interface
+
+<img width="2560" alt="Screen Shot 2024-12-22 at 10 38 31 AM" src="https://github.com/user-attachments/assets/698950e0-908f-450d-9a32-5d99edaf083c" />
+
+🏆 Leaderboard
+
+<img width="2560" alt="Screen Shot 2024-12-22 at 11 25 28 AM" src="https://github.com/user-attachments/assets/93d9b040-911b-402f-9b8b-e0071a2d20e4" />
+
+⚙️ Settings Page
+
+<img width="2560" alt="Screen Shot 2024-12-22 at 11 07 00 AM" src="https://github.com/user-attachments/assets/0f23ce6d-b9e5-466e-b663-7a8852c34d94" />
