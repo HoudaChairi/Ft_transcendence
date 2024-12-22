@@ -121,6 +121,14 @@
 
 ## 🌆 Preview
 
+🔐 Sign In Page
+
+<img width="2560" alt="Screen Shot 2024-12-22 at 12 18 43 PM" src="https://github.com/user-attachments/assets/06eef315-ce60-45e5-b0e3-4c95a324f916" />
+
+✍️ Sign Up Page
+
+<img width="2560" alt="Screen Shot 2024-12-22 at 12 19 35 PM" src="https://github.com/user-attachments/assets/26041b9c-0dcf-4884-b8f1-6e0a18bce67c" />
+
 👤 Profile Page
 
 <img width="2560" alt="Screen Shot 2024-12-22 at 12 05 30 PM" src="https://github.com/user-attachments/assets/17955b14-997e-4e3f-bb02-bfa966976abf" />
