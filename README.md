@@ -130,6 +130,8 @@
 <img width="2560" alt="Screen Shot 2024-12-22 at 10 39 03 AM" src="https://github.com/user-attachments/assets/8664a049-51b3-4034-ab36-a9b685ae9850" />
 Online Matchmaking
 <img width="2560" alt="Screen Shot 2024-12-22 at 11 09 09 AM" src="https://github.com/user-attachments/assets/c725e917-6993-40da-ba26-141f2c168bca" />
+<img width="2560" alt="Screen Shot 2024-12-22 at 11 09 41 AM" src="https://github.com/user-attachments/assets/f66d6988-35bf-4c4a-9785-05386d599632" />
+
 Offline, choosing whether playing vs AI/friend using same keyboard
 <img width="2560" alt="Screen Shot 2024-12-22 at 11 10 09 AM" src="https://github.com/user-attachments/assets/ba6e2638-6199-4262-9116-584ea70a6b91" />
 vs AI
