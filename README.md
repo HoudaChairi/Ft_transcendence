@@ -119,6 +119,8 @@
     -   **Online Mode**: Compete against other players online.
 -   **🏆 Tournaments**: Join or create tournaments and track user statistics.
 
+---
+
 ## 🌆 Preview
 
 🔐 Sign In Page
