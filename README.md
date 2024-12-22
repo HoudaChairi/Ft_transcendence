@@ -161,8 +161,14 @@
 
 <img width="2560" alt="Screen Shot 2024-12-22 at 11 07 00 AM" src="https://github.com/user-attachments/assets/0f23ce6d-b9e5-466e-b663-7a8852c34d94" />
 
+🔐 Activate 2FA
+
 <img width="2560" alt="Screen Shot 2024-12-22 at 12 12 37 PM" src="https://github.com/user-attachments/assets/95c9fb90-d9ca-447c-a55d-837bf4ccada8" />
 
+✅ 2FA Activated
+
 <img width="2560" alt="Screen Shot 2024-12-22 at 12 13 24 PM" src="https://github.com/user-attachments/assets/10994bc3-a658-489d-8cf0-a26a7241b5b0" />
+
+🔑 Login with 2FA Enabled
 
 <img width="2560" alt="Screen Shot 2024-12-22 at 12 14 32 PM" src="https://github.com/user-attachments/assets/41cdc768-5d17-4d6a-af75-17b7ab086864" />
