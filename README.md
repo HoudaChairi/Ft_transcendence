@@ -123,7 +123,7 @@
 
 👤 Profile Dashboard
 
-<img width="2560" alt="Screen Shot 2024-12-22 at 11 18 40 AM" src="https://github.com/user-attachments/assets/024d647b-f31e-4900-8262-8483a0ead8de" />
+<img width="2560" alt="Screen Shot 2024-12-22 at 12 05 30 PM" src="https://github.com/user-attachments/assets/17955b14-997e-4e3f-bb02-bfa966976abf" />
 
 🎮 Game Pages
 
