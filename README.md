@@ -128,9 +128,13 @@
 🎮 Game Pages
 
 <img width="2560" alt="Screen Shot 2024-12-22 at 10 39 03 AM" src="https://github.com/user-attachments/assets/8664a049-51b3-4034-ab36-a9b685ae9850" />
+Online Matchmaking
 <img width="2560" alt="Screen Shot 2024-12-22 at 11 09 09 AM" src="https://github.com/user-attachments/assets/c725e917-6993-40da-ba26-141f2c168bca" />
+Offline, choosing whether playing vs AI/friend using same keyboard
 <img width="2560" alt="Screen Shot 2024-12-22 at 11 10 09 AM" src="https://github.com/user-attachments/assets/ba6e2638-6199-4262-9116-584ea70a6b91" />
+vs AI
 <img width="2560" alt="Screen Shot 2024-12-22 at 11 10 28 AM" src="https://github.com/user-attachments/assets/88aabeec-a4ea-4540-bc7f-b8e7185eab93" />
+vs Friend
 <img width="2560" alt="Screen Shot 2024-12-22 at 11 21 01 AM" src="https://github.com/user-attachments/assets/f317bffa-28ff-4c3f-b11f-9344b75facff" />
 
 💬 Chat Interface
