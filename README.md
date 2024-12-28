@@ -7,7 +7,7 @@
 
 👥 **Teammates with**: <a href="https://github.com/ThEWoLf882-42" style="color: blue;"><b>@ThEWoLf882-42</b></a>, <a href="https://github.com/mel-moun" style="color: blue;"><b>@mel-moun</b></a>
 
-🌐 **Live Demo**: [Visit FT_Transcendence Website](https://noskillpong.com/)
+<!-- 🌐 **Live Demo**: [Visit FT_Transcendence Website](https://noskillpong.com/) -->
 
 ---
 
