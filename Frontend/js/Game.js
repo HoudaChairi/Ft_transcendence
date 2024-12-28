@@ -1513,16 +1513,26 @@ class Game {
 				).innerHTML = '';
 				this.#chatuser = undefined;
 			}
+
 			const id = {
 				1: ALL_PLAYERS,
 				2: FRIENDS,
 				3: PENDING,
 				4: BLOCKED,
 			};
+
 			this.#css2DObject.chat.element.querySelector(
 				'.all-players'
 			).innerHTML = id[btn];
 			this.#selectedTab = btn;
+
+			for (const key in this.#chatWebSocket) {
+				if (this.#chatWebSocket[key].sock) {
+					this.#chatWebSocket[key].sock.close();
+					delete this.#chatWebSocket[key];
+				}
+			}
+
 			const response = await fetch(`api/manage/friendship/`, {
 				method: 'GET',
 				headers: {
@@ -1532,6 +1542,7 @@ class Game {
 					)}`,
 				},
 			});
+
 			const data = await response.json();
 			if (response.ok) {
 				const stat = {
@@ -3560,15 +3571,15 @@ class Game {
 	}
 
 	#setupChat() {
-		this.#switchChatTab(1);
-
 		this.#onlineSocket = new WebSocket(
 			`wss://${window.location.host}/api/ws/online_status/${
 				this.#loggedUser
 			}/`
 		);
 
-		this.#onlineSocket.onopen = () => {};
+		this.#onlineSocket.onopen = () => {
+			this.#switchChatTab(1);
+		};
 
 		this.#onlineSocket.onclose = () => (this.#onlineSocket = null);
 
@@ -3612,7 +3623,6 @@ class Game {
 					this.#startInviteGame(data.recipient);
 				} else {
 					this.#onlineUsers = data.online_users;
-					this.#switchChatTab(this.#selectedTab, false);
 				}
 			} catch (error) {
 				console.error('Error processing message:', error);

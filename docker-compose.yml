@@ -1,74 +1,74 @@
 services:
-  postgres:
-    image: postgres:alpine
-    restart: always
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
-    env_file:
-      - .env
-    expose:
-      - "5432"
-    container_name: postgres
+    #   postgres:
+    #     image: postgres:alpine
+    #     restart: always
+    #     volumes:
+    #       - postgres_data:/var/lib/postgresql/data/
+    #     env_file:
+    #       - .env
+    #     expose:
+    #       - "5432"
+    #     container_name: postgres
 
-  pgadmin:
-    image: dpage/pgadmin4
-    env_file:
-      - .env
-    ports:
-      - "8080:80"
-    container_name: pgadmin
-    restart: always
+    #   pgadmin:
+    #     image: dpage/pgadmin4
+    #     env_file:
+    #       - .env
+    #     ports:
+    #       - "8080:80"
+    #     container_name: pgadmin
+    #     restart: always
 
-  django:
-    build:
-      context: ./Devops/Django
-    volumes:
-      - ./Backend:/app
-      - media_data:/app/media
-    expose:
-      - "8000"
-    depends_on:
-      - postgres
-      - redis
-    env_file:
-      - .env
-    container_name: django
-    restart: always
+    #   django:
+    #     build:
+    #       context: ./Devops/Django
+    #     volumes:
+    #       - ./Backend:/app
+    #       - media_data:/app/media
+    #     expose:
+    #       - "8000"
+    #     depends_on:
+    #       - postgres
+    #       - redis
+    #     env_file:
+    #       - .env
+    #     container_name: django
+    #     restart: always
 
-  threejs:
-    build:
-      context: ./Devops/Three.js
-    volumes:
-      - ./Frontend:/usr/src/app
-    expose:
-      - "5173"
-    depends_on:
-      - django
-    container_name: threejs
-    restart: always
+    threejs:
+        build:
+            context: ./Devops/Three.js
+        volumes:
+            - ./Frontend:/usr/src/app
+        expose:
+            - '5173'
+        # depends_on:
+        #     - django
+        container_name: threejs
+        restart: always
 
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    depends_on:
-      - django
-      - threejs
-    volumes:
-      - ./Devops/Nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./Devops/Nginx/certs:/etc/nginx/certs
-      - media_data:/app/media
-    restart: always
-    container_name: nginx
+    # nginx:
+    #   image: nginx:alpine
+    #   ports:
+    #     - "80:80"
+    #     - "443:443"
+    #   depends_on:
+    #     - django
+    #     - threejs
+    #   volumes:
+    #     - ./Devops/Nginx/nginx.conf:/etc/nginx/nginx.conf
+    #     - ./Devops/Nginx/certs:/etc/nginx/certs
+    #     - media_data:/app/media
+    #   restart: always
+    #   container_name: nginx
 
-  redis:
-    image: redis:alpine
-    container_name: redis
-    restart: always
-    expose:
-      - "6379"
+    # redis:
+    #   image: redis:alpine
+    #   container_name: redis
+    #   restart: always
+    #   expose:
+    #     - "6379"
 
 volumes:
-  postgres_data:
-  media_data:
+    postgres_data:
+    media_data:
